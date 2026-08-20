@@ -2,6 +2,7 @@ services:
   - type: web
     name: aula-medica-dr-villalobos
     runtime: python
+    rootDir: Aula_medica_Dr_Villalobos_Render
     plan: free
     buildCommand: pip install -r requirements.txt
     startCommand: uvicorn app:app --host 0.0.0.0 --port $PORT
