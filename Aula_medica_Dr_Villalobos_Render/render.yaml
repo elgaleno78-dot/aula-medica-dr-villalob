@@ -2,7 +2,7 @@ services:
   - type: web
     name: aula-medica-dr-villalobos
     runtime: python
-    plan: starter
+    plan: free
     buildCommand: pip install -r requirements.txt
     startCommand: uvicorn app:app --host 0.0.0.0 --port $PORT
     healthCheckPath: /health
@@ -11,8 +11,4 @@ services:
       - key: AULA_ADMIN_PASSWORD
         generateValue: true
       - key: AULA_DATA_DIR
-        value: /var/data
-    disk:
-      name: aula-medica-data
-      mountPath: /var/data
-      sizeGB: 1
+        value: /tmp/aula-data
