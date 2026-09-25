@@ -1,4 +1,5 @@
 import os, tempfile, importlib, unittest
+from unittest.mock import patch
 from pathlib import Path
 
 tmp=tempfile.TemporaryDirectory()
@@ -19,7 +20,9 @@ class StudentAuthTests(unittest.TestCase):
     def test_account_enrollment_and_file_protection(self):
         client=self.client
         user={"full_name":"Alumno Prueba","email":"alumno@example.org","password":"UnaClaveDePruebaSegura2026!"}
-        signup=client.post("/api/student-auth/register",json=user)
+        with patch.object(appmod,"mail_configured",return_value=True), patch.object(appmod,"send_student_email") as sender:
+            signup=client.post("/api/student-auth/register",json=user)
+            self.assertEqual(sender.call_count,1)
         self.assertEqual(signup.status_code,200,signup.text)
         token=signup.json()["token"]
         self.assertEqual(client.post("/api/student-auth/register",json=user).status_code,409)
@@ -27,7 +30,8 @@ class StudentAuthTests(unittest.TestCase):
         self.assertEqual(client.get("/api/student-auth/me",headers={"Authorization":"Bearer "+token}).status_code,200)
         self.assertEqual(client.get("/uploads/no-such-file.pdf").status_code,401)
         self.assertEqual(client.post("/api/register",data={"full_name":user["full_name"],"email":user["email"],"course_id":1}).status_code,401)
-        enrolled=client.post("/api/register",data={"full_name":user["full_name"],"email":user["email"],"course_id":1},headers={"Authorization":"Bearer "+token})
+        with patch.object(appmod,"mail_configured",return_value=False):
+            enrolled=client.post("/api/register",data={"full_name":user["full_name"],"email":user["email"],"course_id":1},headers={"Authorization":"Bearer "+token})
         self.assertEqual(enrolled.status_code,200,enrolled.text)
         me=client.get("/api/student-auth/me",headers={"Authorization":"Bearer "+token}).json()
         self.assertEqual(len(me["enrollments"]),1)
