@@ -25,7 +25,8 @@ class StudentAuthTests(unittest.TestCase):
             self.assertEqual(sender.call_count,1)
         self.assertEqual(signup.status_code,200,signup.text)
         token=signup.json()["token"]
-        self.assertEqual(client.post("/api/student-auth/register",json=user).status_code,409)
+        with patch.object(appmod,"mail_configured",return_value=True):
+            self.assertEqual(client.post("/api/student-auth/register",json=user).status_code,409)
         self.assertEqual(client.post("/api/student-auth/login",json={"email":user["email"],"password":"incorrecta"}).status_code,401)
         self.assertEqual(client.get("/api/student-auth/me",headers={"Authorization":"Bearer "+token}).status_code,200)
         self.assertEqual(client.get("/uploads/no-such-file.pdf").status_code,401)
