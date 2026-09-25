@@ -2,7 +2,7 @@ from fastapi import FastAPI, UploadFile, File, Form, HTTPException, Request
 from fastapi.responses import HTMLResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
 from pathlib import Path
-import sqlite3, os, secrets, shutil, datetime, json
+import sqlite3, os, secrets, shutil, datetime, json, hashlib, hmac, re
 
 BASE = Path(__file__).resolve().parent
 
@@ -175,6 +175,22 @@ def init_db():
       value TEXT DEFAULT ''
     );
     """)
+    cur.executescript("""
+    CREATE TABLE IF NOT EXISTS student_accounts(
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      full_name TEXT NOT NULL,
+      email TEXT NOT NULL UNIQUE COLLATE NOCASE,
+      password_hash TEXT NOT NULL,
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP
+    );
+    CREATE TABLE IF NOT EXISTS student_sessions(
+      token_hash TEXT PRIMARY KEY,
+      account_id INTEGER NOT NULL,
+      expires_at TEXT NOT NULL,
+      FOREIGN KEY(account_id) REFERENCES student_accounts(id) ON DELETE CASCADE
+    );
+    CREATE INDEX IF NOT EXISTS idx_student_sessions_account ON student_sessions(account_id);
+    """)
     # Safe migrations for existing databases
     course_cols={r["name"] for r in cur.execute("PRAGMA table_info(courses)").fetchall()}
     if "access_hours" not in course_cols:
@@ -258,6 +274,97 @@ async def login(payload: dict):
     t = secrets.token_urlsafe(24)
     TOKENS.add(t)
     return {"token":t}
+
+
+# ---------- CUENTAS INDIVIDUALES DE ALUMNOS ----------
+def password_hash(password: str) -> str:
+    salt=secrets.token_bytes(16)
+    key=hashlib.scrypt(password.encode("utf-8"),salt=salt,n=16384,r=8,p=1,dklen=32)
+    return "scrypt$16384$"+salt.hex()+"$"+key.hex()
+
+def password_matches(password: str, stored: str) -> bool:
+    try:
+        algorithm,cost,salt,digest=stored.split("$")
+        if algorithm!="scrypt" or cost!="16384":
+            return False
+        candidate=hashlib.scrypt(password.encode("utf-8"),salt=bytes.fromhex(salt),n=16384,r=8,p=1,dklen=32)
+        return hmac.compare_digest(candidate,bytes.fromhex(digest))
+    except (ValueError,TypeError):
+        return False
+
+def student_identity(request:Request):
+    bearer=request.headers.get("authorization","")
+    token=bearer[7:].strip() if bearer.startswith("Bearer ") else ""
+    if not token:
+        raise HTTPException(401,"Inicia sesión")
+    token_hash=hashlib.sha256(token.encode()).hexdigest()
+    con=db()
+    row=con.execute("""SELECT a.id,a.full_name,a.email FROM student_sessions s
+        JOIN student_accounts a ON a.id=s.account_id
+        WHERE s.token_hash=? AND s.expires_at>?""",(token_hash,utcnow().isoformat())).fetchone()
+    con.close()
+    if not row:
+        raise HTTPException(401,"Sesión inválida o vencida")
+    return dict(row)
+
+def student_session(account_id:int):
+    raw=secrets.token_urlsafe(32)
+    con=db()
+    con.execute("INSERT INTO student_sessions(token_hash,account_id,expires_at) VALUES(?,?,?)",
+        (hashlib.sha256(raw.encode()).hexdigest(),account_id,(utcnow()+datetime.timedelta(days=7)).isoformat()))
+    con.commit();con.close()
+    return raw
+
+@app.post("/api/student-auth/register")
+async def student_signup(payload:dict):
+    name=str(payload.get("full_name") or "").strip()
+    email=str(payload.get("email") or "").strip().lower()
+    password=str(payload.get("password") or "")
+    if len(name)<3 or len(name)>150 or not re.fullmatch(r"[^\\s@]+@[^\\s@]+\\.[^\\s@]+",email) or len(email)>254:
+        raise HTTPException(400,"Nombre o correo inválido")
+    if len(password)<12 or len(password)>128:
+        raise HTTPException(400,"La contraseña debe tener entre 12 y 128 caracteres")
+    hashed=password_hash(password)
+    con=db()
+    try:
+        cur=con.execute("INSERT INTO student_accounts(full_name,email,password_hash) VALUES(?,?,?)",(name,email,hashed))
+        account_id=cur.lastrowid
+        con.commit()
+    except sqlite3.IntegrityError:
+        raise HTTPException(409,"El correo ya tiene una cuenta")
+    finally:
+        con.close()
+    return {"token":student_session(account_id),"student":{"id":account_id,"full_name":name,"email":email}}
+
+@app.post("/api/student-auth/login")
+async def student_signin(payload:dict):
+    email=str(payload.get("email") or "").strip().lower()
+    password=str(payload.get("password") or "")
+    con=db()
+    row=con.execute("SELECT id,full_name,email,password_hash FROM student_accounts WHERE email=?",(email,)).fetchone()
+    con.close()
+    if not row or not password_matches(password,row["password_hash"]):
+        raise HTTPException(401,"Correo o contraseña incorrectos")
+    return {"token":student_session(row["id"]),"student":{"id":row["id"],"full_name":row["full_name"],"email":row["email"]}}
+
+@app.get("/api/student-auth/me")
+def student_me(request:Request):
+    identity=student_identity(request)
+    con=db()
+    enrollments=[dict(r) for r in con.execute("""SELECT s.course_id,c.title,s.access_expires_at,s.access_token
+        FROM students s JOIN courses c ON c.id=s.course_id
+        WHERE lower(s.email)=? ORDER BY s.id DESC""",(identity["email"],)).fetchall()]
+    con.close()
+    return {"student":identity,"enrollments":enrollments}
+
+@app.post("/api/student-auth/logout")
+def student_logout(request:Request):
+    student_identity(request)
+    token=request.headers["authorization"][7:].strip()
+    con=db()
+    con.execute("DELETE FROM student_sessions WHERE token_hash=?",(hashlib.sha256(token.encode()).hexdigest(),))
+    con.commit();con.close()
+    return {"ok":True}
 
 @app.get("/api/courses")
 def courses():
