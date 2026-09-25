@@ -202,6 +202,8 @@ def init_db():
         cur.execute("ALTER TABLE students ADD COLUMN access_started_at TEXT")
     if "access_expires_at" not in student_cols:
         cur.execute("ALTER TABLE students ADD COLUMN access_expires_at TEXT")
+    if "account_id" not in student_cols:
+        cur.execute("ALTER TABLE students ADD COLUMN account_id INTEGER REFERENCES student_accounts(id)")
     initialized = cur.execute("SELECT value FROM settings WHERE key='initialized'").fetchone()
     if initialized is None:
         n = cur.execute("SELECT COUNT(*) FROM courses").fetchone()[0]
@@ -320,7 +322,7 @@ async def student_signup(payload:dict):
     name=str(payload.get("full_name") or "").strip()
     email=str(payload.get("email") or "").strip().lower()
     password=str(payload.get("password") or "")
-    if len(name)<3 or len(name)>150 or not re.fullmatch(r"[^\\s@]+@[^\\s@]+\\.[^\\s@]+",email) or len(email)>254:
+    if len(name)<3 or len(name)>150 or not re.fullmatch(r"[^\s@]+@[^\s@]+\.[^\s@]+",email) or len(email)>254:
         raise HTTPException(400,"Nombre o correo inválido")
     if len(password)<12 or len(password)>128:
         raise HTTPException(400,"La contraseña debe tener entre 12 y 128 caracteres")
@@ -353,7 +355,7 @@ def student_me(request:Request):
     con=db()
     enrollments=[dict(r) for r in con.execute("""SELECT s.course_id,c.title,s.access_expires_at,s.access_token
         FROM students s JOIN courses c ON c.id=s.course_id
-        WHERE lower(s.email)=? ORDER BY s.id DESC""",(identity["email"],)).fetchall()]
+        WHERE s.account_id=? ORDER BY s.id DESC""",(identity["id"],)).fetchall()]
     con.close()
     return {"student":identity,"enrollments":enrollments}
 
@@ -511,8 +513,12 @@ async def register_student(
     institution: str = Form(""),
     position: str = Form(""),
     email: str = Form(""),
-    course_id: int = Form(...)
+    course_id: int = Form(...),
+    request: Request = None
 ):
+    identity=student_identity(request)
+    if email.strip().lower()!=identity["email"]:
+        raise HTTPException(403,"El correo debe coincidir con tu cuenta")
     full_name=full_name.strip()
     email=email.strip().lower()
     if len(full_name)<3:
@@ -531,9 +537,9 @@ async def register_student(
     started=utcnow()
     expires=started+datetime.timedelta(hours=hours)
     access_token=secrets.token_urlsafe(32)
-    cur.execute("""INSERT INTO students(full_name,age,institution,position,email,course_id,access_token,access_started_at,access_expires_at)
-                   VALUES(?,?,?,?,?,?,?,?,?)""",
-                (full_name,age,institution.strip(),position.strip(),email,course_id,access_token,started.isoformat(),expires.isoformat()))
+    cur.execute("""INSERT INTO students(full_name,age,institution,position,email,course_id,access_token,access_started_at,access_expires_at,account_id)
+                   VALUES(?,?,?,?,?,?,?,?,?,?)""",
+                (full_name,age,institution.strip(),position.strip(),email,course_id,access_token,started.isoformat(),expires.isoformat(),identity["id"]))
     sid=cur.lastrowid
     cur.execute("INSERT INTO activities(message) VALUES(?)",(f"Nuevo alumno inscrito: {full_name} · acceso {hours} h",))
     con.commit(); con.close()
