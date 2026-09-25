@@ -510,6 +510,37 @@ def courses():
     return rows
 
 
+@app.get("/api/student-courses/{course_id}/access")
+def student_course_access(course_id:int, request:Request):
+    """All published lessons are available to every authenticated student account."""
+    identity=student_identity(request)
+    con=db()
+    course=con.execute("SELECT * FROM courses WHERE id=? AND published=1",(course_id,)).fetchone()
+    if not course:
+        con.close()
+        raise HTTPException(404,"Curso no disponible")
+    lessons=[dict(r) for r in con.execute("SELECT * FROM lessons WHERE course_id=? ORDER BY ord,id",(course_id,)).fetchall()]
+    con.close()
+    return {"course":dict(course),"lessons":lessons,"student":identity["full_name"]}
+
+@app.get("/student-course-file/{lesson_id}/{filename}")
+def student_course_file(lesson_id:int, filename:str, request:Request):
+    """Protect course assets with the student's own session, without timed enrollment."""
+    student_identity(request)
+    con=db()
+    row=con.execute("""SELECT l.filename,l.kind FROM lessons l JOIN courses c ON c.id=l.course_id
+        WHERE l.id=? AND c.published=1""",(lesson_id,)).fetchone()
+    con.close()
+    if not row or not row["filename"] or filename!=row["filename"]:
+        raise HTTPException(404,"Archivo no encontrado")
+    p=UPLOADS/row["filename"]
+    if not p.exists():
+        raise HTTPException(404,"Archivo no disponible")
+    media={"pdf":"application/pdf","pptx":"application/vnd.openxmlformats-officedocument.presentationml.presentation",
+      "mp4":"video/mp4","mov":"video/quicktime","png":"image/png","jpg":"image/jpeg",
+      "jpeg":"image/jpeg","webp":"image/webp"}.get(row["kind"],"application/octet-stream")
+    return FileResponse(p,media_type=media,headers={"Content-Disposition":"inline","Cache-Control":"private, no-store"})
+
 @app.get("/api/courses/{course_id}/access")
 def course_access(course_id:int, access_token:str=""):
     info, remaining = validate_course_access(course_id, access_token)
