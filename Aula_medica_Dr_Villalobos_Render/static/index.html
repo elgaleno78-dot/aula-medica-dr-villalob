@@ -118,6 +118,23 @@ button,input,textarea,select{font:inherit}.app{display:grid;grid-template-column
 <link rel="stylesheet" href="/static/avico-theme.css">
 </head>
 <body>
+<div id="avicoWelcome" class="avico-welcome" role="dialog" aria-modal="true" aria-label="Bienvenida a Aula AVICO">
+  <section class="avico-welcome-left">
+    <div class="avico-identity"><div class="avico-emblem" aria-hidden="true">AV</div><div><strong>AVICO</strong><span>AULA VIRTUAL</span><p>Educación médica continua<br>en Ginecología y Obstetricia</p></div></div>
+    <div class="avico-benefits"><p><b>Cursos especializados</b><br>Actualización basada en evidencia</p><p><b>Expertos nacionales e internacionales</b><br>Aprende de los mejores</p><p><b>Constancias académicas</b><br>Impulsa tu desarrollo profesional</p></div>
+    <p class="avico-tagline">Conocimiento hoy,<br>mejores pacientes mañana.</p>
+  </section>
+  <section class="avico-welcome-right"><div class="avico-entry-card"><h1>Bienvenido(a) al<br><strong>Aula Virtual AVICO</strong></h1><p>Continúa tu formación en Ginecología y Obstetricia.</p>
+  <button type="button" class="avico-enter" id="avicoEnter">Ingresar al Aula →</button>
+  <p class="avico-entry-note">Accede a cursos, clases y recursos académicos.</p>
+  <button type="button" class="avico-register" id="avicoRegister">Crear cuenta / Inscribirme</button>
+  <p class="avico-auth-note">El acceso individual con correo y contraseña estará disponible al implementar las cuentas de alumnos.</p>
+  </div></section>
+</div>
+<script>
+(function(){const splash=document.getElementById('avicoWelcome');if(sessionStorage.getItem('avicoEntered')==='1')splash.hidden=true;function enter(){sessionStorage.setItem('avicoEntered','1');splash.hidden=true;}document.getElementById('avicoEnter').addEventListener('click',enter);document.getElementById('avicoRegister').addEventListener('click',function(){enter();const register=document.querySelector('[onclick*="register"],[data-view="register"],[data-section="register"]');if(register)register.click();});})();
+</script>
+
 <div class="app">
 <aside class="sidebar">
   <div class="brand"><div class="logo">♡</div><div>Aula médica<br><b>Dr. Villalobos</b></div></div>
