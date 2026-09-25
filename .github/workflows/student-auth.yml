@@ -1,0 +1,20 @@
+name: Student authentication tests
+on:
+  pull_request:
+    paths:
+      - 'Aula_medica_Dr_Villalobos_Render/**'
+      - '.github/workflows/student-auth.yml'
+  push:
+    branches: [main]
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: pip install -r requirements.txt httpx
+        working-directory: Aula_medica_Dr_Villalobos_Render
+      - run: python -m unittest -v test_student_auth
+        working-directory: Aula_medica_Dr_Villalobos_Render
