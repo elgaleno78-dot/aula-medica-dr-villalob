@@ -68,3 +68,62 @@ body{background:var(--bg);color:var(--ink)}
 @media(max-width:1050px){.avico-welcome{grid-template-columns:1fr 1fr}.avico-welcome-left{padding-left:38%}.avico-welcome-left:before{width:43%}.avico-identity{flex-wrap:wrap}.avico-identity strong{font-size:48px}}
 @media(max-width:760px){.avico-welcome{display:block}.avico-welcome-left{min-height:310px;padding:32px 20px 24px 43%;background:linear-gradient(130deg,#eaf6ff,#fff)}.avico-welcome-left:before{width:42%;background-size:cover}.avico-welcome-left:after{height:16%}.avico-identity{gap:7px}.avico-emblem{width:43px;height:43px;font-size:16px}.avico-identity strong{font-size:39px}.avico-identity span{font-size:10px}.avico-identity p{font-size:11px}.avico-benefits{display:block;margin:14px 0}.avico-benefits p{font-size:12px;padding:7px 0 7px 10px}.avico-tagline{display:block;font-size:12px}.avico-tagline:before{margin-bottom:6px}.avico-welcome-right{padding:18px 14px 32px}.avico-entry-card{padding:25px 20px}}
 @media(max-width:390px){.avico-welcome-left{padding-left:39%}.avico-welcome-left:before{width:39%}.avico-identity strong{font-size:32px}.avico-identity p{font-size:10px}}
+
+
+/* Welcome layout correction: no clipped actions, consistent spacing at laptop sizes. */
+.avico-welcome{grid-template-columns:minmax(0,55%) minmax(0,45%);overflow-x:hidden}
+.avico-welcome-left{min-height:100dvh;padding:clamp(28px,3.5vw,54px) clamp(20px,3vw,48px) 36px 39%;justify-content:flex-start}
+.avico-welcome-left:before{width:39%;background-size:cover;background-position:center center}
+.avico-welcome-left:after{height:17%;bottom:-7%;opacity:.26}
+.avico-identity{flex-wrap:nowrap;align-items:center;gap:12px}
+.avico-emblem{width:52px;height:52px;font-size:20px;flex-shrink:0}
+.avico-identity strong{font-size:clamp(37px,4.2vw,66px)}
+.avico-identity span{font-size:clamp(9px,1vw,14px);letter-spacing:.2em}
+.avico-identity p{font-size:clamp(12px,1.15vw,16px)}
+.avico-benefits{margin:clamp(36px,8vh,90px) 0 18px}
+.avico-benefits p{max-width:370px}
+.avico-tagline{margin-top:auto;margin-bottom:clamp(18px,5vh,52px);color:#174f85;text-shadow:none}
+.avico-welcome-right{min-height:100dvh;display:flex;align-items:center;justify-content:center;padding:clamp(15px,2vw,28px)}
+.avico-entry-card{width:min(100%,520px);padding:clamp(22px,2.4vw,34px);border-radius:24px}
+.avico-entry-card h1{font-size:clamp(24px,2.3vw,32px);line-height:1.23;margin-bottom:8px}
+.avico-entry-card>p{margin:8px 0}
+.avico-account-form{margin-top:12px;gap:6px}
+.avico-account-form input{min-height:48px;padding:11px 13px}
+.avico-account-form .avico-enter{margin:6px 0 0}
+.avico-enter{min-height:49px;padding:12px}
+.avico-register{min-height:43px;padding:10px 12px;margin-top:7px}
+.avico-account-error{min-height:0;margin:2px 0;font-size:12px}
+.avico-auth-note{font-size:11px;margin-top:8px}
+@media(max-width:1050px) and (min-width:761px){
+ .avico-welcome{grid-template-columns:minmax(0,53%) minmax(0,47%)}
+ .avico-welcome-left{padding-left:37%;padding-right:18px}
+ .avico-welcome-left:before{width:37%}
+ .avico-identity{gap:7px}
+ .avico-emblem{width:42px;height:42px;font-size:16px}
+ .avico-identity strong{font-size:clamp(34px,4vw,46px)}
+ .avico-identity span{font-size:10px}
+ .avico-identity p{font-size:12px}
+ .avico-entry-card{padding:20px}
+}
+@media(max-width:760px){
+ .avico-welcome{display:block;overflow-y:auto}
+ .avico-welcome-left{min-height:260px;padding:24px 18px 22px 39%}
+ .avico-welcome-left:before{width:38%}
+ .avico-identity{gap:7px}
+ .avico-identity strong{font-size:clamp(31px,8vw,43px)}
+ .avico-identity span{font-size:10px}
+ .avico-identity p{font-size:11px}
+ .avico-benefits{margin:16px 0 12px}
+ .avico-tagline{margin:12px 0 0;font-size:12px}
+ .avico-welcome-right{min-height:auto;padding:14px 12px 28px}
+ .avico-entry-card{width:min(100%,520px);padding:23px 20px}
+}
+@media(max-height:760px) and (min-width:761px){
+ .avico-welcome-right{align-items:flex-start}
+ .avico-entry-card{padding:20px 25px}
+ .avico-register{min-height:38px;padding:8px;margin-top:5px}
+ .avico-account-form input{min-height:42px}
+ .avico-enter{min-height:43px}
+ .avico-benefits{margin:35px 0 12px}
+ .avico-tagline{margin-bottom:16px}
+}
