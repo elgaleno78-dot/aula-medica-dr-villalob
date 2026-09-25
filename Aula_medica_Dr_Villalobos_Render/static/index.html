@@ -524,11 +524,40 @@ async function openCourse(id){
   }catch(err){$('#lessons').textContent=err.message||'No se pudo abrir el curso.';}
 }
 let avicoViewerBlob=null;
+let avicoSlideBlob=null;
+async function showAvicoSlide(lessonId,number,count){
+  const status=$('#avicoSlideStatus'), image=$('#avicoSlideImage');
+  status.textContent='Cargando diapositiva '+number+' de '+count+'…';
+  try{
+    const r=await fetch('/api/student-lessons/'+lessonId+'/slides/'+number,{headers:{Authorization:'Bearer '+sessionStorage.getItem('avico_student_token')}});
+    if(!r.ok)throw Error('No se pudo cargar la diapositiva.');
+    const url=URL.createObjectURL(await r.blob());
+    image.onload=()=>{if(avicoSlideBlob)URL.revokeObjectURL(avicoSlideBlob);avicoSlideBlob=url;status.textContent=number+' / '+count;};
+    image.src=url;
+    $('#avicoPrevSlide').disabled=number<=1;
+    $('#avicoNextSlide').disabled=number>=count;
+    $('#avicoPrevSlide').onclick=()=>showAvicoSlide(lessonId,number-1,count);
+    $('#avicoNextSlide').onclick=()=>showAvicoSlide(lessonId,number+1,count);
+  }catch(e){status.textContent=e.message;}
+}
 async function viewLesson(raw,accessToken=null,isAdmin=false){
   const l=JSON.parse(raw); $('#viewerTitle').textContent=l.title; let html='';
   if(avicoViewerBlob){URL.revokeObjectURL(avicoViewerBlob);avicoViewerBlob=null;}
+  if(avicoSlideBlob){URL.revokeObjectURL(avicoSlideBlob);avicoSlideBlob=null;}
+  if(l.kind==='pptx'&&!isAdmin){
+    $('#viewerContent').innerHTML='<div class="pptBox" style="max-width:none;width:100%;padding:12px"><div style="display:flex;justify-content:center;align-items:center;gap:12px;margin-bottom:10px"><button class="btn" id="avicoPrevSlide" disabled>← Anterior</button><span id="avicoSlideStatus" aria-live="polite">Preparando presentación…</span><button class="btn" id="avicoNextSlide" disabled>Siguiente →</button></div><img id="avicoSlideImage" alt="Diapositiva de la clase" style="display:block;width:100%;height:calc(100vh - 170px);object-fit:contain" oncontextmenu="return false"></div>';
+    $('#viewer').classList.add('show');
+    try{
+      const response=await fetch('/api/student-lessons/'+l.id+'/slides',{headers:{Authorization:'Bearer '+sessionStorage.getItem('avico_student_token')}});
+      if(!response.ok)throw Error('No se pudo abrir esta presentación.');
+      const data=await response.json();
+      if(!data.count)throw Error('La presentación no contiene diapositivas.');
+      await showAvicoSlide(l.id,1,data.count);
+    }catch(e){$('#avicoSlideStatus').textContent=e.message;}
+    return;
+  }
   let fileUrl='';
-  if(l.filename && l.kind!=='pptx'){
+  if(l.filename){
     const url=isAdmin?`/uploads/${encodeURIComponent(l.filename)}`:`/student-course-file/${l.id}/${encodeURIComponent(l.filename)}`;
     try{
       const response=await fetch(url,{headers:{Authorization:'Bearer '+(isAdmin?token:sessionStorage.getItem('avico_student_token'))}});
@@ -540,7 +569,7 @@ async function viewLesson(raw,accessToken=null,isAdmin=false){
   else if(l.kind==='pdf')html=`<iframe src="${fileUrl}#toolbar=0&navpanes=0"></iframe>`;
   else if(['mp4','mov'].includes(l.kind))html=`<video controls controlsList="nodownload" src="${fileUrl}" oncontextmenu="return false"></video>`;
   else if(['png','jpg','jpeg','webp'].includes(l.kind))html=`<img src="${fileUrl}" oncontextmenu="return false">`;
-  else if(l.kind==='pptx')html='<div class="pptBox"><h2>Presentación en preparación</h2><p>Esta clase está guardada como PowerPoint privado. Para verla dentro del aula sin descargar el archivo original, el administrador debe publicar una versión PDF de visualización.</p></div>';
+  else if(l.kind==='pptx')html='<div class="pptBox"><p>Vista previa de PowerPoint disponible para alumnos en su cuenta.</p></div>';
   $('#viewerContent').innerHTML=html;
   $('#viewer').classList.add('show');
 }
