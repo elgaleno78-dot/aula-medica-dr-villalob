@@ -20,7 +20,7 @@ class StudentAuthTests(unittest.TestCase):
     def test_account_enrollment_and_file_protection(self):
         client=self.client
         user={"full_name":"Alumno Prueba","email":"alumno@example.org","password":"UnaClaveDePruebaSegura2026!"}
-        with patch.object(appmod,"mail_configured",return_value=True), patch.object(appmod,"send_student_email") as sender:
+        with patch.dict(os.environ,{"AULA_PUBLIC_URL":"https://example.org"}), patch.object(appmod,"mail_configured",return_value=True), patch.object(appmod,"send_student_email") as sender:
             signup=client.post("/api/student-auth/register",json=user)
             self.assertEqual(sender.call_count,1)
         self.assertEqual(signup.status_code,200,signup.text)
