@@ -68,3 +68,22 @@ body{background:var(--bg);color:var(--ink)}
 @media(max-width:1050px){.avico-welcome{grid-template-columns:1fr 1fr}.avico-welcome-left{padding-left:38%}.avico-welcome-left:before{width:43%}.avico-identity{flex-wrap:wrap}.avico-identity strong{font-size:48px}}
 @media(max-width:760px){.avico-welcome{display:block}.avico-welcome-left{min-height:310px;padding:32px 20px 24px 43%;background:linear-gradient(130deg,#eaf6ff,#fff)}.avico-welcome-left:before{width:42%;background-size:cover}.avico-welcome-left:after{height:16%}.avico-identity{gap:7px}.avico-emblem{width:43px;height:43px;font-size:16px}.avico-identity strong{font-size:39px}.avico-identity span{font-size:10px}.avico-identity p{font-size:11px}.avico-benefits{display:block;margin:14px 0}.avico-benefits p{font-size:12px;padding:7px 0 7px 10px}.avico-tagline{display:block;font-size:12px}.avico-tagline:before{margin-bottom:6px}.avico-welcome-right{padding:18px 14px 32px}.avico-entry-card{padding:25px 20px}}
 @media(max-width:390px){.avico-welcome-left{padding-left:39%}.avico-welcome-left:before{width:39%}.avico-identity strong{font-size:32px}.avico-identity p{font-size:10px}}
+
+
+/* Approved artwork as a real background; form remains interactive and accessible.
+   The asset must be uploaded to static/assets/avico-approved-login.png. */
+@media(min-width:761px){
+.avico-welcome{display:grid;grid-template-columns:62.4% 37.6%;background:#d9ecff url('/static/assets/avico-approved-login.png') center center/100% 100% no-repeat}
+.avico-welcome-left{visibility:hidden;min-height:100dvh;pointer-events:none}
+.avico-welcome-right{background:transparent;min-height:100dvh;display:flex;align-items:center;justify-content:center;padding:1.8vw 2.1vw 1.8vw .7vw}
+.avico-welcome-right:before{display:none}
+.avico-entry-card{background:#fff;box-shadow:none;width:100%;max-width:none;border-radius:24px;padding:clamp(20px,2.3vw,39px)}
+.avico-entry-card h1{font-size:clamp(24px,2.3vw,36px)}
+}
+@media(max-width:760px){
+.avico-welcome{display:block;background:#e5f4ff}
+.avico-welcome-left{background:#e5f4ff url('/static/assets/avico-approved-login.png') left top/auto 100% no-repeat;min-height:240px;padding:0}
+.avico-welcome-left>*{visibility:hidden}
+.avico-welcome-right{background:#e5f4ff;padding:12px}
+.avico-entry-card{background:#fff}
+}
