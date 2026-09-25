@@ -127,3 +127,34 @@ body{background:var(--bg);color:var(--ink)}
  .avico-benefits{margin:35px 0 12px}
  .avico-tagline{margin-bottom:16px}
 }
+
+
+/* Academic hero inspired by approved AVICO design; real HTML controls remain functional. */
+.avico-welcome{grid-template-columns:minmax(0,64%) minmax(390px,36%);background:#dcefff}
+.avico-welcome-left{display:block;position:relative;isolation:isolate;min-height:100dvh;padding:clamp(22px,3vw,44px) 37% 26px clamp(26px,5vw,90px);background:radial-gradient(ellipse at 79% 62%,#90c6f4 0%,#e6f4ff 39%,transparent 65%),linear-gradient(115deg,#d0eaff,#fff 48%,#a7d6fb);overflow:hidden}
+.avico-welcome-left:before{content:"";position:absolute;z-index:-2;left:0;top:0;bottom:0;width:27%;background:linear-gradient(90deg,#0b376a8a,#e8f5ff75),repeating-linear-gradient(90deg,#164a85 0 19px,#3485bf 19px 25px,#d7edff 25px 32px);opacity:.5;mask-image:linear-gradient(#000,transparent 70%)}
+.avico-welcome-left:after{content:"";position:absolute;z-index:-2;inset:auto -10% -28% 55%;height:67%;border-radius:50%;background:radial-gradient(circle at 55% 40%,#5daaf0,#0e5cae 60%,#c5e9ff 62%,transparent 70%);opacity:.6}
+.avico-hero-content{position:relative;z-index:2;display:flex;flex-direction:column;min-height:calc(100dvh - 70px);max-width:590px}
+.avico-identity{display:block}.avico-identity strong{font-family:Georgia,serif;font-weight:500;letter-spacing:-.055em;font-size:clamp(58px,6.1vw,108px);line-height:.95}.avico-identity sup{font-family:Arial,sans-serif;font-size:.16em;vertical-align:top;letter-spacing:0}
+.avico-identity span{width:max-content;font-size:clamp(11px,1.15vw,18px);letter-spacing:.35em;border-bottom:2px solid #2077c6;padding:6px 0 10px}
+.avico-identity p{font-size:clamp(13px,1.35vw,19px);line-height:1.35;margin:14px 0 0}
+.avico-hero-heading{font-size:clamp(30px,3.1vw,51px);line-height:1.04;letter-spacing:-.045em;color:#12355f;margin:clamp(22px,4vh,44px) 0 12px;font-weight:850}
+.avico-hero-heading em{font-style:normal;color:#2077cb}
+.avico-hero-subtitle{font-size:clamp(15px,1.45vw,23px);line-height:1.2;color:#173c67;margin:0 0 16px}
+.avico-hero-features{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin:10px 0 16px}
+.avico-hero-features div{text-align:center;color:#113866;display:flex;flex-direction:column;align-items:center;gap:5px}
+.avico-hero-features span{display:grid;place-items:center;width:clamp(38px,4vw,65px);height:clamp(38px,4vw,65px);border-radius:50%;background:#ffffffdd;color:#145ca3;font-size:clamp(24px,2.5vw,38px)}
+.avico-hero-features b{font-size:clamp(9px,.9vw,13px);line-height:1.15}
+.avico-signature{margin-top:auto;background:linear-gradient(115deg,#0d376b,#155c9d);border-radius:17px;color:#fff;padding:clamp(12px,1.4vw,20px);text-align:center;box-shadow:0 14px 35px #0b3c6b36}
+.avico-signature span{display:block;font-family:"Segoe Script","Brush Script MT","URW Chancery L",cursive;font-size:clamp(18px,2vw,31px);font-style:italic;font-weight:400;white-space:nowrap}
+.avico-signature small{display:block;font-size:clamp(11px,1vw,16px);margin:4px 0 10px}
+.avico-signature b{display:block;border-top:1px solid #ffffff80;padding-top:8px;letter-spacing:.2em;font-size:clamp(8px,.8vw,12px)}
+.avico-hero-art{position:absolute;z-index:1;right:-1%;top:10%;width:39%;height:76%;pointer-events:none;opacity:.96}
+.avico-hero-art svg{width:100%;height:100%;filter:drop-shadow(0 8px 12px #ffffffaa)}
+.avico-welcome-right{min-height:100dvh;padding:clamp(16px,2vw,32px);background:linear-gradient(140deg,#b4ddff,#e8f6ff 65%,#a8d3f5)}
+.avico-entry-card{width:min(100%,520px);padding:clamp(21px,2.5vw,39px)}
+.avico-entry-card h1{font-size:clamp(25px,2.3vw,34px)}
+.avico-register{min-height:42px}
+@media(max-width:1200px) and (min-width:761px){.avico-welcome{grid-template-columns:minmax(0,59%) minmax(390px,41%)}.avico-welcome-left{padding-left:25px;padding-right:34%}.avico-hero-art{width:35%}.avico-signature span{font-size:18px}.avico-hero-heading{font-size:clamp(29px,3vw,38px)}}
+@media(max-width:760px){.avico-welcome{display:block}.avico-welcome-left{min-height:0;padding:25px 24px 20px;display:block}.avico-welcome-left:before{width:18%}.avico-hero-content{min-height:0;max-width:100%;padding-right:28%}.avico-identity strong{font-size:54px}.avico-identity span{font-size:11px}.avico-identity p{font-size:12px}.avico-hero-heading{font-size:clamp(25px,6vw,34px);margin:18px 0 8px}.avico-hero-subtitle{font-size:14px}.avico-hero-art{top:12%;right:-4%;width:36%;height:57%}.avico-hero-features{grid-template-columns:repeat(4,minmax(0,1fr));gap:3px;margin:12px 0}.avico-hero-features span{width:35px;height:35px;font-size:22px}.avico-hero-features b{font-size:8px}.avico-signature{margin-top:8px;padding:12px}.avico-signature span{font-size:clamp(13px,3vw,21px);white-space:normal}.avico-signature b{font-size:8px;letter-spacing:.07em}.avico-welcome-right{min-height:0;padding:15px 12px 28px}.avico-entry-card{padding:22px 19px}}
+@media(max-width:390px){.avico-hero-content{padding-right:18%}.avico-hero-art{opacity:.38}.avico-hero-heading{font-size:26px}}
