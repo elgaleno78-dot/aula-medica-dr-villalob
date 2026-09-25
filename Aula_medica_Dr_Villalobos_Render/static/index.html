@@ -860,12 +860,12 @@ load();
 window.avicoRefreshStudent=async function(){
  const t=sessionStorage.getItem('avico_student_token'),box=document.getElementById('avicoStudentStatus'),form=document.getElementById('studentRegisterForm');
  if(!box||!form)return;
- if(!t){box.textContent='Inicia sesión como alumno para inscribirte.';form.hidden=true;return;}
+ if(!t){box.textContent='Inicia sesión como alumno para inscribirte.';form.hidden=true;document.getElementById('avicoStudentLogout').hidden=true;return;}
  try{const r=await fetch('/api/student-auth/me',{headers:{Authorization:'Bearer '+t}});if(!r.ok)throw Error('Sesión vencida');const data=await r.json();
  box.textContent='Sesión de alumno: '+data.student.full_name+' ('+data.student.email+')';
- form.hidden=false;form.elements.email.value=data.student.email;form.elements.email.readOnly=true;form.elements.full_name.value=data.student.full_name;
+ form.hidden=false;document.getElementById('avicoStudentLogout').hidden=false;form.elements.email.value=data.student.email;form.elements.email.readOnly=true;form.elements.full_name.value=data.student.full_name;
  const map=JSON.parse(localStorage.getItem('aula_course_tokens')||'{}');for(const e of data.enrollments)map[String(e.course_id)]=e.access_token;localStorage.setItem('aula_course_tokens',JSON.stringify(map));
- }catch{sessionStorage.removeItem('avico_student_token');box.textContent='Tu sesión venció. Ingresa de nuevo.';form.hidden=true;document.getElementById('avicoWelcome').hidden=false;}
-};window.avicoRefreshStudent();
+ }catch{sessionStorage.removeItem('avico_student_token');box.textContent='Tu sesión venció. Ingresa de nuevo.';form.hidden=true;document.getElementById('avicoStudentLogout').hidden=true;document.getElementById('avicoWelcome').hidden=false;}
+};document.getElementById('avicoStudentLogout').addEventListener('click',async()=>{const t=sessionStorage.getItem('avico_student_token');if(t)await fetch('/api/student-auth/logout',{method:'POST',headers:{Authorization:'Bearer '+t}}).catch(()=>{});sessionStorage.removeItem('avico_student_token');sessionStorage.removeItem('avicoEntered');localStorage.removeItem('aula_course_tokens');document.getElementById('avicoWelcome').hidden=false;window.avicoRefreshStudent();});window.avicoRefreshStudent();
 </script></body>
 </html>
