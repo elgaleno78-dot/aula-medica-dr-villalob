@@ -33,7 +33,22 @@ BACKUPS.mkdir(parents=True, exist_ok=True)
 
 app = FastAPI(title="Aula médica · Dr. Villalobos")
 app.mount("/static", StaticFiles(directory=BASE/"static"), name="static")
-app.mount("/uploads", StaticFiles(directory=UPLOADS), name="uploads")
+# Private lesson files must not be publicly mounted.
+@app.get("/uploads/{filename}")
+def protected_upload(filename:str, request:Request):
+    auth(request)
+    if filename != Path(filename).name:
+        raise HTTPException(404,"Archivo no encontrado")
+    con=db()
+    row=con.execute("SELECT 1 FROM lessons WHERE filename=? LIMIT 1",(filename,)).fetchone()
+    con.close()
+    if not row:
+        raise HTTPException(404,"Archivo no encontrado")
+    path=UPLOADS/filename
+    if not path.is_file():
+        raise HTTPException(404,"Archivo no encontrado")
+    return FileResponse(path,headers={"Cache-Control":"private, no-store"})
+
 
 ADMIN_PASSWORD = os.getenv("AULA_ADMIN_PASSWORD", "CambiarEstaClave2026")
 TOKENS = set()
