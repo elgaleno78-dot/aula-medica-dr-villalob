@@ -280,10 +280,10 @@ button,input,textarea,select{font:inherit}.app{display:grid;grid-template-column
     <div class="studentIntro">
       <div class="studentLead">
         <h3>Únete a Aula Médica</h3>
-        <p>Regístrate para acceder a los cursos y permitir el seguimiento académico. El contador de alumnos del inicio se actualiza automáticamente con los registros reales.</p>
+        <p>Tu cuenta de alumno permite acceder a todos los cursos publicados sin inscripciones adicionales.</p>
         <small>Los datos de alumnos solo son visibles para el administrador.</small>
       </div>
-      <div id="avicoStudentStatus" class="noticeBox span2">Inicia sesión con tu cuenta para inscribirte.</div><form id="studentRegisterForm" class="studentForm">
+      <div id="avicoStudentStatus" class="noticeBox span2">Inicia sesión para acceder a todos los cursos.</div><form id="studentRegisterForm" class="studentForm">
         <div class="field span2"><label>Nombre completo *</label><input name="full_name" required placeholder="Nombre y apellidos"></div>
         <div class="field"><label>Edad</label><input type="number" name="age" min="14" max="100" placeholder="Edad"></div>
         <div class="field"><label>Correo</label><input type="email" name="email" placeholder="correo@ejemplo.com"></div>
@@ -502,22 +502,28 @@ async function openCourse(id){
     return;
   }
 
-  const map=JSON.parse(localStorage.getItem('aula_course_tokens')||'{}');
-  const accessToken=map[String(id)]||'';
-  if(!accessToken){
-    $('#lessons').innerHTML=`<div class="accessExpired"><b>Inscripción requerida</b><br>Regístrate en este curso para iniciar tu periodo de ${c.access_hours||24} horas.<br><br><button class="btn red" onclick="scrollToId('alumnos')">Ir a inscripción</button></div>`;
+  const studentToken=sessionStorage.getItem('avico_student_token');
+  if(!studentToken){
+    $('#lessons').innerHTML='<div class="accessExpired"><b>Inicia sesión para ver las clases.</b><br>Tu cuenta da acceso a todos los cursos publicados.</div>';
+    document.getElementById('avicoWelcome').hidden=false;
     return;
   }
   try{
-    const r=await fetch(`/api/courses/${id}/access?access_token=${encodeURIComponent(accessToken)}`);
-    if(!r.ok){
-      $('#lessons').innerHTML='<div class="accessExpired"><b>Acceso finalizado</b><br>El periodo para revisar este curso ya terminó.</div>';
+    const r=await fetch(`/api/student-courses/${id}/access`,{headers:{Authorization:'Bearer '+studentToken}});
+    if(r.status===401){
+      $('#lessons').innerHTML='<div class="accessExpired">Inicia sesión nuevamente para continuar.</div>';
+      document.getElementById('avicoWelcome').hidden=false;
       return;
     }
-    renderTimedCourse(await r.json(),accessToken);
-  }catch{
-    $('#lessons').innerHTML='<div class="accessExpired">No se pudo verificar el acceso.</div>';
-  }
+    if(!r.ok)throw Error('No se pudo abrir el curso.');
+    const data=await r.json();
+    if(courseTimerInterval)clearInterval(courseTimerInterval);
+    $('#lessons').innerHTML=data.lessons.length?data.lessons.map(l=>`
+      <div class="lessonRow">
+        <div><b>${esc(l.title)}</b><div class="muted" style="font-size:12px">${esc(l.notes||'')} · ${l.kind.toUpperCase()}</div></div>
+        <button class="btn" onclick='event.stopPropagation();viewLesson(${JSON.stringify(JSON.stringify(l))},null,false)'>Ver clase</button>
+      </div>`).join(''):'<p class="muted">Todavía no hay clases.</p>';
+  }catch(err){$('#lessons').textContent=err.message||'No se pudo abrir el curso.';}
 }
 let avicoViewerBlob=null;
 async function viewLesson(raw,accessToken=null,isAdmin=false){
@@ -525,10 +531,10 @@ async function viewLesson(raw,accessToken=null,isAdmin=false){
   if(avicoViewerBlob){URL.revokeObjectURL(avicoViewerBlob);avicoViewerBlob=null;}
   let fileUrl='';
   if(l.filename){
-    const url=isAdmin?`/uploads/${encodeURIComponent(l.filename)}`:`/course-file/${l.id}/${encodeURIComponent(accessToken||'')}/${encodeURIComponent(l.filename)}`;
+    const url=isAdmin?`/uploads/${encodeURIComponent(l.filename)}`:`/student-course-file/${l.id}/${encodeURIComponent(l.filename)}`;
     try{
-      const response=await fetch(url,isAdmin?{headers:{Authorization:'Bearer '+token}}:{});
-      if(!response.ok)throw Error('No tienes acceso a este archivo o el periodo terminó.');
+      const response=await fetch(url,{headers:{Authorization:'Bearer '+(isAdmin?token:sessionStorage.getItem('avico_student_token'))}});
+      if(!response.ok)throw Error('Inicia sesión para acceder a este archivo.');
       avicoViewerBlob=URL.createObjectURL(await response.blob());fileUrl=avicoViewerBlob;
     }catch(err){alert(err.message);return;}
   }
@@ -863,12 +869,12 @@ load();
 window.avicoRefreshStudent=async function(){
  const t=sessionStorage.getItem('avico_student_token'),box=document.getElementById('avicoStudentStatus'),form=document.getElementById('studentRegisterForm');
  if(!box||!form)return;
- if(!t){box.textContent='Inicia sesión como alumno para inscribirte.';form.hidden=true;document.getElementById('avicoStudentLogout').hidden=true;return;}
+ if(!t){box.textContent='Inicia sesión para acceder a todos los cursos.';form.hidden=true;document.getElementById('avicoStudentLogout').hidden=true;return;}
  try{const r=await fetch('/api/student-auth/me',{headers:{Authorization:'Bearer '+t}});if(!r.ok)throw Error('Sesión vencida');const data=await r.json();
- box.textContent='Sesión de alumno: '+data.student.full_name+' ('+data.student.email+')'+(data.email_verified?' · Correo verificado':' · Confirma tu correo para inscribirte');
- form.hidden=!data.email_verified;document.getElementById('avicoStudentLogout').hidden=false;form.elements.email.value=data.student.email;form.elements.email.readOnly=true;form.elements.full_name.value=data.student.full_name;
- const map=JSON.parse(localStorage.getItem('aula_course_tokens')||'{}');for(const e of data.enrollments)map[String(e.course_id)]=e.access_token;localStorage.setItem('aula_course_tokens',JSON.stringify(map));
- }catch{sessionStorage.removeItem('avico_student_token');box.textContent='Tu sesión venció. Ingresa de nuevo.';form.hidden=true;document.getElementById('avicoStudentLogout').hidden=true;document.getElementById('avicoWelcome').hidden=false;}
+ box.textContent='Cuenta de alumno: '+data.student.full_name+' ('+data.student.email+') · Acceso a todos los cursos publicados';
+ form.hidden=true;document.getElementById('avicoStudentLogout').hidden=false;form.elements.email.value=data.student.email;form.elements.email.readOnly=true;form.elements.full_name.value=data.student.full_name;
+ // Course access is now tied to the account session, not enrollment tokens.
+ }catch{sessionStorage.removeItem('avico_student_token');box.textContent='No se pudo validar tu sesión. Ingresa de nuevo.';form.hidden=true;document.getElementById('avicoStudentLogout').hidden=true;document.getElementById('avicoWelcome').hidden=false;}
 };document.getElementById('avicoStudentLogout').addEventListener('click',async()=>{const t=sessionStorage.getItem('avico_student_token');if(t)await fetch('/api/student-auth/logout',{method:'POST',headers:{Authorization:'Bearer '+t}}).catch(()=>{});sessionStorage.removeItem('avico_student_token');sessionStorage.removeItem('avicoEntered');localStorage.removeItem('aula_course_tokens');document.getElementById('avicoWelcome').hidden=false;window.avicoRefreshStudent();});window.avicoRefreshStudent();
 </script><script>
 (async function(){
