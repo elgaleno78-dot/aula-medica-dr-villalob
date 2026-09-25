@@ -2,7 +2,9 @@ from fastapi import FastAPI, UploadFile, File, Form, HTTPException, Request
 from fastapi.responses import HTMLResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
 from pathlib import Path
-import sqlite3, os, secrets, shutil, datetime, json, hashlib, hmac, re
+import sqlite3, os, secrets, shutil, datetime, json, hashlib, hmac, re, smtplib, ssl
+from email.message import EmailMessage
+from urllib.parse import quote
 
 BASE = Path(__file__).resolve().parent
 
@@ -206,6 +208,19 @@ def init_db():
     );
     CREATE INDEX IF NOT EXISTS idx_student_sessions_account ON student_sessions(account_id);
     """)
+    cur.executescript("""
+    CREATE TABLE IF NOT EXISTS student_email_tokens(
+      token_hash TEXT PRIMARY KEY,
+      account_id INTEGER NOT NULL,
+      purpose TEXT NOT NULL CHECK(purpose IN ('verify','reset')),
+      expires_at TEXT NOT NULL,
+      FOREIGN KEY(account_id) REFERENCES student_accounts(id) ON DELETE CASCADE
+    );
+    CREATE INDEX IF NOT EXISTS idx_student_email_tokens_account ON student_email_tokens(account_id);
+    """)
+    account_cols={r["name"] for r in cur.execute("PRAGMA table_info(student_accounts)")}
+    if "email_verified_at" not in account_cols:
+        cur.execute("ALTER TABLE student_accounts ADD COLUMN email_verified_at TEXT")
     # Safe migrations for existing databases
     course_cols={r["name"] for r in cur.execute("PRAGMA table_info(courses)").fetchall()}
     if "access_hours" not in course_cols:
@@ -316,7 +331,7 @@ def student_identity(request:Request):
         raise HTTPException(401,"Inicia sesión")
     token_hash=hashlib.sha256(token.encode()).hexdigest()
     con=db()
-    row=con.execute("""SELECT a.id,a.full_name,a.email FROM student_sessions s
+    row=con.execute("""SELECT a.id,a.full_name,a.email,a.email_verified_at FROM student_sessions s
         JOIN student_accounts a ON a.id=s.account_id
         WHERE s.token_hash=? AND s.expires_at>?""",(token_hash,utcnow().isoformat())).fetchone()
     con.close()
@@ -332,6 +347,105 @@ def student_session(account_id:int):
     con.commit();con.close()
     return raw
 
+# SMTP configuration: SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASSWORD,
+# SMTP_FROM, SMTP_SECURITY (ssl or starttls), AULA_PUBLIC_URL.
+def mail_configured():
+    return all(os.getenv(k) for k in ("SMTP_HOST","SMTP_PORT","SMTP_USER","SMTP_PASSWORD","SMTP_FROM","AULA_PUBLIC_URL"))
+
+def send_student_email(to_email:str, subject:str, message:str):
+    if not mail_configured():
+        raise HTTPException(503,"El envío de correo todavía no está configurado")
+    msg=EmailMessage()
+    msg["From"]=os.environ["SMTP_FROM"]
+    msg["To"]=to_email
+    msg["Subject"]=subject
+    msg.set_content(message)
+    host=os.environ["SMTP_HOST"]
+    port=int(os.environ["SMTP_PORT"])
+    security=os.getenv("SMTP_SECURITY","ssl").lower()
+    context=ssl.create_default_context()
+    if security=="ssl":
+        with smtplib.SMTP_SSL(host,port,timeout=15,context=context) as server:
+            server.login(os.environ["SMTP_USER"],os.environ["SMTP_PASSWORD"])
+            server.send_message(msg)
+    elif security=="starttls":
+        with smtplib.SMTP(host,port,timeout=15) as server:
+            server.ehlo()
+            server.starttls(context=context)
+            server.ehlo()
+            server.login(os.environ["SMTP_USER"],os.environ["SMTP_PASSWORD"])
+            server.send_message(msg)
+    else:
+        raise HTTPException(503,"Configuración SMTP insegura")
+
+def email_action(account_id:int,email:str,purpose:str):
+    raw=secrets.token_urlsafe(32)
+    hashed=hashlib.sha256(raw.encode()).hexdigest()
+    expires=(utcnow()+datetime.timedelta(hours=24 if purpose=="verify" else 1)).isoformat()
+    con=db()
+    con.execute("DELETE FROM student_email_tokens WHERE account_id=? AND purpose=?",(account_id,purpose))
+    con.execute("INSERT INTO student_email_tokens VALUES(?,?,?,?)",(hashed,account_id,purpose,expires))
+    con.commit();con.close()
+    base=os.environ["AULA_PUBLIC_URL"].rstrip("/")
+    action="verify" if purpose=="verify" else "reset"
+    link=base+"/?email_action="+action+"&token="+quote(raw)
+    subject="Confirma tu correo · Aula AVICO" if purpose=="verify" else "Restablece tu contraseña · Aula AVICO"
+    message=("Hola.\n\nConfirma tu dirección de correo para Aula AVICO:\n" if purpose=="verify" else "Hola.\n\nSolicitaste restablecer tu contraseña de Aula AVICO:\n")+link+"\n\nEste enlace vence en "+("24 horas." if purpose=="verify" else "1 hora.")+" Si no solicitaste este mensaje, ignóralo.\n"
+    try:
+        send_student_email(email,subject,message)
+    except Exception:
+        # Never leave an actionable token after a failed delivery.
+        con=db();con.execute("DELETE FROM student_email_tokens WHERE token_hash=?",(hashed,));con.commit();con.close()
+        raise
+
+@app.post("/api/student-auth/resend-verification")
+def resend_verification(payload:dict):
+    email=str(payload.get("email") or "").strip().lower()
+    con=db();row=con.execute("SELECT id,email,email_verified_at FROM student_accounts WHERE email=?",(email,)).fetchone();con.close()
+    if row and not row["email_verified_at"] and mail_configured():
+        email_action(row["id"],row["email"],"verify")
+    return {"ok":True,"message":"Si la cuenta existe y está pendiente, recibirás un correo."}
+
+@app.post("/api/student-auth/verify-email")
+def verify_email(payload:dict):
+    raw=str(payload.get("token") or "")
+    if len(raw)>256 or not raw:
+        raise HTTPException(400,"Enlace inválido")
+    hashed=hashlib.sha256(raw.encode()).hexdigest()
+    con=db()
+    row=con.execute("SELECT account_id FROM student_email_tokens WHERE token_hash=? AND purpose='verify' AND expires_at>?",(hashed,utcnow().isoformat())).fetchone()
+    if not row:
+        con.close();raise HTTPException(400,"Enlace inválido o vencido")
+    con.execute("UPDATE student_accounts SET email_verified_at=? WHERE id=?",(utcnow().isoformat(),row["account_id"]))
+    con.execute("DELETE FROM student_email_tokens WHERE account_id=? AND purpose='verify'",(row["account_id"],))
+    con.commit();con.close()
+    return {"ok":True}
+
+@app.post("/api/student-auth/request-reset")
+def request_reset(payload:dict):
+    email=str(payload.get("email") or "").strip().lower()
+    con=db();row=con.execute("SELECT id,email FROM student_accounts WHERE email=?",(email,)).fetchone();con.close()
+    if row and mail_configured():
+        email_action(row["id"],row["email"],"reset")
+    return {"ok":True,"message":"Si existe una cuenta, recibirás instrucciones."}
+
+@app.post("/api/student-auth/reset-password")
+def reset_password(payload:dict):
+    raw=str(payload.get("token") or "")
+    password=str(payload.get("password") or "")
+    if not raw or len(raw)>256 or not 12<=len(password)<=128:
+        raise HTTPException(400,"Enlace o contraseña inválidos")
+    hashed=hashlib.sha256(raw.encode()).hexdigest()
+    con=db()
+    row=con.execute("SELECT account_id FROM student_email_tokens WHERE token_hash=? AND purpose='reset' AND expires_at>?",(hashed,utcnow().isoformat())).fetchone()
+    if not row:
+        con.close();raise HTTPException(400,"Enlace inválido o vencido")
+    con.execute("UPDATE student_accounts SET password_hash=? WHERE id=?",(password_hash(password),row["account_id"]))
+    con.execute("DELETE FROM student_email_tokens WHERE account_id=?",(row["account_id"],))
+    con.execute("DELETE FROM student_sessions WHERE account_id=?",(row["account_id"],))
+    con.commit();con.close()
+    return {"ok":True}
+
 @app.post("/api/student-auth/register")
 async def student_signup(payload:dict):
     name=str(payload.get("full_name") or "").strip()
@@ -341,6 +455,8 @@ async def student_signup(payload:dict):
         raise HTTPException(400,"Nombre o correo inválido")
     if len(password)<12 or len(password)>128:
         raise HTTPException(400,"La contraseña debe tener entre 12 y 128 caracteres")
+    if not mail_configured():
+        raise HTTPException(503,"El registro está temporalmente suspendido hasta configurar el correo de confirmación")
     hashed=password_hash(password)
     con=db()
     try:
@@ -351,7 +467,8 @@ async def student_signup(payload:dict):
         raise HTTPException(409,"El correo ya tiene una cuenta")
     finally:
         con.close()
-    return {"token":student_session(account_id),"student":{"id":account_id,"full_name":name,"email":email}}
+    email_action(account_id,email,"verify")
+    return {"token":student_session(account_id),"verification_required":True,"student":{"id":account_id,"full_name":name,"email":email}}
 
 @app.post("/api/student-auth/login")
 async def student_signin(payload:dict):
@@ -372,7 +489,7 @@ def student_me(request:Request):
         FROM students s JOIN courses c ON c.id=s.course_id
         WHERE s.account_id=? ORDER BY s.id DESC""",(identity["id"],)).fetchall()]
     con.close()
-    return {"student":identity,"enrollments":enrollments}
+    return {"student":identity,"email_verified":bool(identity["email_verified_at"]),"enrollments":enrollments}
 
 @app.post("/api/student-auth/logout")
 def student_logout(request:Request):
@@ -532,6 +649,8 @@ async def register_student(
     request: Request = None
 ):
     identity=student_identity(request)
+    if mail_configured() and not identity["email_verified_at"]:
+        raise HTTPException(403,"Confirma tu correo antes de inscribirte")
     if email.strip().lower()!=identity["email"]:
         raise HTTPException(403,"El correo debe coincidir con tu cuenta")
     full_name=full_name.strip()

@@ -133,7 +133,7 @@ button,input,textarea,select{font:inherit}.app{display:grid;grid-template-column
     <button type="submit" class="avico-enter" id="avicoAccountSubmit">Ingresar como alumno →</button>
   </form>
   <button type="button" class="avico-register" id="avicoRegister">Crear cuenta de alumno</button>
-  <button type="button" class="avico-register" id="avicoAdminEnter">Ingresar como administrador</button>
+  <button type="button" class="avico-register" id="avicoResend">Reenviar confirmación de correo</button><button type="button" class="avico-register" id="avicoForgot">Olvidé mi contraseña</button><button type="button" class="avico-register" id="avicoAdminEnter">Ingresar como administrador</button>
   <p class="avico-auth-note">La inscripción a un curso se realiza después de iniciar sesión.</p>
   </div></section>
 </div>
@@ -145,9 +145,12 @@ button,input,textarea,select{font:inherit}.app{display:grid;grid-template-column
  function enter(){sessionStorage.setItem('avicoEntered','1');splash.hidden=true;}
  function mode(next){creating=next;document.getElementById('avicoNameRow').hidden=!creating;document.getElementById('avicoName').required=creating;document.getElementById('avicoPassword').autocomplete=creating?'new-password':'current-password';document.getElementById('avicoAccountSubmit').textContent=creating?'Crear mi cuenta →':'Ingresar como alumno →';register.textContent=creating?'Ya tengo cuenta: ingresar':'Crear cuenta de alumno';error.textContent='';}
  register.addEventListener('click',()=>mode(!creating));
+ async function emailRequest(endpoint){const email=document.getElementById('avicoEmail').value.trim();if(!email){error.textContent='Escribe tu correo electrónico primero.';return;}try{const r=await fetch('/api/student-auth/'+endpoint,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email})});const d=await r.json();if(!r.ok)throw Error(d.detail||'No se pudo enviar');error.textContent=d.message||'Revisa tu correo.';}catch(e){error.textContent=e.message;}}
+ document.getElementById('avicoResend').addEventListener('click',()=>emailRequest('resend-verification'));
+ document.getElementById('avicoForgot').addEventListener('click',()=>emailRequest('request-reset'));
  document.getElementById('avicoAdminEnter').addEventListener('click',()=>{enter();openAdmin();});
  form.addEventListener('submit',async e=>{e.preventDefault();error.textContent='';const payload={email:document.getElementById('avicoEmail').value.trim(),password:document.getElementById('avicoPassword').value};if(creating)payload.full_name=document.getElementById('avicoName').value.trim();
- try{const response=await fetch('/api/student-auth/'+(creating?'register':'login'),{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});const data=await response.json();if(!response.ok)throw Error(data.detail||'No se pudo iniciar sesión');localStorage.removeItem('aula_course_tokens');sessionStorage.setItem('avico_student_token',data.token);sessionStorage.setItem('avico_student_name',data.student.full_name);sessionStorage.setItem('avico_student_email',data.student.email);enter();window.avicoRefreshStudent?.();}catch(err){error.textContent=err.message;}});
+ try{const response=await fetch('/api/student-auth/'+(creating?'register':'login'),{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});const data=await response.json();if(!response.ok)throw Error(data.detail||'No se pudo iniciar sesión');localStorage.removeItem('aula_course_tokens');sessionStorage.setItem('avico_student_token',data.token);sessionStorage.setItem('avico_student_name',data.student.full_name);sessionStorage.setItem('avico_student_email',data.student.email);enter();window.avicoRefreshStudent?.();if(data.verification_required)alert('Te enviamos un enlace de confirmación. Revisa tu correo antes de inscribirte.');}catch(err){error.textContent=err.message;}});
  if(sessionStorage.getItem('avico_student_token')&&sessionStorage.getItem('avicoEntered')==='1')splash.hidden=true;
 })();
 </script>
@@ -862,10 +865,29 @@ window.avicoRefreshStudent=async function(){
  if(!box||!form)return;
  if(!t){box.textContent='Inicia sesión como alumno para inscribirte.';form.hidden=true;document.getElementById('avicoStudentLogout').hidden=true;return;}
  try{const r=await fetch('/api/student-auth/me',{headers:{Authorization:'Bearer '+t}});if(!r.ok)throw Error('Sesión vencida');const data=await r.json();
- box.textContent='Sesión de alumno: '+data.student.full_name+' ('+data.student.email+')';
- form.hidden=false;document.getElementById('avicoStudentLogout').hidden=false;form.elements.email.value=data.student.email;form.elements.email.readOnly=true;form.elements.full_name.value=data.student.full_name;
+ box.textContent='Sesión de alumno: '+data.student.full_name+' ('+data.student.email+')'+(data.email_verified?' · Correo verificado':' · Confirma tu correo para inscribirte');
+ form.hidden=!data.email_verified;document.getElementById('avicoStudentLogout').hidden=false;form.elements.email.value=data.student.email;form.elements.email.readOnly=true;form.elements.full_name.value=data.student.full_name;
  const map=JSON.parse(localStorage.getItem('aula_course_tokens')||'{}');for(const e of data.enrollments)map[String(e.course_id)]=e.access_token;localStorage.setItem('aula_course_tokens',JSON.stringify(map));
  }catch{sessionStorage.removeItem('avico_student_token');box.textContent='Tu sesión venció. Ingresa de nuevo.';form.hidden=true;document.getElementById('avicoStudentLogout').hidden=true;document.getElementById('avicoWelcome').hidden=false;}
 };document.getElementById('avicoStudentLogout').addEventListener('click',async()=>{const t=sessionStorage.getItem('avico_student_token');if(t)await fetch('/api/student-auth/logout',{method:'POST',headers:{Authorization:'Bearer '+t}}).catch(()=>{});sessionStorage.removeItem('avico_student_token');sessionStorage.removeItem('avicoEntered');localStorage.removeItem('aula_course_tokens');document.getElementById('avicoWelcome').hidden=false;window.avicoRefreshStudent();});window.avicoRefreshStudent();
+</script><script>
+(async function(){
+ const q=new URLSearchParams(location.search),action=q.get('email_action'),token=q.get('token');
+ if(!token||!['verify','reset'].includes(action))return;
+ history.replaceState({},'',location.pathname);
+ try{
+  if(action==='verify'){
+   const r=await fetch('/api/student-auth/verify-email',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({token})});
+   const d=await r.json();if(!r.ok)throw Error(d.detail||'Enlace inválido');
+   alert('Tu correo ha sido confirmado. Ya puedes inscribirte.');window.avicoRefreshStudent?.();
+  }else{
+   const password=prompt('Escribe tu nueva contraseña (mínimo 12 caracteres):');
+   if(!password)return;
+   const r=await fetch('/api/student-auth/reset-password',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({token,password})});
+   const d=await r.json();if(!r.ok)throw Error(d.detail||'Enlace inválido');
+   sessionStorage.removeItem('avico_student_token');localStorage.removeItem('aula_course_tokens');document.getElementById('avicoWelcome').hidden=false;alert('Contraseña actualizada. Inicia sesión nuevamente.');
+  }
+ }catch(e){alert(e.message);}
+})();
 </script></body>
 </html>
