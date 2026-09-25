@@ -132,7 +132,7 @@ button,input,textarea,select{font:inherit}.app{display:grid;grid-template-column
   </div></section>
 </div>
 <script>
-(function(){const splash=document.getElementById('avicoWelcome');if(sessionStorage.getItem('avicoEntered')==='1')splash.hidden=true;function enter(){sessionStorage.setItem('avicoEntered','1');splash.hidden=true;}document.getElementById('avicoEnter').addEventListener('click',enter);document.getElementById('avicoRegister').addEventListener('click',function(){enter();const register=document.querySelector('[onclick*="register"],[data-view="register"],[data-section="register"]');if(register)register.click();});})();
+(function(){const splash=document.getElementById('avicoWelcome');if(sessionStorage.getItem('avicoEntered')==='1')splash.hidden=true;function enter(){sessionStorage.setItem('avicoEntered','1');splash.hidden=true;}document.getElementById('avicoEnter').addEventListener('click',enter);document.getElementById('avicoRegister').addEventListener('click',function(){enter();const register=document.getElementById('studentRegisterForm');if(register)register.scrollIntoView({behavior:'smooth',block:'start'});});})();
 </script>
 
 <div class="app">
