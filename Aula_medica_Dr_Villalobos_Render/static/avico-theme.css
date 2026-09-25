@@ -158,3 +158,38 @@ body{background:var(--bg);color:var(--ink)}
 @media(max-width:1200px) and (min-width:761px){.avico-welcome{grid-template-columns:minmax(0,59%) minmax(390px,41%)}.avico-welcome-left{padding-left:25px;padding-right:34%}.avico-hero-art{width:35%}.avico-signature span{font-size:18px}.avico-hero-heading{font-size:clamp(29px,3vw,38px)}}
 @media(max-width:760px){.avico-welcome{display:block}.avico-welcome-left{min-height:0;padding:25px 24px 20px;display:block}.avico-welcome-left:before{width:18%}.avico-hero-content{min-height:0;max-width:100%;padding-right:28%}.avico-identity strong{font-size:54px}.avico-identity span{font-size:11px}.avico-identity p{font-size:12px}.avico-hero-heading{font-size:clamp(25px,6vw,34px);margin:18px 0 8px}.avico-hero-subtitle{font-size:14px}.avico-hero-art{top:12%;right:-4%;width:36%;height:57%}.avico-hero-features{grid-template-columns:repeat(4,minmax(0,1fr));gap:3px;margin:12px 0}.avico-hero-features span{width:35px;height:35px;font-size:22px}.avico-hero-features b{font-size:8px}.avico-signature{margin-top:8px;padding:12px}.avico-signature span{font-size:clamp(13px,3vw,21px);white-space:normal}.avico-signature b{font-size:8px;letter-spacing:.07em}.avico-welcome-right{min-height:0;padding:15px 12px 28px}.avico-entry-card{padding:22px 19px}}
 @media(max-width:390px){.avico-hero-content{padding-right:18%}.avico-hero-art{opacity:.38}.avico-hero-heading{font-size:26px}}
+
+
+/* Final visual correction: remove striped placeholder and oversized circular graphic. */
+.avico-welcome{grid-template-columns:minmax(0,62%) minmax(0,38%)}
+.avico-welcome-left{padding-left:clamp(32px,5vw,78px);padding-right:34%;background:linear-gradient(110deg,#d7eaff 0%,#f9fcff 24%,#e9f6ff 60%,#a8d5fa 100%)}
+.avico-welcome-left:before{content:"";position:absolute;inset:0 auto 0 0;width:25%;background:linear-gradient(90deg,#8fbfe63d,transparent);mask-image:none;opacity:1}
+.avico-welcome-left:after{content:"";position:absolute;z-index:-2;left:auto;right:-8%;bottom:-34%;width:53%;height:64%;background:radial-gradient(ellipse,#2d82d3 0%,#8ec7f5 44%,transparent 70%);opacity:.28;border-radius:50%}
+.avico-hero-art{top:17%;right:0;width:34%;height:60%;opacity:.76}
+.avico-hero-art svg{filter:none}
+.avico-hero-content{min-height:calc(100dvh - 64px)}
+.avico-identity strong{font-size:clamp(57px,5.3vw,88px)}
+.avico-hero-heading{font-size:clamp(31px,2.85vw,47px);margin:clamp(19px,3.5vh,36px) 0 12px}
+.avico-hero-features{margin:10px 0 14px}
+.avico-signature{max-width:520px;margin-top:auto;padding:14px 16px}
+.avico-signature span{font-size:clamp(17px,1.75vw,27px)}
+.avico-welcome-right{background:linear-gradient(150deg,#c9e7ff,#edf7ff 64%,#b1dafb)}
+.avico-welcome-right:before{opacity:.16}
+.avico-entry-card{box-shadow:0 20px 60px #154f8521}
+@media(max-width:1200px) and (min-width:761px){
+ .avico-welcome{grid-template-columns:minmax(0,58%) minmax(390px,42%)}
+ .avico-welcome-left{padding-left:30px;padding-right:31%}
+ .avico-hero-art{width:30%;right:0;top:20%;height:53%}
+ .avico-hero-heading{font-size:clamp(28px,3vw,39px)}
+ .avico-signature span{font-size:clamp(15px,1.6vw,21px)}
+}
+@media(max-width:760px){
+ .avico-welcome{display:block}
+ .avico-welcome-left{padding:22px 18px;background:linear-gradient(115deg,#d8ecff,#fff 60%,#b6dcfc)}
+ .avico-welcome-left:before{width:20%;opacity:.3}
+ .avico-welcome-left:after{width:50%;height:45%;bottom:-20%;opacity:.15}
+ .avico-hero-content{min-height:0;padding-right:25%}
+ .avico-hero-art{right:-3%;top:17%;width:31%;height:46%;opacity:.52}
+ .avico-hero-heading{font-size:clamp(25px,5.7vw,33px)}
+ .avico-signature{margin-top:14px}
+}
