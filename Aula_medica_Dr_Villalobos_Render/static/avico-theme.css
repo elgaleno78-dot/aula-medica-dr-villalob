@@ -1,0 +1,34 @@
+/* AVICO visual layer. Existing routes, forms, data and administration remain unchanged. */
+:root{--navy:#0b3159;--navy2:#174a7a;--red:#2474bd;--red2:#0e4f91;--bg:#f4f8fd;--ink:#102b49;--muted:#60758d;--line:#dce7f2}
+body{background:var(--bg);color:var(--ink)}
+.sidebar{background:linear-gradient(180deg,#092747,#123e6a);box-shadow:4px 0 25px #09274712}
+.brand{font-family:Inter,system-ui,sans-serif;font-weight:800;letter-spacing:-.04em}
+.brand b{color:#8fc5f5}.logo{border-color:#8fc5f5;color:#fff}
+.nav button{transition:background .2s,transform .2s}.nav button.active,.nav button:hover{background:linear-gradient(90deg,#216cb0,#12508b)}
+.main{max-width:1600px}.heroCopy,.bookCard,.toolsCard,.panel,.course,.stat,.quick{border-color:#dce7f2;box-shadow:0 8px 28px #123e6810;border-radius:18px}
+.heroCopy{background:linear-gradient(135deg,#fff 55%,#e9f4ff)}
+.heroCopy:after{background:linear-gradient(150deg,transparent 0 30%,#72aee1 31% 34%,#0b3159 35% 100%)}
+.heroCopy h1{font-family:Inter,system-ui,sans-serif;font-weight:850;letter-spacing:-.055em}
+.heroCopy h1 span,.bookCard h3,.toolsCard h3,.heroCopy .tag{color:#1764a8}
+.heroMark{border-color:#3e91d4;color:#1764a8}
+.badge{background:#e7f2fd;color:#145b9a}.btn{background:#0b3159}.btn.red{background:#1764a8}
+.btn:hover,.adminBtn:hover{filter:brightness(1.1)}.course:hover{transform:translateY(-4px);box-shadow:0 16px 38px #123e6820}
+.field input:focus,.field textarea:focus,.field select:focus{outline:2px solid #80b9ee;outline-offset:1px}
+@media(max-width:760px){
+ .app{display:block;padding-bottom:72px}.sidebar{position:relative;height:auto;padding:14px 16px;border-radius:0 0 20px 20px}
+ .brand{margin:0 0 12px;font-size:20px}.logo{width:36px;height:36px;font-size:18px}
+ .nav{display:flex;overflow-x:auto;gap:6px;scrollbar-width:none;padding-bottom:4px}
+ .nav button{width:auto;flex:0 0 auto;white-space:nowrap;padding:10px 13px;margin:0;font-size:13px}
+ .main{padding:16px}.topbar{gap:10px;flex-wrap:wrap}.hero{display:block}
+ .heroCopy{min-height:0;padding:26px 20px 34px}.heroCopy h1{font-size:35px;max-width:100%;line-height:1.1}
+ .heroCopy p{font-size:14px}.heroMark{display:none}.heroCopy:after{width:220px;height:130px;right:-60px;bottom:-80px}
+ .stats{gap:10px;margin-top:24px}.stat{min-height:92px;padding:12px 6px}.stat b{font-size:26px}
+ .bookCard{margin-top:14px;min-height:0}.bookImg{max-height:260px}
+ .courseGrid{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.cover{height:95px}.courseBody{padding:12px}.courseBody h3{font-size:14px}
+ .toolGrid,.quickGrid{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+ .panel{padding:14px}.lessonRow{grid-template-columns:minmax(0,1fr) auto;overflow-wrap:anywhere}
+ .footer{padding:18px}.modalBox{max-height:88dvh}.viewerBar{flex-wrap:wrap}
+ button,a{touch-action:manipulation}
+}
+@media(max-width:390px){.courseGrid{grid-template-columns:1fr}.heroCopy h1{font-size:31px}}
+@media(prefers-reduced-motion:reduce){*,*:before,*:after{transition:none!important;animation:none!important}}
