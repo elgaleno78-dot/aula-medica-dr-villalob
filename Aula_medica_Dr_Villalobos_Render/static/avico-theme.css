@@ -46,3 +46,25 @@ body{background:var(--bg);color:var(--ink)}
 @media(max-width:760px){.avico-welcome{display:block}.avico-welcome-left{min-height:0;padding:28px 24px 45px;background:linear-gradient(145deg,#fff 65%,#e8f4ff)}.avico-identity{gap:12px}.avico-emblem{width:65px;height:65px;font-size:23px;border-width:3px}.avico-identity strong{font-size:48px}.avico-identity span{font-size:12px}.avico-identity p{font-size:12px}.avico-benefits{display:none}.avico-tagline{display:none}.avico-welcome-right{padding:16px 18px 36px;background:#f4f8fd}.avico-entry-card{padding:26px 22px;border-radius:20px;box-shadow:0 8px 24px #123e6813}}
 
 .avico-account-form{display:grid;gap:9px;margin-top:20px}.avico-account-form label{font-size:13px;font-weight:750;color:#153a62}.avico-account-form input{width:100%;box-sizing:border-box;padding:14px;border:1px solid #cbd9e8;border-radius:10px;font:inherit;background:#fff;color:#153a62}.avico-account-form input:focus{outline:2px solid #70a8df;outline-offset:1px}.avico-account-form .avico-enter{margin:12px 0 0}.avico-account-error{color:#a51d32!important;min-height:1.3em;font-size:13px}.avico-account-form [hidden],#studentRegisterForm[hidden]{display:none!important}
+
+
+/* Refined welcome layout: local maternity artwork on the left, compact login on the right. */
+.avico-welcome{grid-template-columns:minmax(0,1.1fr) minmax(440px,.9fr);background:#f7fbff}
+.avico-welcome-left{position:relative;isolation:isolate;overflow:hidden;padding:clamp(32px,4.2vw,74px) clamp(26px,3.2vw,62px) 42px 43%;background:linear-gradient(155deg,#f6fbff 15%,#fff 53%,#e8f5ff 78%,#d0e8ff);min-height:100dvh}
+.avico-welcome-left:before{content:"";position:absolute;z-index:-1;left:0;top:0;bottom:0;width:48%;background:url('/static/assets/avico-maternity.svg') left center/cover no-repeat}
+.avico-welcome-left:after{content:"";position:absolute;z-index:-1;left:-12%;right:-8%;bottom:-12%;height:29%;background:linear-gradient(130deg,#a9d8fa,#377fc0 70%,#0d447c);border-radius:55% 45% 0 0/35% 45% 0 0;opacity:.55}
+.avico-identity{gap:12px;align-items:center}.avico-emblem{width:62px;height:62px;border-width:3px;font-size:24px;background:#fff9}
+.avico-identity strong{font-size:clamp(46px,5vw,76px)}.avico-identity span{font-size:clamp(11px,1.1vw,16px);letter-spacing:.27em}.avico-identity p{font-size:clamp(13px,1.2vw,18px)}
+.avico-benefits{margin:clamp(36px,7vh,85px) 0 20px}.avico-benefits p{border-left:4px solid #b5dbf8;padding:13px 0 13px 19px;font-size:clamp(14px,1.2vw,18px);background:#ffffff9c;border-radius:0 12px 12px 0}
+.avico-tagline{margin:auto 0 0;color:#174f85;font-size:clamp(17px,1.5vw,22px);font-weight:500;text-shadow:0 1px 2px #fff}
+.avico-tagline:before{content:"";display:block;width:54px;height:4px;background:#2588d0;border-radius:5px;margin-bottom:17px}
+.avico-welcome-right{position:relative;overflow:hidden;background:linear-gradient(145deg,#d5ecff,#eaf6ff 58%,#8dc5f3);padding:clamp(16px,2vw,34px)}
+.avico-welcome-right:before{content:"";position:absolute;inset:auto -18% -34% -18%;height:60%;background:linear-gradient(110deg,#2f8cd2,#a7d8ff);transform:rotate(-15deg);border-radius:50%;opacity:.45}
+.avico-entry-card{position:relative;width:min(100%,550px);padding:clamp(25px,3vw,44px);border-radius:27px;box-shadow:0 22px 75px #154f8524}
+.avico-entry-card h1{font-size:clamp(26px,2.3vw,35px);font-weight:850;letter-spacing:-.025em}
+.avico-account-form input{background:#edf5ff;border-color:#cbdcf0;min-height:53px}.avico-enter{background:linear-gradient(105deg,#205b96,#0c315c);min-height:54px}
+.avico-register{margin-top:9px;min-height:49px;border-color:#3a89cf;background:#fff;transition:background .2s,transform .2s}
+.avico-register:hover{background:#eef7ff;transform:translateY(-1px)}.avico-auth-note{margin-bottom:0}
+@media(max-width:1050px){.avico-welcome{grid-template-columns:1fr 1fr}.avico-welcome-left{padding-left:38%}.avico-welcome-left:before{width:43%}.avico-identity{flex-wrap:wrap}.avico-identity strong{font-size:48px}}
+@media(max-width:760px){.avico-welcome{display:block}.avico-welcome-left{min-height:310px;padding:32px 20px 24px 43%;background:linear-gradient(130deg,#eaf6ff,#fff)}.avico-welcome-left:before{width:42%;background-size:cover}.avico-welcome-left:after{height:16%}.avico-identity{gap:7px}.avico-emblem{width:43px;height:43px;font-size:16px}.avico-identity strong{font-size:39px}.avico-identity span{font-size:10px}.avico-identity p{font-size:11px}.avico-benefits{display:block;margin:14px 0}.avico-benefits p{font-size:12px;padding:7px 0 7px 10px}.avico-tagline{display:block;font-size:12px}.avico-tagline:before{margin-bottom:6px}.avico-welcome-right{padding:18px 14px 32px}.avico-entry-card{padding:25px 20px}}
+@media(max-width:390px){.avico-welcome-left{padding-left:39%}.avico-welcome-left:before{width:39%}.avico-identity strong{font-size:32px}.avico-identity p{font-size:10px}}
