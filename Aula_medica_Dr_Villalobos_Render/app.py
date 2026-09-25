@@ -1,5 +1,5 @@
 from fastapi import FastAPI, UploadFile, File, Form, HTTPException, Request
-from fastapi.responses import HTMLResponse, FileResponse
+from fastapi.responses import HTMLResponse, FileResponse, Response
 from fastapi.staticfiles import StaticFiles
 from pathlib import Path
 import sqlite3, os, secrets, shutil, datetime, json, hashlib, hmac, re, smtplib, ssl
@@ -523,6 +523,40 @@ def student_course_access(course_id:int, request:Request):
     con.close()
     return {"course":dict(course),"lessons":lessons,"student":identity["full_name"]}
 
+def _pptx_lesson(lesson_id:int, request:Request):
+    student_identity(request)
+    con=db()
+    row=con.execute("""SELECT l.filename FROM lessons l JOIN courses c ON c.id=l.course_id
+        WHERE l.id=? AND l.kind='pptx' AND c.published=1""",(lesson_id,)).fetchone()
+    con.close()
+    if not row or not row["filename"]:
+        raise HTTPException(404,"Presentación no encontrada")
+    path=UPLOADS/row["filename"]
+    if not path.is_file():
+        raise HTTPException(404,"Presentación no disponible")
+    return path
+
+@app.get("/api/student-lessons/{lesson_id}/slides")
+def student_slide_manifest(lesson_id:int, request:Request):
+    path=_pptx_lesson(lesson_id,request)
+    try:
+        from pptx_preview import slide_count
+        return {"count":slide_count(path)}
+    except Exception:
+        raise HTTPException(422,"No se pudo leer esta presentación")
+
+@app.get("/api/student-lessons/{lesson_id}/slides/{number}")
+def student_slide_image(lesson_id:int, number:int, request:Request):
+    path=_pptx_lesson(lesson_id,request)
+    try:
+        from pptx_preview import render_slide
+        image=render_slide(path,number)
+    except IndexError:
+        raise HTTPException(404,"Diapositiva no encontrada")
+    except Exception:
+        raise HTTPException(422,"No se pudo mostrar esta diapositiva")
+    return Response(image,media_type="image/jpeg",headers={"Cache-Control":"private, no-store","X-Content-Type-Options":"nosniff"})
+
 @app.get("/student-course-file/{lesson_id}/{filename}")
 def student_course_file(lesson_id:int, filename:str, request:Request):
     """Protect course assets with the student's own session, without timed enrollment."""
@@ -533,6 +567,8 @@ def student_course_file(lesson_id:int, filename:str, request:Request):
     con.close()
     if not row or not row["filename"] or filename!=row["filename"]:
         raise HTTPException(404,"Archivo no encontrado")
+    if row["kind"]=="pptx":
+        raise HTTPException(403,"El PowerPoint original no está disponible para descarga")
     p=UPLOADS/row["filename"]
     if not p.exists():
         raise HTTPException(404,"Archivo no disponible")
