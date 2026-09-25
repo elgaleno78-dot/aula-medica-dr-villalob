@@ -68,3 +68,6 @@ body{background:var(--bg);color:var(--ink)}
 @media(max-width:1050px){.avico-welcome{grid-template-columns:1fr 1fr}.avico-welcome-left{padding-left:38%}.avico-welcome-left:before{width:43%}.avico-identity{flex-wrap:wrap}.avico-identity strong{font-size:48px}}
 @media(max-width:760px){.avico-welcome{display:block}.avico-welcome-left{min-height:310px;padding:32px 20px 24px 43%;background:linear-gradient(130deg,#eaf6ff,#fff)}.avico-welcome-left:before{width:42%;background-size:cover}.avico-welcome-left:after{height:16%}.avico-identity{gap:7px}.avico-emblem{width:43px;height:43px;font-size:16px}.avico-identity strong{font-size:39px}.avico-identity span{font-size:10px}.avico-identity p{font-size:11px}.avico-benefits{display:block;margin:14px 0}.avico-benefits p{font-size:12px;padding:7px 0 7px 10px}.avico-tagline{display:block;font-size:12px}.avico-tagline:before{margin-bottom:6px}.avico-welcome-right{padding:18px 14px 32px}.avico-entry-card{padding:25px 20px}}
 @media(max-width:390px){.avico-welcome-left{padding-left:39%}.avico-welcome-left:before{width:39%}.avico-identity strong{font-size:32px}.avico-identity p{font-size:10px}}
+
+/* A hidden welcome dialog must never override the signed-in classroom. */
+#avicoWelcome[hidden]{display:none!important}
