@@ -71,3 +71,15 @@ body{background:var(--bg);color:var(--ink)}
 
 /* A hidden welcome dialog must never override the signed-in classroom. */
 #avicoWelcome[hidden]{display:none!important}
+
+/* Approved AVICO welcome: no people; live text and form remain crisp and accessible. */
+.avico-welcome-left{padding:clamp(30px,4vw,66px)!important;background:#f7fbff url('/static/assets/avico-clean-waves.svg') left center/cover no-repeat!important;display:flex;flex-direction:column;align-items:stretch;min-width:0}
+.avico-welcome-left:before,.avico-welcome-left:after{content:none!important;display:none!important}
+.avico-identity{margin:clamp(24px,7vh,100px) 0 0 clamp(20px,17%,175px);max-width:560px;flex-wrap:nowrap}
+.avico-identity strong{font-size:clamp(45px,5vw,74px)}
+.avico-benefits{margin:clamp(38px,7vh,90px) 0 0 clamp(20px,17%,175px);max-width:560px}
+.avico-tagline{margin:auto 0 0 clamp(20px,17%,175px);padding-top:36px;color:#153e69!important;text-shadow:none!important}
+.avico-signature{align-self:flex-end;margin:12px 2% 5% 0;color:#103d70;font-family:'Segoe Script','Brush Script MT','Lucida Handwriting',cursive;font-size:clamp(24px,2.5vw,39px);font-style:italic;transform:rotate(-5deg);line-height:1.2;text-align:right}
+@media(max-width:1050px){.avico-identity,.avico-benefits,.avico-tagline{margin-left:8%}.avico-identity{flex-wrap:wrap}.avico-signature{font-size:25px}}
+@media(max-width:760px){.avico-welcome-left{min-height:350px!important;padding:20px 22px 28px!important;background-position:left center!important}.avico-identity{margin:12px 0 0 18%;gap:8px;flex-wrap:nowrap}.avico-identity strong{font-size:clamp(32px,8vw,48px)}.avico-identity span{font-size:10px}.avico-identity p{font-size:11px}.avico-benefits{margin:22px 0 0 18%}.avico-benefits p{font-size:12px}.avico-tagline{margin:20px 0 0 18%;padding:0;font-size:13px}.avico-signature{font-size:24px;margin:8px 0 0 auto}}
+@media(max-width:390px){.avico-identity,.avico-benefits,.avico-tagline{margin-left:12%}.avico-identity strong{font-size:30px}.avico-signature{font-size:20px}}
