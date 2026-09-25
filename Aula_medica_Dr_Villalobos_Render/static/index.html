@@ -504,15 +504,13 @@ async function openCourse(id){
 
   const studentToken=sessionStorage.getItem('avico_student_token');
   if(!studentToken){
-    $('#lessons').innerHTML='<div class="accessExpired"><b>Inicia sesión para ver las clases.</b><br>Tu cuenta da acceso a todos los cursos publicados.</div>';
-    document.getElementById('avicoWelcome').hidden=false;
+    $('#lessons').innerHTML='<div class="accessExpired"><b>Inicia sesión para ver las clases.</b><br>Tu cuenta da acceso a todos los cursos publicados.<br><button type="button" class="btn" onclick="document.getElementById(\'avicoWelcome\').hidden=false">Iniciar sesión</button></div>';
     return;
   }
   try{
     const r=await fetch(`/api/student-courses/${id}/access`,{headers:{Authorization:'Bearer '+studentToken}});
     if(r.status===401){
-      $('#lessons').innerHTML='<div class="accessExpired">Inicia sesión nuevamente para continuar.</div>';
-      document.getElementById('avicoWelcome').hidden=false;
+      $('#lessons').innerHTML='<div class="accessExpired"><b>El servidor no reconoce esta sesión.</b><br>La clase permanece abierta. Vuelve a iniciar sesión desde el botón de abajo.<br><button type="button" class="btn" onclick="document.getElementById(\'avicoWelcome\').hidden=false">Iniciar sesión</button></div>';
       return;
     }
     if(!r.ok)throw Error('No se pudo abrir el curso.');
