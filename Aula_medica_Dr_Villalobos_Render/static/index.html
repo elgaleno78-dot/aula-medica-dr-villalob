@@ -870,11 +870,25 @@ window.avicoRefreshStudent=async function(){
  const t=sessionStorage.getItem('avico_student_token'),box=document.getElementById('avicoStudentStatus'),form=document.getElementById('studentRegisterForm');
  if(!box||!form)return;
  if(!t){box.textContent='Inicia sesión para acceder a todos los cursos.';form.hidden=true;document.getElementById('avicoStudentLogout').hidden=true;return;}
- try{const r=await fetch('/api/student-auth/me',{headers:{Authorization:'Bearer '+t}});if(!r.ok)throw Error('Sesión vencida');const data=await r.json();
- box.textContent='Cuenta de alumno: '+data.student.full_name+' ('+data.student.email+') · Acceso a todos los cursos publicados';
- form.hidden=true;document.getElementById('avicoStudentLogout').hidden=false;form.elements.email.value=data.student.email;form.elements.email.readOnly=true;form.elements.full_name.value=data.student.full_name;
- // Course access is now tied to the account session, not enrollment tokens.
- }catch{sessionStorage.removeItem('avico_student_token');box.textContent='No se pudo validar tu sesión. Ingresa de nuevo.';form.hidden=true;document.getElementById('avicoStudentLogout').hidden=true;document.getElementById('avicoWelcome').hidden=false;}
+ try{
+  const r=await fetch('/api/student-auth/me',{headers:{Authorization:'Bearer '+t}});
+  if(r.status===401){
+   sessionStorage.removeItem('avico_student_token');
+   sessionStorage.removeItem('avicoEntered');
+   box.textContent='Tu sesión ha vencido. Inicia sesión nuevamente.';
+   form.hidden=true;document.getElementById('avicoStudentLogout').hidden=true;
+   document.getElementById('avicoWelcome').hidden=false;return;
+  }
+  if(!r.ok){box.textContent='No se pudo verificar la sesión. Puedes seguir navegando y volver a intentar.';return;}
+  const data=await r.json();
+  box.textContent='Cuenta de alumno: '+data.student.full_name+' ('+data.student.email+') · Acceso a todos los cursos publicados';
+  form.hidden=true;document.getElementById('avicoStudentLogout').hidden=false;
+  if(form.elements.namedItem('email'))form.elements.namedItem('email').value=data.student.email;
+  if(form.elements.namedItem('full_name'))form.elements.namedItem('full_name').value=data.student.full_name;
+ }catch(err){
+  console.warn('No se pudo actualizar el estado del alumno',err);
+  box.textContent='No se pudo actualizar el estado de tu cuenta. Tu sesión se conserva.';
+ }
 };document.getElementById('avicoStudentLogout').addEventListener('click',async()=>{const t=sessionStorage.getItem('avico_student_token');if(t)await fetch('/api/student-auth/logout',{method:'POST',headers:{Authorization:'Bearer '+t}}).catch(()=>{});sessionStorage.removeItem('avico_student_token');sessionStorage.removeItem('avicoEntered');localStorage.removeItem('aula_course_tokens');document.getElementById('avicoWelcome').hidden=false;window.avicoRefreshStudent();});window.avicoRefreshStudent();
 </script><script>
 (async function(){
