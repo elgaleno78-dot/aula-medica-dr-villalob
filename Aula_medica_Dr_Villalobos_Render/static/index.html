@@ -528,7 +528,7 @@ async function viewLesson(raw,accessToken=null,isAdmin=false){
   const l=JSON.parse(raw); $('#viewerTitle').textContent=l.title; let html='';
   if(avicoViewerBlob){URL.revokeObjectURL(avicoViewerBlob);avicoViewerBlob=null;}
   let fileUrl='';
-  if(l.filename){
+  if(l.filename && l.kind!=='pptx'){
     const url=isAdmin?`/uploads/${encodeURIComponent(l.filename)}`:`/student-course-file/${l.id}/${encodeURIComponent(l.filename)}`;
     try{
       const response=await fetch(url,{headers:{Authorization:'Bearer '+(isAdmin?token:sessionStorage.getItem('avico_student_token'))}});
@@ -540,9 +540,8 @@ async function viewLesson(raw,accessToken=null,isAdmin=false){
   else if(l.kind==='pdf')html=`<iframe src="${fileUrl}#toolbar=0&navpanes=0"></iframe>`;
   else if(['mp4','mov'].includes(l.kind))html=`<video controls controlsList="nodownload" src="${fileUrl}" oncontextmenu="return false"></video>`;
   else if(['png','jpg','jpeg','webp'].includes(l.kind))html=`<img src="${fileUrl}" oncontextmenu="return false">`;
-  else if(l.kind==='pptx')html='<div class="pptBox"><p>La vista externa de PowerPoint no admite archivos privados. Descarga la clase desde tu acceso autorizado para abrirla en PowerPoint.</p><a class="btn" id="avicoPptDownload" download="clase.pptx">Abrir archivo</a></div>';
+  else if(l.kind==='pptx')html='<div class="pptBox"><h2>Presentación en preparación</h2><p>Esta clase está guardada como PowerPoint privado. Para verla dentro del aula sin descargar el archivo original, el administrador debe publicar una versión PDF de visualización.</p></div>';
   $('#viewerContent').innerHTML=html;
-  if(l.kind==='pptx'&&fileUrl){const link=document.getElementById('avicoPptDownload');link.href=fileUrl;link.download=l.filename;}
   $('#viewer').classList.add('show');
 }
 let courseTimerInterval=null;
