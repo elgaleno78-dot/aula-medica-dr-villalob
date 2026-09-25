@@ -125,14 +125,31 @@ button,input,textarea,select{font:inherit}.app{display:grid;grid-template-column
     <p class="avico-tagline">Conocimiento hoy,<br>mejores pacientes mañana.</p>
   </section>
   <section class="avico-welcome-right"><div class="avico-entry-card"><h1>Bienvenido(a) al<br><strong>Aula Virtual AVICO</strong></h1><p>Continúa tu formación en Ginecología y Obstetricia.</p>
-  <button type="button" class="avico-enter" id="avicoEnter">Ingresar al Aula →</button>
-  <p class="avico-entry-note">Accede a cursos, clases y recursos académicos.</p>
-  <button type="button" class="avico-register" id="avicoRegister">Crear cuenta / Inscribirme</button>
-  <p class="avico-auth-note">El acceso individual con correo y contraseña estará disponible al implementar las cuentas de alumnos.</p>
+  <form id="avicoAccountForm" class="avico-account-form">
+    <label for="avicoEmail">Correo electrónico</label><input id="avicoEmail" type="email" autocomplete="email" required placeholder="alumno@correo.com">
+    <label for="avicoPassword">Contraseña</label><input id="avicoPassword" type="password" autocomplete="current-password" minlength="12" required placeholder="Tu contraseña">
+    <div id="avicoNameRow" hidden><label for="avicoName">Nombre completo</label><input id="avicoName" autocomplete="name" placeholder="Nombre y apellidos"></div>
+    <p id="avicoAccountError" role="alert" class="avico-account-error"></p>
+    <button type="submit" class="avico-enter" id="avicoAccountSubmit">Ingresar como alumno →</button>
+  </form>
+  <button type="button" class="avico-register" id="avicoRegister">Crear cuenta de alumno</button>
+  <button type="button" class="avico-register" id="avicoAdminEnter">Ingresar como administrador</button>
+  <p class="avico-auth-note">La inscripción a un curso se realiza después de iniciar sesión.</p>
   </div></section>
 </div>
 <script>
-(function(){const splash=document.getElementById('avicoWelcome');if(sessionStorage.getItem('avicoEntered')==='1')splash.hidden=true;function enter(){sessionStorage.setItem('avicoEntered','1');splash.hidden=true;}document.getElementById('avicoEnter').addEventListener('click',enter);document.getElementById('avicoRegister').addEventListener('click',function(){enter();const register=document.getElementById('studentRegisterForm');if(register)register.scrollIntoView({behavior:'smooth',block:'start'});});})();
+(function(){
+ const splash=document.getElementById('avicoWelcome'),form=document.getElementById('avicoAccountForm');
+ const error=document.getElementById('avicoAccountError'),register=document.getElementById('avicoRegister');
+ let creating=false;
+ function enter(){sessionStorage.setItem('avicoEntered','1');splash.hidden=true;}
+ function mode(next){creating=next;document.getElementById('avicoNameRow').hidden=!creating;document.getElementById('avicoName').required=creating;document.getElementById('avicoPassword').autocomplete=creating?'new-password':'current-password';document.getElementById('avicoAccountSubmit').textContent=creating?'Crear mi cuenta →':'Ingresar como alumno →';register.textContent=creating?'Ya tengo cuenta: ingresar':'Crear cuenta de alumno';error.textContent='';}
+ register.addEventListener('click',()=>mode(!creating));
+ document.getElementById('avicoAdminEnter').addEventListener('click',()=>{enter();const b=document.querySelector('[onclick*="admin"],[onclick*="Admin"]');if(b)b.click();});
+ form.addEventListener('submit',async e=>{e.preventDefault();error.textContent='';const payload={email:document.getElementById('avicoEmail').value.trim(),password:document.getElementById('avicoPassword').value};if(creating)payload.full_name=document.getElementById('avicoName').value.trim();
+ try{const response=await fetch('/api/student-auth/'+(creating?'register':'login'),{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});const data=await response.json();if(!response.ok)throw Error(data.detail||'No se pudo iniciar sesión');sessionStorage.setItem('avico_student_token',data.token);sessionStorage.setItem('avico_student_name',data.student.full_name);sessionStorage.setItem('avico_student_email',data.student.email);enter();window.avicoRefreshStudent?.();}catch(err){error.textContent=err.message;}});
+ if(sessionStorage.getItem('avico_student_token')&&sessionStorage.getItem('avicoEntered')==='1')splash.hidden=true;
+})();
 </script>
 
 <div class="app">
@@ -263,7 +280,7 @@ button,input,textarea,select{font:inherit}.app{display:grid;grid-template-column
         <p>Regístrate para acceder a los cursos y permitir el seguimiento académico. El contador de alumnos del inicio se actualiza automáticamente con los registros reales.</p>
         <small>Los datos de alumnos solo son visibles para el administrador.</small>
       </div>
-      <form id="studentRegisterForm" class="studentForm">
+      <div id="avicoStudentStatus" class="noticeBox span2">Inicia sesión con tu cuenta para inscribirte.</div><form id="studentRegisterForm" class="studentForm">
         <div class="field span2"><label>Nombre completo *</label><input name="full_name" required placeholder="Nombre y apellidos"></div>
         <div class="field"><label>Edad</label><input type="number" name="age" min="14" max="100" placeholder="Edad"></div>
         <div class="field"><label>Correo</label><input type="email" name="email" placeholder="correo@ejemplo.com"></div>
@@ -596,11 +613,12 @@ async function delCourse(id){
 $('#studentRegisterForm').onsubmit=async e=>{
   e.preventDefault();
   try{
+    const studentToken=sessionStorage.getItem('avico_student_token');if(!studentToken)throw new Error('Inicia sesión como alumno para inscribirte.');
     const fd=new FormData(e.target);
-    const r=await fetch('/api/register',{method:'POST',body:fd});
+    const r=await fetch('/api/register',{method:'POST',headers:{Authorization:'Bearer '+studentToken},body:fd});
     if(!r.ok){
       if(r.status===409) throw new Error('Este correo ya fue inscrito en este curso.');
-      throw new Error('No se pudo registrar');
+      const detail=await r.json();throw new Error(detail.detail||'No se pudo registrar');
     }
     const d=await r.json();
     const map=JSON.parse(localStorage.getItem('aula_course_tokens')||'{}');
@@ -611,6 +629,7 @@ $('#studentRegisterForm').onsubmit=async e=>{
     await load();
     alert(`Inscripción registrada. Tu acceso estará disponible durante ${d.access_hours} horas.`);
     openCourse(d.course_id);
+    window.avicoRefreshStudent?.();
     if(token) loadStudents();
   }catch(err){ alert(err.message||'No se pudo registrar al alumno') }
 }
@@ -835,5 +854,16 @@ $('#caseForm').onsubmit=async e=>{
 
 load();
 </script>
-</body>
+<script>
+window.avicoRefreshStudent=async function(){
+ const t=sessionStorage.getItem('avico_student_token'),box=document.getElementById('avicoStudentStatus'),form=document.getElementById('studentRegisterForm');
+ if(!box||!form)return;
+ if(!t){box.textContent='Inicia sesión como alumno para inscribirte.';form.hidden=true;return;}
+ try{const r=await fetch('/api/student-auth/me',{headers:{Authorization:'Bearer '+t}});if(!r.ok)throw Error('Sesión vencida');const data=await r.json();
+ box.textContent='Sesión de alumno: '+data.student.full_name+' ('+data.student.email+')';
+ form.hidden=false;form.elements.email.value=data.student.email;form.elements.email.readOnly=true;form.elements.full_name.value=data.student.full_name;
+ const map=JSON.parse(localStorage.getItem('aula_course_tokens')||'{}');for(const e of data.enrollments)map[String(e.course_id)]=e.access_token;localStorage.setItem('aula_course_tokens',JSON.stringify(map));
+ }catch{sessionStorage.removeItem('avico_student_token');box.textContent='Tu sesión venció. Ingresa de nuevo.';form.hidden=true;document.getElementById('avicoWelcome').hidden=false;}
+};window.avicoRefreshStudent();
+</script></body>
 </html>
