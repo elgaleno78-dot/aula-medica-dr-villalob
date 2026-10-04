@@ -108,6 +108,9 @@ def init_db():
       kind TEXT DEFAULT 'pptx',
       filename TEXT DEFAULT '',
       notes TEXT DEFAULT '',
+      session_date TEXT DEFAULT '',
+      institution TEXT DEFAULT '',
+      speaker TEXT DEFAULT '',
       ord INTEGER DEFAULT 0,
       created_at TEXT DEFAULT CURRENT_TIMESTAMP,
       FOREIGN KEY(course_id) REFERENCES courses(id)
@@ -243,6 +246,13 @@ def init_db():
         cur.execute("ALTER TABLE students ADD COLUMN access_expires_at TEXT")
     if "account_id" not in student_cols:
         cur.execute("ALTER TABLE students ADD COLUMN account_id INTEGER REFERENCES student_accounts(id)")
+    lesson_cols={r["name"] for r in cur.execute("PRAGMA table_info(lessons)").fetchall()}
+    if "session_date" not in lesson_cols:
+        cur.execute("ALTER TABLE lessons ADD COLUMN session_date TEXT DEFAULT ''")
+    if "institution" not in lesson_cols:
+        cur.execute("ALTER TABLE lessons ADD COLUMN institution TEXT DEFAULT ''")
+    if "speaker" not in lesson_cols:
+        cur.execute("ALTER TABLE lessons ADD COLUMN speaker TEXT DEFAULT ''")
     initialized = cur.execute("SELECT value FROM settings WHERE key='initialized'").fetchone()
     if initialized is None:
         n = cur.execute("SELECT COUNT(*) FROM courses").fetchone()[0]
@@ -672,7 +682,7 @@ async def update_course_access_settings(course_id:int, request:Request):
     return {"ok":True,"access_hours":hours}
 
 @app.post("/api/lessons")
-async def add_lesson(request: Request, course_id:int=Form(...), title:str=Form(...), notes:str=Form(""), file:UploadFile|None=File(None)):
+async def add_lesson(request: Request, course_id:int=Form(...), title:str=Form(...), notes:str=Form(""), session_date:str=Form(""), institution:str=Form(""), speaker:str=Form(""), file:UploadFile|None=File(None)):
     auth(request)
     filename=""; kind="texto"
     if file and file.filename:
@@ -690,7 +700,9 @@ async def add_lesson(request: Request, course_id:int=Form(...), title:str=Form(.
         con.close()
         raise HTTPException(404,"Curso no encontrado")
     ordv=cur.execute("SELECT COALESCE(MAX(ord),0)+1 FROM lessons WHERE course_id=?",(course_id,)).fetchone()[0]
-    cur.execute("INSERT INTO lessons(course_id,title,kind,filename,notes,ord) VALUES(?,?,?,?,?,?)",(course_id,title,kind,filename,notes,ordv))
+    cur.execute("""INSERT INTO lessons(course_id,title,kind,filename,notes,session_date,institution,speaker,ord)
+                   VALUES(?,?,?,?,?,?,?,?,?)""",
+                (course_id,title,kind,filename,notes,session_date.strip(),institution.strip(),speaker.strip(),ordv))
     cur.execute("INSERT INTO activities(message) VALUES(?)",(f"Se agregó la clase: {title}",))
     con.commit(); con.close()
     return {"ok":True}
