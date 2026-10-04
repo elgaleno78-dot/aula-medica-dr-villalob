@@ -33,7 +33,7 @@ UPLOADS.mkdir(parents=True, exist_ok=True)
 BACKUPS = DATA_DIR / "backups"
 BACKUPS.mkdir(parents=True, exist_ok=True)
 
-app = FastAPI(title="Aula médica · Dr. Villalobos")
+app = FastAPI(title="Curso de Hemorragia Obstétrica · AVICO")
 app.mount("/static", StaticFiles(directory=BASE/"static"), name="static")
 # Private lesson files must not be publicly mounted.
 @app.get("/uploads/{filename}")
@@ -239,10 +239,7 @@ def init_db():
         n = cur.execute("SELECT COUNT(*) FROM courses").fetchone()[0]
         if n == 0:
             seed = [
-              ("Hemorragia obstétrica","Protocolos, algoritmos y simulación","Urgencias","#hemorragia"),
-              ("Preeclampsia y HTA en el embarazo","Diagnóstico y manejo basado en evidencia","Obstetricia","#preeclampsia"),
-              ("Parto y trabajo de parto","Fisiología, vigilancia y buenas prácticas","Obstetricia","#parto"),
-              ("Cesárea segura","Indicaciones, técnica y seguridad","Cirugía","#cesarea")
+              ("Curso de Hemorragia Obstétrica","Reconocimiento temprano, reanimación, control médico y quirúrgico basado en evidencia","Hemorragia obstétrica","#hemorragia")
             ]
             for t,s,c,cover in seed:
                 cur.execute("INSERT INTO courses(title,subtitle,category,cover) VALUES(?,?,?,?)",(t,s,c,cover))
@@ -389,8 +386,8 @@ def email_action(account_id:int,email:str,purpose:str):
     base=os.environ["AULA_PUBLIC_URL"].rstrip("/")
     action="verify" if purpose=="verify" else "reset"
     link=base+"/?email_action="+action+"&token="+quote(raw)
-    subject="Confirma tu correo · Aula AVICO" if purpose=="verify" else "Restablece tu contraseña · Aula AVICO"
-    message=("Hola.\n\nConfirma tu dirección de correo para Aula AVICO:\n" if purpose=="verify" else "Hola.\n\nSolicitaste restablecer tu contraseña de Aula AVICO:\n")+link+"\n\nEste enlace vence en "+("24 horas." if purpose=="verify" else "1 hora.")+" Si no solicitaste este mensaje, ignóralo.\n"
+    subject="Confirma tu correo · Curso de Hemorragia Obstétrica AVICO" if purpose=="verify" else "Restablece tu contraseña · Curso de Hemorragia Obstétrica AVICO"
+    message=("Hola.\n\nConfirma tu dirección de correo para el Curso de Hemorragia Obstétrica AVICO:\n" if purpose=="verify" else "Hola.\n\nSolicitaste restablecer tu contraseña del Curso de Hemorragia Obstétrica AVICO:\n")+link+"\n\nEste enlace vence en "+("24 horas." if purpose=="verify" else "1 hora.")+" Si no solicitaste este mensaje, ignóralo.\n"
     try:
         send_student_email(email,subject,message)
     except Exception:
