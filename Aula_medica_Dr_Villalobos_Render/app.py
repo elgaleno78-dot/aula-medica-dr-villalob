@@ -197,7 +197,10 @@ def init_db():
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       full_name TEXT NOT NULL,
       email TEXT NOT NULL UNIQUE COLLATE NOCASE,
-      password_hash TEXT NOT NULL,
+      password_hash TEXT NOT NULL DEFAULT '',
+      age INTEGER,
+      institution TEXT DEFAULT '',
+      position TEXT DEFAULT '',
       created_at TEXT DEFAULT CURRENT_TIMESTAMP
     );
     CREATE TABLE IF NOT EXISTS student_sessions(
@@ -221,6 +224,12 @@ def init_db():
     account_cols={r["name"] for r in cur.execute("PRAGMA table_info(student_accounts)")}
     if "email_verified_at" not in account_cols:
         cur.execute("ALTER TABLE student_accounts ADD COLUMN email_verified_at TEXT")
+    if "age" not in account_cols:
+        cur.execute("ALTER TABLE student_accounts ADD COLUMN age INTEGER")
+    if "institution" not in account_cols:
+        cur.execute("ALTER TABLE student_accounts ADD COLUMN institution TEXT DEFAULT ''")
+    if "position" not in account_cols:
+        cur.execute("ALTER TABLE student_accounts ADD COLUMN position TEXT DEFAULT ''")
     # Safe migrations for existing databases
     course_cols={r["name"] for r in cur.execute("PRAGMA table_info(courses)").fetchall()}
     if "access_hours" not in course_cols:
@@ -328,7 +337,7 @@ def student_identity(request:Request):
         raise HTTPException(401,"Inicia sesión")
     token_hash=hashlib.sha256(token.encode()).hexdigest()
     con=db()
-    row=con.execute("""SELECT a.id,a.full_name,a.email,a.email_verified_at FROM student_sessions s
+    row=con.execute("""SELECT a.id,a.full_name,a.email,a.age,a.institution,a.position,a.email_verified_at FROM student_sessions s
         JOIN student_accounts a ON a.id=s.account_id
         WHERE s.token_hash=? AND s.expires_at>?""",(token_hash,utcnow().isoformat())).fetchone()
     con.close()
@@ -340,7 +349,7 @@ def student_session(account_id:int):
     raw=secrets.token_urlsafe(32)
     con=db()
     con.execute("INSERT INTO student_sessions(token_hash,account_id,expires_at) VALUES(?,?,?)",
-        (hashlib.sha256(raw.encode()).hexdigest(),account_id,(utcnow()+datetime.timedelta(days=7)).isoformat()))
+        (hashlib.sha256(raw.encode()).hexdigest(),account_id,(utcnow()+datetime.timedelta(days=3650)).isoformat()))
     con.commit();con.close()
     return raw
 
@@ -445,38 +454,38 @@ def reset_password(payload:dict):
 
 @app.post("/api/student-auth/register")
 async def student_signup(payload:dict):
+    """Ingreso sin contraseña: registra o reconoce al alumno por correo y conserva su sesión."""
     name=str(payload.get("full_name") or "").strip()
     email=str(payload.get("email") or "").strip().lower()
-    password=str(payload.get("password") or "")
-    if len(name)<3 or len(name)>150 or not re.fullmatch(r"[^\s@]+@[^\s@]+\.[^\s@]+",email) or len(email)>254:
-        raise HTTPException(400,"Nombre o correo inválido")
-    if len(password)<12 or len(password)>128:
-        raise HTTPException(400,"La contraseña debe tener entre 12 y 128 caracteres")
-    if not mail_configured():
-        raise HTTPException(503,"El registro está temporalmente suspendido hasta configurar el correo de confirmación")
-    hashed=password_hash(password)
-    con=db()
+    institution=str(payload.get("institution") or "").strip()
+    position=str(payload.get("position") or "").strip()
     try:
-        cur=con.execute("INSERT INTO student_accounts(full_name,email,password_hash) VALUES(?,?,?)",(name,email,hashed))
+        age=int(payload.get("age")) if payload.get("age") not in (None,"") else None
+    except (TypeError,ValueError):
+        age=None
+    if len(name)<3 or len(name)>150 or not re.fullmatch(r"[^\s@]+@[^\s@]+\.[^\s@]+",email) or len(email)>254:
+        raise HTTPException(400,"Escribe tu nombre completo y un correo válido")
+    if age is not None and not 14<=age<=100:
+        raise HTTPException(400,"Edad fuera de rango")
+    con=db()
+    row=con.execute("SELECT id,full_name,email FROM student_accounts WHERE email=?",(email,)).fetchone()
+    if row:
+        account_id=row["id"]
+        con.execute("""UPDATE student_accounts
+            SET full_name=?,age=?,institution=?,position=?,email_verified_at=COALESCE(email_verified_at,?)
+            WHERE id=?""",(name,age,institution,position,utcnow().isoformat(),account_id))
+    else:
+        cur=con.execute("""INSERT INTO student_accounts(full_name,email,password_hash,age,institution,position,email_verified_at)
+            VALUES(?,?,?,?,?,?,?)""",(name,email,"",age,institution,position,utcnow().isoformat()))
         account_id=cur.lastrowid
-        con.commit()
-    except sqlite3.IntegrityError:
-        raise HTTPException(409,"El correo ya tiene una cuenta")
-    finally:
-        con.close()
-    email_action(account_id,email,"verify")
-    return {"token":student_session(account_id),"verification_required":True,"student":{"id":account_id,"full_name":name,"email":email}}
+    con.commit();con.close()
+    return {"token":student_session(account_id),"student":{"id":account_id,"full_name":name,"email":email,
+        "age":age,"institution":institution,"position":position}}
 
 @app.post("/api/student-auth/login")
 async def student_signin(payload:dict):
-    email=str(payload.get("email") or "").strip().lower()
-    password=str(payload.get("password") or "")
-    con=db()
-    row=con.execute("SELECT id,full_name,email,password_hash FROM student_accounts WHERE email=?",(email,)).fetchone()
-    con.close()
-    if not row or not password_matches(password,row["password_hash"]):
-        raise HTTPException(401,"Correo o contraseña incorrectos")
-    return {"token":student_session(row["id"]),"student":{"id":row["id"],"full_name":row["full_name"],"email":row["email"]}}
+    # Compatibilidad: el acceso normal se realiza por /register sin contraseña.
+    return await student_signup(payload)
 
 @app.get("/api/student-auth/me")
 def student_me(request:Request):
