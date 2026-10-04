@@ -136,6 +136,13 @@ button,input,textarea,select{font:inherit}.app{display:grid;grid-template-column
 @media(max-width:980px){.ponenciaRow{grid-template-columns:220px 1fr}.ponenciaAction{grid-column:2;justify-content:flex-start}.ponenciaVisual{height:105px}.ponenciaBadge{width:90px;height:90px}.ponenciaRibbon{left:80px;width:135px;top:28px}.ponenciaInfo h3{font-size:26px}}
 @media(max-width:700px){.ponenciasWrap{padding:0 14px}.ponenciaRow{grid-template-columns:1fr;gap:12px;padding:22px 0}.ponenciaVisual{height:105px}.ponenciaAction{grid-column:1;justify-content:flex-start}.ponenciaInfo h3{font-size:24px}.ponenciaDate,.ponenciaInstitution,.ponenciaSpeaker{font-size:15px}}
 
+
+@media(max-width:900px){
+  #adminPanel > div[style*="repeat(4,1fr)"]{grid-template-columns:repeat(2,1fr)!important}
+}
+@media(max-width:560px){
+  #adminPanel > div[style*="repeat(4,1fr)"]{grid-template-columns:1fr!important}
+}
 </style>
 <link rel="stylesheet" href="/static/avico-theme.css">
 </head>
@@ -215,6 +222,7 @@ button,input,textarea,select{font:inherit}.app{display:grid;grid-template-column
     <button onclick="scrollToId('videosMedicos')">▶ Videos médicos</button>
     <button onclick="scrollToId('casosClinicos')">♙ Casos clínicos</button>
     <button onclick="scrollToId('autoevaluaciones')">◎ Autoevaluaciones</button>
+    <button id="adminNavBtn" style="display:none" onclick="showAdmin()">⚙ Zona del administrador</button>
     <button onclick="alert('Foro de dudas: preparado para integrarse con usuarios al desplegar en servidor.')">◌ Foro de dudas</button>
   </div>
   <div class="profile">
@@ -378,8 +386,28 @@ button,input,textarea,select{font:inherit}.app{display:grid;grid-template-column
   </div>
 
   <div class="panel adminPanel" id="adminPanel">
-    <h2>Panel de administrador</h2>
-    <p class="muted">Solo el administrador puede crear, cargar o eliminar contenido.</p>
+    <div style="display:flex;justify-content:space-between;gap:18px;align-items:flex-start;flex-wrap:wrap">
+      <div>
+        <div class="badge">ACCESO PRIVADO</div>
+        <h2 style="margin:8px 0 6px">Zona del administrador</h2>
+        <p class="muted" style="margin:0">Control exclusivo del Curso de Hemorragia Obstétrica · AVICO.</p>
+      </div>
+      <button class="btn light" onclick="document.getElementById('adminPanel').classList.remove('show')">Cerrar panel</button>
+    </div>
+
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin:20px 0">
+      <div class="stat"><b id="adminStatPonencias">–</b><small>Ponencias</small></div>
+      <div class="stat"><b id="adminStatAlumnos">–</b><small>Alumnos</small></div>
+      <div class="stat"><b id="adminStatCursos">–</b><small>Cursos</small></div>
+      <div class="stat"><b>AVICO</b><small>Administración</small></div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:24px">
+      <button class="quick" onclick="document.getElementById('lessonForm').scrollIntoView({behavior:'smooth'})"><div class="ico">＋</div>Nueva ponencia</button>
+      <button class="quick" onclick="scrollToId('alumnos')"><div class="ico">♙</div>Ver alumnos</button>
+      <button class="quick" onclick="document.getElementById('libraryForm').scrollIntoView({behavior:'smooth'})"><div class="ico">📚</div>Biblioteca</button>
+      <button class="quick" onclick="document.getElementById('quizForm').scrollIntoView({behavior:'smooth'})"><div class="ico">📝</div>Evaluaciones</button>
+    </div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px">
       <form id="courseForm">
         <h3>Crear curso</h3>
@@ -503,6 +531,7 @@ function scrollToId(id){document.getElementById(id)?.scrollIntoView({behavior:'s
 async function api(url,opt={}){let r=await fetch(url,opt); if(!r.ok) throw new Error(await r.text()); return r.json()}
 async function load(){
   courses=await api('/api/courses'); const d=await api('/api/dashboard');
+  if(token){const adminNav=document.getElementById('adminNavBtn'); if(adminNav) adminNav.style.display='block';}
   $('#statCourses').textContent=d.courses; $('#statStudents').textContent=d.students; $('#statProgress').textContent=d.progress+'%'; $('#statSat').textContent=d.satisfaction+'%';
   renderCourses(); fillSelect(); fillAcademicSelects(); loadAcademic(); loadLibrary();
 }
@@ -702,6 +731,11 @@ async function login(){
 }
 function showAdmin(){
   $('#adminPanel').classList.add('show');
+  const adminNav=document.getElementById('adminNavBtn'); if(adminNav) adminNav.style.display='block';
+  const totalPonencias=courses.reduce((n,c)=>n+(c.lessons?.length||0),0);
+  const p=document.getElementById('adminStatPonencias'); if(p)p.textContent=totalPonencias;
+  const c=document.getElementById('adminStatCursos'); if(c)c.textContent=courses.length;
+  const a=document.getElementById('adminStatAlumnos'); if(a)a.textContent=document.getElementById('statStudents')?.textContent||'–';
   $('#adminPanel').scrollIntoView({behavior:'smooth'});
   renderCourseManager(); loadStudents(); loadAcademic();
   $('#exportBtn').onclick=async(e)=>{
