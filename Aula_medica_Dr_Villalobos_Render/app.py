@@ -888,6 +888,46 @@ def delete_student(student_id:int, request:Request):
     con.commit(); con.close()
     return {"ok":True}
 
+@app.get("/api/students/export.xlsx")
+def export_students_xlsx(request:Request):
+    auth(request)
+    import xlsxwriter
+    con=db()
+    rows=con.execute("""
+      SELECT s.id,s.full_name,s.age,s.institution,s.position,s.email,
+             COALESCE(c.title,'') AS course,s.created_at
+      FROM students s
+      LEFT JOIN courses c ON c.id=s.course_id
+      ORDER BY s.created_at,s.full_name
+    """).fetchall()
+    con.close()
+    out=DATA_DIR/"lista_asistencia_hemorragia_obstetrica.xlsx"
+    workbook=xlsxwriter.Workbook(out)
+    ws=workbook.add_worksheet("Asistencia")
+    fmt_head=workbook.add_format({"bold":True,"border":1,"align":"center","valign":"vcenter"})
+    fmt_cell=workbook.add_format({"border":1,"valign":"top"})
+    headers=["No.","Nombre completo","Edad","Institución / Adscripción","Puesto / Grado","Correo","Curso","Fecha de registro","Firma"]
+    for col,h in enumerate(headers):
+        ws.write(0,col,h,fmt_head)
+    for i,r in enumerate(rows, start=1):
+        values=[i,r["full_name"],r["age"] or "",r["institution"],r["position"],r["email"],r["course"],r["created_at"],""]
+        for col,v in enumerate(values):
+            ws.write(i,col,v,fmt_cell)
+    ws.set_column(0,0,6)
+    ws.set_column(1,1,32)
+    ws.set_column(2,2,8)
+    ws.set_column(3,3,30)
+    ws.set_column(4,4,24)
+    ws.set_column(5,5,30)
+    ws.set_column(6,6,36)
+    ws.set_column(7,7,20)
+    ws.set_column(8,8,24)
+    ws.freeze_panes(1,0)
+    workbook.close()
+    return FileResponse(out,
+      media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      filename="lista_asistencia_hemorragia_obstetrica.xlsx")
+
 @app.get("/api/students/export.csv")
 def export_students_csv(request:Request):
     auth(request)
