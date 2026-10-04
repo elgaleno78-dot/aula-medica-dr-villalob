@@ -173,7 +173,7 @@ button,input,textarea,select{font:inherit}.app{display:grid;grid-template-column
     <button type="submit" class="avico-enter" id="avicoAccountSubmit">Entrar al curso →</button>
   </form>
   <button type="button" class="avico-register" id="avicoAdminEnter">Ingresar como administrador</button>
-  <p class="avico-auth-note">No necesitas contraseña. Tus datos y tu acceso quedarán guardados en este dispositivo.</p>
+  <p class="avico-auth-note">Al entrar tendrás acceso inmediato a todas las ponencias publicadas. No necesitas contraseña.</p>
   </div></section>
 </div>
 <script>
@@ -393,7 +393,7 @@ button,input,textarea,select{font:inherit}.app{display:grid;grid-template-column
   </div>
 
   <div class="sectionTitle" id="cursos">
-    <div><h2>Ponencias</h2><div class="muted">Curso de Hemorragia Obstétrica · sesiones académicas AVICO</div></div>
+    <div><h2>Ponencias</h2><div class="muted">Todas las ponencias están disponibles desde el momento en que ingresas al aula</div></div>
     <button class="btn light" onclick="openAdmin()">+ Nueva ponencia</button>
   </div>
   <div class="ponenciasWrap" id="sessionList"><p class="muted" style="padding:28px 8px">Cargando ponencias...</p></div>
@@ -622,11 +622,7 @@ function renderCourseManager(){
       <div class="courseMeta">
         <b>${esc(c.title)}</b>
         <small>${esc(c.subtitle||'Sin subtítulo')} · ${esc(c.category||'Sin categoría')} · ${c.lessons.length} ponencia(s)</small>
-        <div class="accessSettings">
-          <span>Horas de acceso</span>
-          <input id="hours-${c.id}" type="number" min="1" max="8760" value="${c.access_hours||24}" style="padding:7px;border:1px solid var(--line);border-radius:8px">
-          <button class="btn light" onclick="saveAccessHours(${c.id})">Guardar</button>
-        </div>
+        <div class="muted" style="font-size:12px;margin-top:6px">Acceso completo e inmediato para todos los asistentes registrados.</div>
       </div>
       <button class="btn danger" onclick="delCourse(${c.id})">Eliminar curso</button>
     </div>`).join('');
@@ -657,7 +653,7 @@ async function openCourse(id){
     return;
   }
 
-  const studentToken=sessionStorage.getItem('avico_student_token');
+  const studentToken=sessionStorage.getItem('avico_student_token')||localStorage.getItem('avico_student_token');
   if(!studentToken){
     $('#lessons').innerHTML='<div class="accessExpired"><b>Inicia sesión para ver las clases.</b><br>Tu cuenta da acceso a todos los cursos publicados.<br><button type="button" class="btn" onclick="document.getElementById(\'avicoWelcome\').hidden=false">Iniciar sesión</button></div>';
     return;
