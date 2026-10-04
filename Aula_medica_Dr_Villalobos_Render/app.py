@@ -484,7 +484,7 @@ def reset_password(payload:dict):
 
 @app.post("/api/student-auth/register")
 async def student_signup(payload:dict):
-    """Ingreso sin contraseña: registra o reconoce al alumno por correo y conserva su sesión."""
+    """Ingreso sin contraseña con acceso inmediato a todas las ponencias publicadas."""
     name=str(payload.get("full_name") or "").strip()
     email=str(payload.get("email") or "").strip().lower()
     institution=str(payload.get("institution") or "").strip()
@@ -497,8 +497,9 @@ async def student_signup(payload:dict):
         raise HTTPException(400,"Escribe tu nombre completo y un correo válido")
     if age is not None and not 14<=age<=100:
         raise HTTPException(400,"Edad fuera de rango")
+
     con=db()
-    row=con.execute("SELECT id,full_name,email FROM student_accounts WHERE email=?",(email,)).fetchone()
+    row=con.execute("SELECT id FROM student_accounts WHERE email=?",(email,)).fetchone()
     if row:
         account_id=row["id"]
         con.execute("""UPDATE student_accounts
@@ -508,9 +509,29 @@ async def student_signup(payload:dict):
         cur=con.execute("""INSERT INTO student_accounts(full_name,email,password_hash,age,institution,position,email_verified_at)
             VALUES(?,?,?,?,?,?,?)""",(name,email,"",age,institution,position,utcnow().isoformat()))
         account_id=cur.lastrowid
+
+    # Al entrar al aula, registrar asistencia y dar acceso inmediato a todos los cursos publicados.
+    published=con.execute("SELECT id FROM courses WHERE published=1 ORDER BY id").fetchall()
+    now=utcnow()
+    far_future=(now+datetime.timedelta(days=3650)).isoformat()
+    for course in published:
+        course_id=course["id"]
+        existing=con.execute("""SELECT id FROM students
+            WHERE account_id=? AND course_id=? ORDER BY id DESC LIMIT 1""",(account_id,course_id)).fetchone()
+        if existing:
+            con.execute("""UPDATE students SET full_name=?,age=?,institution=?,position=?,email=?,
+                access_expires_at=? WHERE id=?""",
+                (name,age,institution,position,email,far_future,existing["id"]))
+        else:
+            con.execute("""INSERT INTO students(full_name,age,institution,position,email,course_id,
+                access_token,access_started_at,access_expires_at,account_id)
+                VALUES(?,?,?,?,?,?,?,?,?,?)""",
+                (name,age,institution,position,email,course_id,secrets.token_urlsafe(32),
+                 now.isoformat(),far_future,account_id))
     con.commit();con.close()
+
     return {"token":student_session(account_id),"student":{"id":account_id,"full_name":name,"email":email,
-        "age":age,"institution":institution,"position":position}}
+        "age":age,"institution":institution,"position":position},"all_presentations_access":True}
 
 @app.post("/api/student-auth/login")
 async def student_signin(payload:dict):
