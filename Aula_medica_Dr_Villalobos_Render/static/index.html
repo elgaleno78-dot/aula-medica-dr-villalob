@@ -114,6 +114,28 @@ button,input,textarea,select{font:inherit}.app{display:grid;grid-template-column
 @media(max-width:1100px){.libraryGrid{grid-template-columns:1fr 1fr}}
 @media(max-width:760px){.libraryGrid{grid-template-columns:1fr}}
 
+
+/* Lista de ponencias estilo sesión académica */
+.ponenciasWrap{background:#fff;border-radius:16px;border:1px solid var(--line);padding:0 24px;margin-top:12px}
+.ponenciaRow{display:grid;grid-template-columns:320px minmax(0,1fr) 170px;gap:34px;align-items:center;padding:28px 6px;border-bottom:1px solid #dfe4e8;min-height:205px}
+.ponenciaRow:last-child{border-bottom:0}
+.ponenciaVisual{height:130px;display:flex;align-items:center;justify-content:flex-start;position:relative}
+.ponenciaBadge{width:110px;height:110px;border-radius:50%;position:relative;display:grid;place-items:center;background:#fff;border:8px solid #8bd74b;box-shadow:inset 0 0 0 7px #edf7e4}
+.ponenciaBadge:before{content:"";position:absolute;inset:-15px;border-radius:50%;border:5px solid transparent;border-top-color:#b4e789;border-left-color:#66bc31;transform:rotate(-28deg)}
+.ponenciaBadge:after{content:"AVICO";font-size:19px;font-weight:900;color:var(--navy);letter-spacing:.03em}
+.ponenciaRibbon{position:absolute;left:98px;top:38px;width:190px;height:58px;background:linear-gradient(180deg,#fff,#f4f4f4);border:1px solid #d4d7da;border-radius:0 30px 30px 0;box-shadow:0 2px 5px #0002;padding:12px 16px 8px 18px;color:#58b72d;font-size:11px;font-weight:800;text-transform:uppercase;display:flex;align-items:center}
+.ponenciaRibbon small{position:absolute;right:0;bottom:-15px;background:#70c93d;color:white;padding:3px 9px;border-radius:8px 0 8px 8px;font-size:9px;white-space:nowrap}
+.ponenciaInfo h3{font-size:32px;line-height:1.15;margin:0 0 10px;color:#27313c;font-weight:800}
+.ponenciaDate{font-size:18px;margin-bottom:20px;color:#1f2429}
+.ponenciaInstitution{font-size:18px;font-weight:800;margin-bottom:20px;color:#20262d}
+.ponenciaSpeaker{font-size:17px;line-height:1.5;color:#252b32}
+.ponenciaSpeaker b{font-weight:800}
+.ponenciaAction{display:flex;align-items:center;justify-content:center}
+.ponenciaAction .btn{background:#253765;font-size:16px;padding:14px 18px;border-radius:5px;min-width:145px}
+.ponenciaAdminActions{margin-top:10px;display:flex;gap:8px}
+@media(max-width:980px){.ponenciaRow{grid-template-columns:220px 1fr}.ponenciaAction{grid-column:2;justify-content:flex-start}.ponenciaVisual{height:105px}.ponenciaBadge{width:90px;height:90px}.ponenciaRibbon{left:80px;width:135px;top:28px}.ponenciaInfo h3{font-size:26px}}
+@media(max-width:700px){.ponenciasWrap{padding:0 14px}.ponenciaRow{grid-template-columns:1fr;gap:12px;padding:22px 0}.ponenciaVisual{height:105px}.ponenciaAction{grid-column:1;justify-content:flex-start}.ponenciaInfo h3{font-size:24px}.ponenciaDate,.ponenciaInstitution,.ponenciaSpeaker{font-size:15px}}
+
 </style>
 <link rel="stylesheet" href="/static/avico-theme.css">
 </head>
@@ -333,14 +355,20 @@ button,input,textarea,select{font:inherit}.app{display:grid;grid-template-column
     </div>
   </div>
 
-  <div class="sectionTitle" id="cursos"><div><h2>Mis cursos</h2><div class="muted">Selecciona un curso para abrir sus clases</div></div><button class="btn light" onclick="openAdmin()">+ Nueva clase</button></div>
-  <div class="courseGrid" id="courseGrid"></div>
+  <div class="sectionTitle" id="cursos">
+    <div><h2>Ponencias</h2><div class="muted">Curso de Hemorragia Obstétrica · sesiones académicas AVICO</div></div>
+    <button class="btn light" onclick="openAdmin()">+ Nueva ponencia</button>
+  </div>
+  <div class="ponenciasWrap" id="sessionList"><p class="muted" style="padding:28px 8px">Cargando ponencias...</p></div>
 
-  <div class="sectionTitle"><div><h2>Accesos rápidos</h2></div></div>
+  <div class="sectionTitle"><div><h2>Recursos del curso</h2></div></div>
   <div class="quickGrid">
-    <div class="quick" onclick="scrollToId('casosClinicos')" style="cursor:pointer"><div class="ico">🩺</div>Casos clínicos</div><div class="quick" onclick="scrollToId('autoevaluaciones')" style="cursor:pointer"><div class="ico">📝</div>Autoevaluaciones</div>
-    <div class="quick" onclick="scrollToId('biblioteca')" style="cursor:pointer"><div class="ico">📚</div>Biblioteca</div><div class="quick"><div class="ico">🧭</div>Algoritmos</div>
-    <div class="quick" onclick="scrollToId('videosMedicos')" style="cursor:pointer"><div class="ico">▶</div>Videos</div><div class="quick"><div class="ico">💬</div>Foro de dudas</div>
+    <div class="quick" onclick="scrollToId('casosClinicos')" style="cursor:pointer"><div class="ico">🩺</div>Casos clínicos</div>
+    <div class="quick" onclick="scrollToId('autoevaluaciones')" style="cursor:pointer"><div class="ico">📝</div>Autoevaluaciones</div>
+    <div class="quick" onclick="scrollToId('biblioteca')" style="cursor:pointer"><div class="ico">📚</div>Biblioteca</div>
+    <div class="quick"><div class="ico">🧭</div>Algoritmos</div>
+    <div class="quick" onclick="scrollToId('videosMedicos')" style="cursor:pointer"><div class="ico">▶</div>Videos</div>
+    <div class="quick"><div class="ico">💬</div>Foro de dudas</div>
     <div class="quick"><div class="ico">🏅</div>Certificados</div>
   </div>
 
@@ -361,12 +389,15 @@ button,input,textarea,select{font:inherit}.app{display:grid;grid-template-column
         <button class="btn red">Crear curso</button>
       </form>
       <form id="lessonForm">
-        <h3>Agregar clase / presentación</h3>
+        <h3>Agregar ponencia / presentación</h3>
         <div class="field"><label>Curso</label><select name="course_id" id="courseSelect" required></select></div>
-        <div class="field"><label>Título de la clase</label><input name="title" required></div>
+        <div class="field"><label>Título de la ponencia</label><input name="title" required placeholder="Ej. Choque hemorrágico obstétrico"></div>
+        <div class="field"><label>Fecha de la sesión</label><input name="session_date" type="date"></div>
+        <div class="field"><label>Institución / sede académica</label><input name="institution" placeholder="Ej. AVICO · Educación Médica"></div>
+        <div class="field"><label>Ponente / profesor</label><input name="speaker" placeholder="Ej. Dr. Alejandro Lenin Villalobos Rodríguez"></div>
         <div class="field"><label>Archivo</label><input name="file" type="file" accept=".pptx,.pdf,.mp4,.mov,.png,.jpg,.jpeg,.webp"></div>
-        <div class="field"><label>Notas para alumnos</label><textarea name="notes" rows="3"></textarea></div>
-        <button class="btn red">Subir clase</button>
+        <div class="field"><label>Descripción breve</label><textarea name="notes" rows="3"></textarea></div>
+        <button class="btn red">Publicar ponencia</button>
       </form>
     </div>
 
@@ -475,13 +506,49 @@ async function load(){
   $('#statCourses').textContent=d.courses; $('#statStudents').textContent=d.students; $('#statProgress').textContent=d.progress+'%'; $('#statSat').textContent=d.satisfaction+'%';
   renderCourses(); fillSelect(); fillAcademicSelects(); loadAcademic(); loadLibrary();
 }
+function formatSessionDate(value){
+  if(!value)return 'Sesión académica';
+  const d=new Date(value+'T12:00:00');
+  return new Intl.DateTimeFormat('es-MX',{day:'numeric',month:'long',year:'numeric'}).format(d);
+}
+function openPonencia(courseId,lessonId){
+  const c=courses.find(x=>x.id===courseId);
+  if(!c)return;
+  const l=c.lessons.find(x=>x.id===lessonId);
+  if(!l)return;
+  const raw=JSON.stringify(JSON.stringify(l));
+  if(token){viewLesson(JSON.parse(JSON.stringify(raw)),null,true);return;}
+  const studentToken=sessionStorage.getItem('avico_student_token')||localStorage.getItem('avico_student_token');
+  if(!studentToken){
+    document.getElementById('avicoWelcome').hidden=false;
+    return;
+  }
+  sessionStorage.setItem('avico_student_token',studentToken);
+  viewLesson(JSON.parse(JSON.stringify(raw)),null,false);
+}
 function renderCourses(){
-  const icons=['🩸','🩺','🤰','🏥','📖','🧠'];
-  $('#courseGrid').innerHTML=courses.map((c,i)=>`
-    <div class="course" onclick="openCourse(${c.id})">
-      <div class="cover">${icons[i%icons.length]}</div>
-      <div class="courseBody"><span class="badge">${c.category||'Curso'}</span><h3>${esc(c.title)}</h3><p>${esc(c.subtitle||'')}</p><small>${c.lessons.length} clase(s)</small></div>
-    </div>`).join('');
+  const box=$('#sessionList');
+  const lessons=courses.flatMap(c=>(c.lessons||[]).map(l=>({...l,course_id:c.id,course_title:c.title})));
+  if(!lessons.length){
+    box.innerHTML='<p class="muted" style="padding:30px 8px">Todavía no hay ponencias publicadas.</p>';
+  }else{
+    box.innerHTML=lessons.map((l,i)=>`
+      <article class="ponenciaRow">
+        <div class="ponenciaVisual" aria-hidden="true">
+          <div class="ponenciaBadge"></div>
+          <div class="ponenciaRibbon">Sesión académica<small>${esc((l.session_date||'AVICO').toUpperCase())}</small></div>
+        </div>
+        <div class="ponenciaInfo">
+          <h3>${esc(l.title)}</h3>
+          <div class="ponenciaDate">${esc(formatSessionDate(l.session_date))}</div>
+          ${l.institution?`<div class="ponenciaInstitution">${esc(l.institution)}</div>`:''}
+          ${l.speaker?`<div class="ponenciaSpeaker">• <b>Ponente:</b><br>&nbsp;&nbsp;&nbsp;${esc(l.speaker)}</div>`:''}
+          ${l.notes?`<div class="muted" style="margin-top:12px;line-height:1.5">${esc(l.notes)}</div>`:''}
+          ${token?`<div class="ponenciaAdminActions"><button class="btn danger" onclick="event.stopPropagation();delLesson(${l.id})">Eliminar</button></div>`:''}
+        </div>
+        <div class="ponenciaAction"><button class="btn" onclick="openPonencia(${l.course_id},${l.id})">Ir a la ponencia</button></div>
+      </article>`).join('');
+  }
   renderCourseManager(); loadStudents(); loadAcademic(); loadLibrary();
 }
 function renderCourseManager(){
@@ -492,7 +559,7 @@ function renderCourseManager(){
     <div class="courseManageRow">
       <div class="courseMeta">
         <b>${esc(c.title)}</b>
-        <small>${esc(c.subtitle||'Sin subtítulo')} · ${esc(c.category||'Sin categoría')} · ${c.lessons.length} clase(s)</small>
+        <small>${esc(c.subtitle||'Sin subtítulo')} · ${esc(c.category||'Sin categoría')} · ${c.lessons.length} ponencia(s)</small>
         <div class="accessSettings">
           <span>Horas de acceso</span>
           <input id="hours-${c.id}" type="number" min="1" max="8760" value="${c.access_hours||24}" style="padding:7px;border:1px solid var(--line);border-radius:8px">
@@ -651,7 +718,7 @@ function fillSelect(){
   if(sc) sc.innerHTML='<option value="">Selecciona un curso</option>'+courses.map(c=>`<option value="${c.id}">${esc(c.title)} · ${c.access_hours||24} h</option>`).join('');
 }
 $('#courseForm').onsubmit=async e=>{e.preventDefault();try{let fd=new FormData(e.target);await fetch('/api/courses',{method:'POST',headers:{Authorization:'Bearer '+token},body:fd}).then(r=>{if(!r.ok)throw Error()});e.target.reset();await load();alert('Curso creado')}catch{alert('No se pudo crear el curso')}}
-$('#lessonForm').onsubmit=async e=>{e.preventDefault();try{let fd=new FormData(e.target);await fetch('/api/lessons',{method:'POST',headers:{Authorization:'Bearer '+token},body:fd}).then(r=>{if(!r.ok)throw Error()});e.target.reset();await load();alert('Clase agregada')}catch{alert('No se pudo cargar la clase')}}
+$('#lessonForm').onsubmit=async e=>{e.preventDefault();try{let fd=new FormData(e.target);await fetch('/api/lessons',{method:'POST',headers:{Authorization:'Bearer '+token},body:fd}).then(r=>{if(!r.ok)throw Error()});e.target.reset();await load();alert('Ponencia agregada')}catch{alert('No se pudo cargar la ponencia')}}
 async function delLesson(id){
   if(!confirm('¿Eliminar esta clase?'))return;
   await fetch('/api/lessons/'+id,{method:'DELETE',headers:{Authorization:'Bearer '+token}});
