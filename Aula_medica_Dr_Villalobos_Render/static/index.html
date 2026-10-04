@@ -516,15 +516,15 @@ function openPonencia(courseId,lessonId){
   if(!c)return;
   const l=c.lessons.find(x=>x.id===lessonId);
   if(!l)return;
-  const raw=JSON.stringify(JSON.stringify(l));
-  if(token){viewLesson(JSON.parse(JSON.stringify(raw)),null,true);return;}
+  const raw=JSON.stringify(l);
+  if(token){viewLesson(raw,null,true);return;}
   const studentToken=sessionStorage.getItem('avico_student_token')||localStorage.getItem('avico_student_token');
   if(!studentToken){
     document.getElementById('avicoWelcome').hidden=false;
     return;
   }
   sessionStorage.setItem('avico_student_token',studentToken);
-  viewLesson(JSON.parse(JSON.stringify(raw)),null,false);
+  viewLesson(raw,null,false);
 }
 function renderCourses(){
   const box=$('#sessionList');
