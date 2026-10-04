@@ -190,6 +190,26 @@ def init_db():
       message TEXT NOT NULL,
       created_at TEXT DEFAULT CURRENT_TIMESTAMP
     );
+    CREATE TABLE IF NOT EXISTS forum_threads(
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      account_id INTEGER,
+      author TEXT NOT NULL,
+      title TEXT NOT NULL,
+      body TEXT NOT NULL,
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY(account_id) REFERENCES student_accounts(id) ON DELETE SET NULL
+    );
+    CREATE TABLE IF NOT EXISTS forum_replies(
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      thread_id INTEGER NOT NULL,
+      account_id INTEGER,
+      author TEXT NOT NULL,
+      body TEXT NOT NULL,
+      is_admin INTEGER DEFAULT 0,
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY(thread_id) REFERENCES forum_threads(id) ON DELETE CASCADE,
+      FOREIGN KEY(account_id) REFERENCES student_accounts(id) ON DELETE SET NULL
+    );
     CREATE TABLE IF NOT EXISTS settings(
       key TEXT PRIMARY KEY,
       value TEXT DEFAULT ''
@@ -625,6 +645,66 @@ def course_file(lesson_id:int, access_token:str, filename:str):
       "png":"image/png","jpg":"image/jpeg","jpeg":"image/jpeg","webp":"image/webp"
     }.get(row["kind"],"application/octet-stream")
     return FileResponse(p,media_type=media,headers={"Content-Disposition":"inline","Cache-Control":"private, no-store"})
+
+@app.get("/api/forum")
+def forum_list():
+    con=db()
+    threads=[dict(r) for r in con.execute("""SELECT id,author,title,body,created_at
+        FROM forum_threads ORDER BY id DESC""").fetchall()]
+    for t in threads:
+        t["replies"]=[dict(r) for r in con.execute("""SELECT id,author,body,is_admin,created_at
+            FROM forum_replies WHERE thread_id=? ORDER BY id ASC""",(t["id"],)).fetchall()]
+    con.close()
+    return threads
+
+@app.post("/api/forum")
+async def forum_create(request:Request):
+    identity=student_identity(request)
+    payload=await request.json()
+    title=str(payload.get("title") or "").strip()
+    body=str(payload.get("body") or "").strip()
+    if len(title)<3 or len(title)>180 or len(body)<3 or len(body)>4000:
+        raise HTTPException(400,"Escribe un título y una duda válidos")
+    con=db()
+    cur=con.execute("INSERT INTO forum_threads(account_id,author,title,body) VALUES(?,?,?,?)",
+        (identity["id"],identity["full_name"],title,body))
+    tid=cur.lastrowid
+    con.commit();con.close()
+    return {"ok":True,"id":tid}
+
+@app.post("/api/forum/{thread_id}/replies")
+async def forum_reply(thread_id:int, request:Request):
+    payload=await request.json()
+    body=str(payload.get("body") or "").strip()
+    if len(body)<2 or len(body)>4000:
+        raise HTTPException(400,"Respuesta inválida")
+    bearer=request.headers.get("authorization","")
+    raw=bearer[7:].strip() if bearer.startswith("Bearer ") else ""
+    is_admin=False
+    author=""
+    account_id=None
+    if raw and raw in TOKENS:
+        is_admin=True
+        author="Dr. Alejandro Lenin Villalobos Rodríguez"
+    else:
+        identity=student_identity(request)
+        author=identity["full_name"]; account_id=identity["id"]
+    con=db()
+    if not con.execute("SELECT 1 FROM forum_threads WHERE id=?",(thread_id,)).fetchone():
+        con.close(); raise HTTPException(404,"Tema no encontrado")
+    con.execute("INSERT INTO forum_replies(thread_id,account_id,author,body,is_admin) VALUES(?,?,?,?,?)",
+        (thread_id,account_id,author,body,1 if is_admin else 0))
+    con.commit();con.close()
+    return {"ok":True}
+
+@app.delete("/api/forum/{thread_id}")
+def forum_delete(thread_id:int, request:Request):
+    auth(request)
+    con=db()
+    con.execute("DELETE FROM forum_replies WHERE thread_id=?",(thread_id,))
+    con.execute("DELETE FROM forum_threads WHERE id=?",(thread_id,))
+    con.commit();con.close()
+    return {"ok":True}
 
 @app.get("/api/dashboard")
 def dashboard():
