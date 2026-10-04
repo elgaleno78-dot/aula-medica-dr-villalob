@@ -225,7 +225,7 @@ button,input,textarea,select{font:inherit}.app{display:grid;grid-template-column
   <div class="nav">
     <button class="active" onclick="scrollToId('inicio')">⌂ Inicio</button>
     <button onclick="scrollToId('cursos')">▤ Mis cursos</button>
-    <button onclick="scrollToId('alumnos')">♙ Alumnos</button>
+    <button id="studentsNavBtn" style="display:none" onclick="scrollToId('alumnos')">♙ Alumnos inscritos</button>
     <button onclick="scrollToId('biblioteca')">▣ Biblioteca</button>
     <button onclick="scrollToId('acerca')">◉ Acerca de mí</button>
     <button onclick="scrollToId('videosMedicos')">▶ Videos médicos</button>
@@ -358,11 +358,11 @@ button,input,textarea,select{font:inherit}.app{display:grid;grid-template-column
     </div>
   </div>
 
-  <div class="panel studentPanel" id="alumnos">
+  <div class="panel studentPanel" id="alumnos" style="display:none">
     <div class="sectionTitle" style="margin:0 0 14px">
-      <div><h2>Inscripción de alumnos</h2><div class="muted">Registro de participantes del Curso de Hemorragia Obstétrica</div></div>
+      <div><h2>Alumnos inscritos</h2><div class="muted">Padrón privado de asistentes · visible solo para el administrador</div></div>
     </div>
-    <div class="studentIntro">
+    <div class="studentIntro" style="display:none">
       <div class="studentLead">
         <h3>Tu perfil del curso</h3>
         <p>Tu perfil permite mantener tu acceso en este dispositivo sin contraseña ni recuperación por correo.</p>
@@ -381,7 +381,7 @@ button,input,textarea,select{font:inherit}.app{display:grid;grid-template-column
     <div class="studentAdmin" id="studentAdmin" style="display:none">
       <div class="studentToolbar">
         <div><h3 style="margin:0">Alumnos inscritos</h3><div class="muted" id="studentCountText" style="font-size:12px"></div></div>
-        <button class="btn light" onclick="exportStudents()">Exportar para Excel</button>
+        <button class="btn red" onclick="exportStudentsExcel()">Descargar lista de asistencia · Excel</button>
       </div>
       <div class="studentTableWrap">
         <table class="studentTable">
@@ -560,7 +560,11 @@ function scrollToId(id){document.getElementById(id)?.scrollIntoView({behavior:'s
 async function api(url,opt={}){let r=await fetch(url,opt); if(!r.ok) throw new Error(await r.text()); return r.json()}
 async function load(){
   courses=await api('/api/courses'); const d=await api('/api/dashboard');
-  if(token){const adminNav=document.getElementById('adminNavBtn'); if(adminNav) adminNav.style.display='block';}
+  if(token){
+    const adminNav=document.getElementById('adminNavBtn'); if(adminNav) adminNav.style.display='block';
+    const studentsNav=document.getElementById('studentsNavBtn'); if(studentsNav) studentsNav.style.display='block';
+    const studentsPanel=document.getElementById('alumnos'); if(studentsPanel) studentsPanel.style.display='block';
+  }
   $('#statCourses').textContent=d.courses; $('#statStudents').textContent=d.students; $('#statProgress').textContent=d.progress+'%'; $('#statSat').textContent=d.satisfaction+'%';
   renderCourses(); fillSelect(); fillAcademicSelects(); loadAcademic(); loadLibrary(); loadForum();
 }
@@ -761,6 +765,8 @@ async function login(){
 function showAdmin(){
   $('#adminPanel').classList.add('show');
   const adminNav=document.getElementById('adminNavBtn'); if(adminNav) adminNav.style.display='block';
+  const studentsNav=document.getElementById('studentsNavBtn'); if(studentsNav) studentsNav.style.display='block';
+  const studentsPanel=document.getElementById('alumnos'); if(studentsPanel) studentsPanel.style.display='block';
   const totalPonencias=courses.reduce((n,c)=>n+(c.lessons?.length||0),0);
   const p=document.getElementById('adminStatPonencias'); if(p)p.textContent=totalPonencias;
   const c=document.getElementById('adminStatCursos'); if(c)c.textContent=courses.length;
@@ -859,6 +865,12 @@ async function exportStudents(){
   if(!r.ok){alert('No se pudo exportar');return}
   let b=await r.blob(), u=URL.createObjectURL(b), a=document.createElement('a');
   a.href=u;a.download='alumnos_aula_medica.csv';a.click();URL.revokeObjectURL(u);
+}
+async function exportStudentsExcel(){
+  let r=await fetch('/api/students/export.xlsx',{headers:{Authorization:'Bearer '+token}});
+  if(!r.ok){alert('No se pudo generar la lista de asistencia');return}
+  let b=await r.blob(), u=URL.createObjectURL(b), a=document.createElement('a');
+  a.href=u;a.download='lista_asistencia_hemorragia_obstetrica.xlsx';a.click();URL.revokeObjectURL(u);
 }
 
 
