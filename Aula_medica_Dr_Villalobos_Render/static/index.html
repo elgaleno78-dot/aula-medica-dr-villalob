@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Aula Virtual AVICO · Educación médica continua</title>
+<title>Curso de Hemorragia Obstétrica · AVICO</title>
 
 <style>
 :root{--navy:#08243d;--navy2:#0e3655;--red:#b21727;--red2:#d82332;--bg:#f6f8fb;--ink:#10243a;--muted:#68788a;--card:#fff;--line:#e3e9ef}
@@ -118,13 +118,13 @@ button,input,textarea,select{font:inherit}.app{display:grid;grid-template-column
 <link rel="stylesheet" href="/static/avico-theme.css">
 </head>
 <body>
-<div id="avicoWelcome" class="avico-welcome" role="dialog" aria-modal="true" aria-label="Bienvenida a Aula AVICO">
+<div id="avicoWelcome" class="avico-welcome" role="dialog" aria-modal="true" aria-label="Bienvenida al Curso de Hemorragia Obstétrica AVICO">
   <section class="avico-welcome-left">
-    <div class="avico-identity"><div class="avico-emblem" aria-hidden="true">AV</div><div><strong>AVICO</strong><span>AULA VIRTUAL</span><p>Educación médica continua<br>en Ginecología y Obstetricia</p></div></div>
-    <div class="avico-benefits"><p><b>Cursos especializados</b><br>Actualización basada en evidencia</p></div>
+    <div class="avico-identity"><div class="avico-emblem" aria-hidden="true">AV</div><div><strong>AVICO</strong><span>CURSO ESPECIALIZADO</span><p>Hemorragia obstétrica<br>de la evidencia a la práctica</p></div></div>
+    <div class="avico-benefits"><p><b>Hemorragia obstétrica</b><br>Actualización basada en evidencia y toma de decisiones</p></div>
     <p class="avico-tagline">Conocimiento hoy,<br>mejores pacientes mañana.</p><p class="avico-signature">Dr. Alejandro Villalobos</p>
   </section>
-  <section class="avico-welcome-right"><div class="avico-entry-card"><h1>Bienvenido(a) al<br><strong>Aula Virtual AVICO</strong></h1><p>Continúa tu formación en Ginecología y Obstetricia.</p>
+  <section class="avico-welcome-right"><div class="avico-entry-card"><h1>Bienvenido(a) al<br><strong>Curso de Hemorragia Obstétrica</strong></h1><p>Formación AVICO para reconocer, reanimar y controlar la hemorragia obstétrica.</p>
   <form id="avicoAccountForm" class="avico-account-form">
     <label for="avicoEmail">Correo electrónico</label><input id="avicoEmail" type="email" autocomplete="email" required placeholder="alumno@correo.com">
     <label for="avicoPassword">Contraseña</label><input id="avicoPassword" type="password" autocomplete="current-password" minlength="12" required placeholder="Tu contraseña">
@@ -157,7 +157,7 @@ button,input,textarea,select{font:inherit}.app{display:grid;grid-template-column
 
 <div class="app">
 <aside class="sidebar">
-  <div class="brand"><div class="logo">♡</div><div>Aula médica<br><b>Dr. Villalobos</b></div></div>
+  <div class="brand"><div class="logo">♡</div><div>Curso AVICO<br><b>Hemorragia Obstétrica</b></div></div>
   <div class="nav">
     <button class="active" onclick="scrollToId('inicio')">⌂ Inicio</button>
     <button onclick="scrollToId('cursos')">▤ Mis cursos</button>
@@ -176,16 +176,16 @@ button,input,textarea,select{font:inherit}.app{display:grid;grid-template-column
   </div>
 </aside>
 <main class="main">
-  <div class="topbar"><div><b>Aula médica · Dr. Villalobos</b><div class="muted" style="font-size:12px">Docencia médica escalable · presencial y en línea</div></div><button class="adminBtn" onclick="openAdmin()">⚙ Administrar</button></div>
+  <div class="topbar"><div><b>Curso de Hemorragia Obstétrica · AVICO</b><div class="muted" style="font-size:12px">Formación médica basada en evidencia · Dr. Alejandro Lenin Villalobos Rodríguez</div></div><button class="adminBtn" onclick="openAdmin()">⚙ Administrar</button></div>
 
   <section class="hero" id="inicio">
     <div class="heroCopy">
-      <div class="tag">Bienvenido a</div>
-      <h1>Aula médica<br><span>Dr. Villalobos</span></h1>
-      <p>Educación basada en evidencia para mejorar el cuidado de la mujer y su bebé. Sube tus clases, proyéctalas en modo expositor y deja el contenido disponible para tus alumnos.</p>
+      <div class="tag">Curso especializado AVICO</div>
+      <h1>Hemorragia<br><span>Obstétrica</span></h1>
+      <p>Reconocimiento temprano, cuantificación de la pérdida sanguínea, reanimación hemodinámica, tratamiento farmacológico, dispositivos y control quirúrgico de la hemorragia obstétrica.</p>
       <div class="heroMark">⚕</div>
       <div class="stats">
-        <div class="stat"><b id="statCourses">–</b><small>Cursos</small></div>
+        <div class="stat"><b id="statCourses">–</b><small>Curso</small></div>
         <div class="stat"><b id="statStudents">–</b><small>Alumnos</small></div>
         <div class="stat"><b id="statProgress">–</b><small>Avance promedio</small></div>
         <div class="stat"><b id="statSat">–</b><small>Satisfacción</small></div>
@@ -214,7 +214,7 @@ button,input,textarea,select{font:inherit}.app{display:grid;grid-template-column
 
   <div class="panel libraryPanel" id="biblioteca">
     <div class="libraryToolbar">
-      <div><h2 style="margin:0">Biblioteca</h2><div class="muted">Artículos, guías, protocolos, manuales y presentaciones para consulta académica</div></div>
+      <div><h2 style="margin:0">Biblioteca de Hemorragia Obstétrica</h2><div class="muted">Artículos, guías, protocolos, manuales y presentaciones seleccionados para el curso</div></div>
       <span class="badge">Solo lectura para alumnos</span>
     </div>
     <div class="noticeBox">Los recursos publicados pueden ser consultados por alumnos y visitantes, pero solo el administrador puede agregar o eliminar contenido.</div>
