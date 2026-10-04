@@ -83,3 +83,46 @@ body{background:var(--bg);color:var(--ink)}
 @media(max-width:1050px){.avico-identity,.avico-benefits,.avico-tagline{margin-left:8%}.avico-identity{flex-wrap:wrap}.avico-signature{font-size:25px}}
 @media(max-width:760px){.avico-welcome-left{min-height:350px!important;padding:20px 22px 28px!important;background-position:left center!important}.avico-identity{margin:12px 0 0 18%;gap:8px;flex-wrap:nowrap}.avico-identity strong{font-size:clamp(32px,8vw,48px)}.avico-identity span{font-size:10px}.avico-identity p{font-size:11px}.avico-benefits{margin:22px 0 0 18%}.avico-benefits p{font-size:12px}.avico-tagline{margin:20px 0 0 18%;padding:0;font-size:13px}.avico-signature{font-size:24px;margin:8px 0 0 auto}}
 @media(max-width:390px){.avico-identity,.avico-benefits,.avico-tagline{margin-left:12%}.avico-identity strong{font-size:30px}.avico-signature{font-size:20px}}
+
+
+/* Fix 2026-10-04: allow full access form to scroll on all screen sizes. */
+.avico-welcome{
+  height:100dvh;
+  min-height:100dvh;
+  overflow-y:auto!important;
+  overscroll-behavior:contain;
+  -webkit-overflow-scrolling:touch;
+}
+.avico-welcome-right{
+  overflow-y:auto!important;
+  overflow-x:hidden!important;
+  align-items:start!important;
+  padding-top:32px!important;
+  padding-bottom:56px!important;
+}
+.avico-entry-card{
+  margin:auto 0;
+  max-height:none!important;
+  overflow:visible!important;
+}
+@media(max-height:820px) and (min-width:761px){
+  .avico-welcome-right{align-items:start!important}
+  .avico-entry-card{margin:0 auto!important}
+}
+@media(max-width:760px){
+  .avico-welcome{
+    height:100dvh;
+    overflow-y:auto!important;
+    display:block!important;
+  }
+  .avico-welcome-left{min-height:250px!important}
+  .avico-welcome-right{
+    display:block!important;
+    overflow:visible!important;
+    padding:18px 14px 64px!important;
+  }
+  .avico-entry-card{
+    margin:0 auto!important;
+    width:100%!important;
+  }
+}
