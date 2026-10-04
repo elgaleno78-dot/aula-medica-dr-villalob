@@ -143,6 +143,15 @@ button,input,textarea,select{font:inherit}.app{display:grid;grid-template-column
 @media(max-width:560px){
   #adminPanel > div[style*="repeat(4,1fr)"]{grid-template-columns:1fr!important}
 }
+
+.forumThread{border:1px solid var(--line);border-radius:14px;padding:16px;margin:12px 0;background:#fff}
+.forumThread h3{margin:0 0 6px;color:var(--navy)}
+.forumMeta{font-size:12px;color:var(--muted);margin-bottom:10px}
+.forumBody{line-height:1.6;color:#34495e}
+.forumReply{margin:10px 0 0 18px;padding:12px 14px;border-left:3px solid #b8c9d9;background:#f8fbfe;border-radius:8px}
+.forumReply.admin{border-left-color:#1764a8;background:#eef6ff}
+.forumReplyForm{display:flex;gap:8px;margin-top:12px}
+.forumReplyForm input{flex:1;padding:10px;border:1px solid var(--line);border-radius:9px}
 </style>
 <link rel="stylesheet" href="/static/avico-theme.css">
 </head>
@@ -223,7 +232,7 @@ button,input,textarea,select{font:inherit}.app{display:grid;grid-template-column
     <button onclick="scrollToId('casosClinicos')">♙ Casos clínicos</button>
     <button onclick="scrollToId('autoevaluaciones')">◎ Autoevaluaciones</button>
     <button id="adminNavBtn" style="display:none" onclick="showAdmin()">⚙ Zona del administrador</button>
-    <button onclick="alert('Foro de dudas: preparado para integrarse con usuarios al desplegar en servidor.')">◌ Foro de dudas</button>
+    <button onclick="scrollToId('foroDudas')">◌ Foro de dudas</button>
   </div>
   <div class="profile">
     <img src="/static/assets/perfil_dr_villalobos.jpg">
@@ -297,6 +306,20 @@ button,input,textarea,select{font:inherit}.app{display:grid;grid-template-column
     </div>
     <div class="noticeBox">Utiliza únicamente casos docentes anonimizados. No publiques nombres, números de expediente, teléfonos, fotografías identificables ni otros datos personales de pacientes.</div>
     <div id="caseList" style="margin-top:14px"><p class="muted">Cargando casos...</p></div>
+  </div>
+
+
+  <div class="panel academicPanel" id="foroDudas">
+    <div class="sectionTitle" style="margin:0 0 14px">
+      <div><h2>Foro de dudas</h2><div class="muted">Pregunta, comenta y revisa las respuestas del curso</div></div>
+    </div>
+    <div class="noticeBox">Espacio académico del curso. Evita compartir datos identificables de pacientes.</div>
+    <form id="forumForm" style="margin-top:16px">
+      <div class="field"><label>Título de la duda</label><input id="forumTitle" maxlength="180" placeholder="Ej. ¿Cuándo iniciar protocolo transfusional?"></div>
+      <div class="field"><label>Pregunta</label><textarea id="forumBody" rows="4" maxlength="4000" placeholder="Escribe tu duda clínica o académica"></textarea></div>
+      <button class="btn red" type="submit">Publicar duda</button>
+    </form>
+    <div id="forumList" style="margin-top:20px"><p class="muted">Cargando foro...</p></div>
   </div>
 
   <div class="panel aboutPanel" id="acerca">
@@ -382,7 +405,7 @@ button,input,textarea,select{font:inherit}.app{display:grid;grid-template-column
     <div class="quick" onclick="scrollToId('biblioteca')" style="cursor:pointer"><div class="ico">📚</div>Biblioteca</div>
     <div class="quick"><div class="ico">🧭</div>Algoritmos</div>
     <div class="quick" onclick="scrollToId('videosMedicos')" style="cursor:pointer"><div class="ico">▶</div>Videos</div>
-    <div class="quick"><div class="ico">💬</div>Foro de dudas</div>
+    <div class="quick" onclick="scrollToId('foroDudas')" style="cursor:pointer"><div class="ico">💬</div>Foro de dudas</div>
     <div class="quick"><div class="ico">🏅</div>Certificados</div>
   </div>
 
@@ -539,7 +562,7 @@ async function load(){
   courses=await api('/api/courses'); const d=await api('/api/dashboard');
   if(token){const adminNav=document.getElementById('adminNavBtn'); if(adminNav) adminNav.style.display='block';}
   $('#statCourses').textContent=d.courses; $('#statStudents').textContent=d.students; $('#statProgress').textContent=d.progress+'%'; $('#statSat').textContent=d.satisfaction+'%';
-  renderCourses(); fillSelect(); fillAcademicSelects(); loadAcademic(); loadLibrary();
+  renderCourses(); fillSelect(); fillAcademicSelects(); loadAcademic(); loadLibrary(); loadForum();
 }
 function formatSessionDate(value){
   if(!value)return 'Sesión académica';
@@ -838,6 +861,54 @@ async function exportStudents(){
   a.href=u;a.download='alumnos_aula_medica.csv';a.click();URL.revokeObjectURL(u);
 }
 
+
+
+async function loadForum(){
+  const box=$('#forumList'); if(!box)return;
+  try{
+    const threads=await api('/api/forum');
+    box.innerHTML=threads.length?threads.map(t=>`
+      <div class="forumThread">
+        <h3>${esc(t.title)}</h3>
+        <div class="forumMeta">${esc(t.author)} · ${esc((t.created_at||'').replace('T',' ').slice(0,16))}</div>
+        <div class="forumBody">${esc(t.body)}</div>
+        <div>
+          ${(t.replies||[]).map(r=>`<div class="forumReply ${r.is_admin?'admin':''}">
+            <b>${esc(r.author)}${r.is_admin?' · Administrador':''}</b>
+            <div style="margin-top:4px">${esc(r.body)}</div>
+          </div>`).join('')}
+        </div>
+        <div class="forumReplyForm">
+          <input id="reply-${t.id}" placeholder="Responder a esta duda">
+          <button class="btn" onclick="replyForum(${t.id})">Responder</button>
+          ${token?`<button class="btn danger" onclick="deleteForumThread(${t.id})">Eliminar</button>`:''}
+        </div>
+      </div>`).join(''):'<p class="muted">Aún no hay dudas publicadas.</p>';
+  }catch{box.innerHTML='<p class="muted">No se pudo cargar el foro.</p>'}
+}
+async function replyForum(id){
+  const input=document.getElementById('reply-'+id); if(!input||!input.value.trim())return;
+  const authToken=token||sessionStorage.getItem('avico_student_token')||localStorage.getItem('avico_student_token');
+  if(!authToken){document.getElementById('avicoWelcome').hidden=false;return}
+  const r=await fetch('/api/forum/'+id+'/replies',{method:'POST',headers:{Authorization:'Bearer '+authToken,'Content-Type':'application/json'},body:JSON.stringify({body:input.value.trim()})});
+  if(!r.ok){alert('No se pudo publicar la respuesta');return}
+  input.value=''; await loadForum();
+}
+async function deleteForumThread(id){
+  if(!confirm('¿Eliminar esta duda y sus respuestas?'))return;
+  const r=await fetch('/api/forum/'+id,{method:'DELETE',headers:{Authorization:'Bearer '+token}});
+  if(!r.ok){alert('No se pudo eliminar');return}
+  await loadForum();
+}
+document.getElementById('forumForm')?.addEventListener('submit',async e=>{
+  e.preventDefault();
+  const authToken=sessionStorage.getItem('avico_student_token')||localStorage.getItem('avico_student_token');
+  if(!authToken){document.getElementById('avicoWelcome').hidden=false;return}
+  const title=$('#forumTitle').value.trim(),body=$('#forumBody').value.trim();
+  const r=await fetch('/api/forum',{method:'POST',headers:{Authorization:'Bearer '+authToken,'Content-Type':'application/json'},body:JSON.stringify({title,body})});
+  if(!r.ok){alert('No se pudo publicar la duda');return}
+  e.target.reset(); await loadForum();
+});
 
 async function loadLibrary(){
   try{
