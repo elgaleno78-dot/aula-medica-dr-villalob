@@ -218,6 +218,30 @@ def init_db():
     );
     CREATE INDEX IF NOT EXISTS idx_student_email_tokens_account ON student_email_tokens(account_id);
     """)
+    # AVICO Cloud: streaming metadata + durable lesson progress.
+    lesson_cols={r["name"] for r in cur.execute("PRAGMA table_info(lessons)").fetchall()}
+    if "stream_provider" not in lesson_cols:
+        cur.execute("ALTER TABLE lessons ADD COLUMN stream_provider TEXT DEFAULT ''")
+    if "stream_uid" not in lesson_cols:
+        cur.execute("ALTER TABLE lessons ADD COLUMN stream_uid TEXT DEFAULT ''")
+    if "duration_seconds" not in lesson_cols:
+        cur.execute("ALTER TABLE lessons ADD COLUMN duration_seconds INTEGER DEFAULT 0")
+    cur.executescript("""
+    CREATE TABLE IF NOT EXISTS lesson_progress(
+      account_id INTEGER NOT NULL,
+      lesson_id INTEGER NOT NULL,
+      position_seconds INTEGER DEFAULT 0,
+      duration_seconds INTEGER DEFAULT 0,
+      percent_complete REAL DEFAULT 0,
+      completed INTEGER DEFAULT 0,
+      updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
+      PRIMARY KEY(account_id, lesson_id),
+      FOREIGN KEY(account_id) REFERENCES student_accounts(id) ON DELETE CASCADE,
+      FOREIGN KEY(lesson_id) REFERENCES lessons(id) ON DELETE CASCADE
+    );
+    CREATE INDEX IF NOT EXISTS idx_lesson_progress_account ON lesson_progress(account_id);
+    CREATE INDEX IF NOT EXISTS idx_lesson_progress_lesson ON lesson_progress(lesson_id);
+    """)
     account_cols={r["name"] for r in cur.execute("PRAGMA table_info(student_accounts)")}
     if "email_verified_at" not in account_cols:
         cur.execute("ALTER TABLE student_accounts ADD COLUMN email_verified_at TEXT")
@@ -609,6 +633,108 @@ def course_file(lesson_id:int, access_token:str, filename:str):
       "png":"image/png","jpg":"image/jpeg","jpeg":"image/jpeg","webp":"image/webp"
     }.get(row["kind"],"application/octet-stream")
     return FileResponse(p,media_type=media,headers={"Content-Disposition":"inline","Cache-Control":"private, no-store"})
+
+# ---------- AVICO CLOUD: STREAMING Y PROGRESO ----------
+def require_enrollment(account_id:int, course_id:int):
+    con=db()
+    row=con.execute("""SELECT id,access_expires_at FROM students
+        WHERE account_id=? AND course_id=? ORDER BY id DESC LIMIT 1""",(account_id,course_id)).fetchone()
+    con.close()
+    if not row:
+        raise HTTPException(403,"Inscripción requerida")
+    if row["access_expires_at"]:
+        try:
+            exp=datetime.datetime.fromisoformat(row["access_expires_at"])
+            if exp.tzinfo is None:
+                exp=exp.replace(tzinfo=datetime.timezone.utc)
+            if exp <= utcnow():
+                raise HTTPException(403,"El periodo de acceso al curso ha terminado")
+        except HTTPException:
+            raise
+        except Exception:
+            raise HTTPException(403,"Acceso no válido")
+    return True
+
+@app.put("/api/lessons/{lesson_id}/stream")
+async def configure_lesson_stream(lesson_id:int, request:Request):
+    auth(request)
+    payload=await request.json()
+    provider=str(payload.get("provider") or "").strip().lower()
+    uid=str(payload.get("uid") or "").strip()
+    duration=max(0,int(payload.get("duration_seconds") or 0))
+    if provider not in {"cloudflare","mux",""}:
+        raise HTTPException(400,"Proveedor de streaming no admitido")
+    if provider and not uid:
+        raise HTTPException(400,"Identificador de streaming requerido")
+    con=db()
+    if not con.execute("SELECT 1 FROM lessons WHERE id=?",(lesson_id,)).fetchone():
+        con.close(); raise HTTPException(404,"Clase no encontrada")
+    con.execute("UPDATE lessons SET stream_provider=?,stream_uid=?,duration_seconds=? WHERE id=?",
+                (provider,uid,duration,lesson_id))
+    con.commit();con.close()
+    return {"ok":True,"lesson_id":lesson_id,"stream_provider":provider,"duration_seconds":duration}
+
+@app.get("/api/cloud/lessons/{lesson_id}/playback")
+def cloud_lesson_playback(lesson_id:int, request:Request):
+    identity=student_identity(request)
+    con=db()
+    row=con.execute("""SELECT id,course_id,title,stream_provider,stream_uid,duration_seconds
+                       FROM lessons WHERE id=?""",(lesson_id,)).fetchone()
+    con.close()
+    if not row:
+        raise HTTPException(404,"Clase no encontrada")
+    require_enrollment(identity["id"],row["course_id"])
+    if not row["stream_provider"] or not row["stream_uid"]:
+        raise HTTPException(409,"Esta clase aún no ha sido migrada a streaming")
+    # The provider UID is returned only to an authenticated, enrolled student.
+    # Signed playback tokens are added when provider credentials are configured.
+    return {"lesson_id":row["id"],"title":row["title"],"provider":row["stream_provider"],
+            "uid":row["stream_uid"],"duration_seconds":row["duration_seconds"] or 0}
+
+@app.get("/api/cloud/lessons/{lesson_id}/progress")
+def get_lesson_progress(lesson_id:int, request:Request):
+    identity=student_identity(request)
+    con=db()
+    lesson=con.execute("SELECT course_id FROM lessons WHERE id=?",(lesson_id,)).fetchone()
+    if not lesson:
+        con.close(); raise HTTPException(404,"Clase no encontrada")
+    require_enrollment(identity["id"],lesson["course_id"])
+    row=con.execute("SELECT * FROM lesson_progress WHERE account_id=? AND lesson_id=?",
+                    (identity["id"],lesson_id)).fetchone()
+    con.close()
+    return dict(row) if row else {"lesson_id":lesson_id,"position_seconds":0,"duration_seconds":0,
+                                  "percent_complete":0,"completed":0}
+
+@app.put("/api/cloud/lessons/{lesson_id}/progress")
+async def save_lesson_progress(lesson_id:int, request:Request):
+    identity=student_identity(request)
+    payload=await request.json()
+    position=max(0,int(payload.get("position_seconds") or 0))
+    duration=max(0,int(payload.get("duration_seconds") or 0))
+    con=db()
+    lesson=con.execute("SELECT course_id,duration_seconds FROM lessons WHERE id=?",(lesson_id,)).fetchone()
+    if not lesson:
+        con.close(); raise HTTPException(404,"Clase no encontrada")
+    require_enrollment(identity["id"],lesson["course_id"])
+    known_duration=duration or int(lesson["duration_seconds"] or 0)
+    if known_duration:
+        position=min(position,known_duration)
+        percent=min(100.0,round(position*100.0/known_duration,2))
+    else:
+        percent=0.0
+    completed=1 if percent>=90.0 else 0
+    con.execute("""INSERT INTO lesson_progress(account_id,lesson_id,position_seconds,duration_seconds,percent_complete,completed,updated_at)
+        VALUES(?,?,?,?,?,?,?)
+        ON CONFLICT(account_id,lesson_id) DO UPDATE SET
+          position_seconds=excluded.position_seconds,
+          duration_seconds=excluded.duration_seconds,
+          percent_complete=excluded.percent_complete,
+          completed=excluded.completed,
+          updated_at=excluded.updated_at""",
+        (identity["id"],lesson_id,position,known_duration,percent,completed,utcnow().isoformat()))
+    con.commit();con.close()
+    return {"ok":True,"position_seconds":position,"duration_seconds":known_duration,
+            "percent_complete":percent,"completed":bool(completed)}
 
 @app.get("/api/dashboard")
 def dashboard():
