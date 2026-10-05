@@ -540,8 +540,49 @@ async function showAvicoSlide(lessonId,number,count){
     $('#avicoNextSlide').onclick=()=>showAvicoSlide(lessonId,number+1,count);
   }catch(e){status.textContent=e.message;}
 }
+let avicoProgressTimer=null;
+async function openCloudStream(l){
+  const studentToken=sessionStorage.getItem('avico_student_token');
+  if(!studentToken)throw new Error('Inicia sesión para reproducir esta clase.');
+  const headers={Authorization:'Bearer '+studentToken};
+  const [playbackResponse,progressResponse]=await Promise.all([
+    fetch('/api/cloud/lessons/'+l.id+'/playback',{headers}),
+    fetch('/api/cloud/lessons/'+l.id+'/progress',{headers})
+  ]);
+  if(!playbackResponse.ok){
+    const detail=await playbackResponse.json().catch(()=>({}));
+    throw new Error(detail.detail||'No se pudo iniciar el streaming.');
+  }
+  const playback=await playbackResponse.json();
+  const progress=progressResponse.ok?await progressResponse.json():{};
+  let src='';
+  if(playback.provider==='cloudflare') src='https://customer-'+encodeURIComponent(playback.uid)+'.cloudflarestream.com/'+encodeURIComponent(playback.uid)+'/manifest/video.m3u8';
+  else if(playback.provider==='mux') src='https://stream.mux.com/'+encodeURIComponent(playback.uid)+'.m3u8';
+  else throw new Error('Proveedor de streaming no configurado.');
+  const video=document.createElement('video');
+  video.controls=true;video.playsInline=true;video.preload='metadata';video.controlsList='nodownload';video.oncontextmenu=()=>false;
+  video.style.cssText='width:100%;height:100%;object-fit:contain;background:#000';
+  video.src=src;
+  $('#viewerContent').replaceChildren(video);$('#viewer').classList.add('show');
+  const save=async()=>{
+    if(!video.duration||!Number.isFinite(video.duration))return;
+    await fetch('/api/cloud/lessons/'+l.id+'/progress',{method:'PUT',headers:{...headers,'Content-Type':'application/json'},
+      body:JSON.stringify({position_seconds:Math.floor(video.currentTime),duration_seconds:Math.floor(video.duration)})}).catch(()=>{});
+  };
+  video.addEventListener('loadedmetadata',()=>{
+    const pos=Number(progress.position_seconds||0);
+    if(pos>0&&pos<video.duration-5)video.currentTime=pos;
+  },{once:true});
+  video.addEventListener('pause',save);video.addEventListener('ended',save);
+  if(avicoProgressTimer)clearInterval(avicoProgressTimer);
+  avicoProgressTimer=setInterval(()=>{if(!video.paused)save()},15000);
+}
 async function viewLesson(raw,accessToken=null,isAdmin=false){
   const l=JSON.parse(raw); $('#viewerTitle').textContent=l.title; let html='';
+  if(!isAdmin&&l.stream_provider&&l.stream_uid){
+    try{await openCloudStream(l)}catch(err){alert(err.message)}
+    return;
+  }
   if(avicoViewerBlob){URL.revokeObjectURL(avicoViewerBlob);avicoViewerBlob=null;}
   if(avicoSlideBlob){URL.revokeObjectURL(avicoSlideBlob);avicoSlideBlob=null;}
   if(l.kind==='pptx'&&!isAdmin){
@@ -598,7 +639,7 @@ function renderTimedCourse(data,accessToken){
     }
   },1000);
 }
-function closeViewer(){ $('#viewer').classList.remove('show'); if(document.fullscreenElement)document.exitFullscreen()}
+function closeViewer(){ $('#viewer').classList.remove('show'); if(avicoProgressTimer){clearInterval(avicoProgressTimer);avicoProgressTimer=null} const v=$('#viewerContent video');if(v)v.pause(); if(document.fullscreenElement)document.exitFullscreen()}
 function toggleFull(){let el=$('#viewer'); if(!document.fullscreenElement) el.requestFullscreen(); else document.exitFullscreen()}
 function esc(s){return (s??'').toString().replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]))}
 function openAdmin(){ if(token){showAdmin()} else $('#loginModal').classList.add('show') }
