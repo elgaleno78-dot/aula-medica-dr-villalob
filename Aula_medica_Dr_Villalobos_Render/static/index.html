@@ -555,10 +555,8 @@ async function openCloudStream(l){
   }
   const playback=await playbackResponse.json();
   const progress=progressResponse.ok?await progressResponse.json():{};
-  let src='';
-  if(playback.provider==='cloudflare') src='https://customer-'+encodeURIComponent(playback.uid)+'.cloudflarestream.com/'+encodeURIComponent(playback.uid)+'/manifest/video.m3u8';
-  else if(playback.provider==='mux') src='https://stream.mux.com/'+encodeURIComponent(playback.uid)+'.m3u8';
-  else throw new Error('Proveedor de streaming no configurado.');
+  const src=playback.playback_url||'';
+  if(!src)throw new Error('La reproducción protegida no está disponible.');
   const video=document.createElement('video');
   video.controls=true;video.playsInline=true;video.preload='metadata';video.controlsList='nodownload';video.oncontextmenu=()=>false;
   video.style.cssText='width:100%;height:100%;object-fit:contain;background:#000';
