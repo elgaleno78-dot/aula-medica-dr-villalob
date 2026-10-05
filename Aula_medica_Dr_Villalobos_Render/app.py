@@ -968,6 +968,13 @@ def export_students_csv(request:Request):
 
 
 
+# ---------- BIBLIOTECA ----------
+@app.get("/api/library")
+def list_library():
+    """Public library manifest. Empty until library resources are added."""
+    return []
+
+
 # ---------- VIDEOS MÉDICOS ----------
 @app.get("/api/videos")
 def list_videos():
