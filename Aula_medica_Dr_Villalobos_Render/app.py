@@ -5,6 +5,7 @@ from pathlib import Path
 import sqlite3, os, secrets, shutil, datetime, json, hashlib, hmac, re, smtplib, ssl
 from email.message import EmailMessage
 from urllib.parse import quote
+import base64
 
 BASE = Path(__file__).resolve().parent
 
@@ -686,10 +687,38 @@ def cloud_lesson_playback(lesson_id:int, request:Request):
     require_enrollment(identity["id"],row["course_id"])
     if not row["stream_provider"] or not row["stream_uid"]:
         raise HTTPException(409,"Esta clase aún no ha sido migrada a streaming")
-    # The provider UID is returned only to an authenticated, enrolled student.
-    # Signed playback tokens are added when provider credentials are configured.
-    return {"lesson_id":row["id"],"title":row["title"],"provider":row["stream_provider"],
-            "uid":row["stream_uid"],"duration_seconds":row["duration_seconds"] or 0}
+    provider=row["stream_provider"]
+    uid=row["stream_uid"]
+    playback_url=""
+    expires_at=(utcnow()+datetime.timedelta(minutes=20)).isoformat()
+    if provider=="cloudflare":
+        customer=os.getenv("AVICO_STREAM_CUSTOMER_CODE","").strip()
+        if not customer:
+            raise HTTPException(503,"Streaming Cloudflare pendiente de configuración")
+        # In production, require signed-token delivery so the public player never receives a reusable asset UID.
+        signing_key=os.getenv("AVICO_STREAM_SIGNING_KEY","").strip()
+        if signing_key:
+            exp=int((utcnow()+datetime.timedelta(minutes=20)).timestamp())
+            payload=base64.urlsafe_b64encode(json.dumps({"sub":uid,"exp":exp},separators=(",",":")).encode()).decode().rstrip("=")
+            sig=base64.urlsafe_b64encode(hmac.new(signing_key.encode(),payload.encode(),hashlib.sha256).digest()).decode().rstrip("=")
+            token=payload+"."+sig
+            playback_url=f"https://customer-{customer}.cloudflarestream.com/{token}/manifest/video.m3u8"
+        elif os.getenv("AVICO_ALLOW_UNSIGNED_STREAM","0")=="1":
+            playback_url=f"https://customer-{customer}.cloudflarestream.com/{uid}/manifest/video.m3u8"
+        else:
+            raise HTTPException(503,"Activa la firma de reproducción antes de publicar videos")
+    elif provider=="mux":
+        playback_id=uid
+        signing_key=os.getenv("AVICO_STREAM_SIGNING_KEY","").strip()
+        if not signing_key and os.getenv("AVICO_ALLOW_UNSIGNED_STREAM","0")!="1":
+            raise HTTPException(503,"Configura firma de reproducción para Mux antes de publicar")
+        # Mux signed playback uses provider-issued JWTs; keep unsigned fallback development-only.
+        playback_url=f"https://stream.mux.com/{playback_id}.m3u8"
+    else:
+        raise HTTPException(409,"Proveedor de streaming no configurado")
+    return {"lesson_id":row["id"],"title":row["title"],"provider":provider,
+            "playback_url":playback_url,"expires_at":expires_at,
+            "duration_seconds":row["duration_seconds"] or 0}
 
 @app.get("/api/cloud/lessons/{lesson_id}/progress")
 def get_lesson_progress(lesson_id:int, request:Request):
