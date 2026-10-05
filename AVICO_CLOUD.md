@@ -35,3 +35,20 @@ Las credenciales nunca deben almacenarse en GitHub.
 6. Cuando todo esté validado, retirar el uso de MP4 locales para esas lecciones.
 
 No se elimina la infraestructura actual hasta verificar la migración.
+
+
+## Piloto previo a Hemorragia Obstétrica
+
+Antes de migrar el curso de Hemorragia Obstétrica, AVICO Cloud se validará en el Aula AVICO general.
+
+Criterios del piloto:
+- usar una sola clase/video de prueba;
+- mantener intactas las ponencias de Hemorragia Obstétrica;
+- comprobar inicio de sesión e inscripción activa;
+- comprobar reproducción protegida en escritorio y móvil;
+- guardar avance y reanudar desde la última posición;
+- verificar finalización y persistencia del progreso;
+- conservar el archivo local como respaldo;
+- no migrar Hemorragia hasta completar satisfactoriamente estas pruebas.
+
+Rama de validación: `avico-cloud-pilot`.
