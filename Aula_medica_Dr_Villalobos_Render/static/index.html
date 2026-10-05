@@ -344,6 +344,22 @@ button,input,textarea,select{font:inherit}.app{display:grid;grid-template-column
       </form>
     </div>
 
+    <div class="courseManager">
+      <h3>AVICO Cloud · Streaming de ponencias</h3>
+      <p class="muted">Asocia cada clase con su video de streaming. El archivo local se conserva como respaldo durante la migración.</p>
+      <form id="cloudStreamForm">
+        <div style="display:grid;grid-template-columns:1.2fr .7fr 1fr .6fr;gap:12px">
+          <div class="field"><label>Clase / ponencia</label><select id="cloudLessonSelect" required></select></div>
+          <div class="field"><label>Proveedor</label><select id="cloudProvider"><option value="cloudflare">Cloudflare Stream</option><option value="mux">Mux</option></select></div>
+          <div class="field"><label>ID del video</label><input id="cloudStreamUid" required placeholder="Identificador del video"></div>
+          <div class="field"><label>Duración (seg)</label><input id="cloudDuration" type="number" min="0" value="0"></div>
+        </div>
+        <button class="btn red" type="submit">Vincular streaming</button>
+        <button class="btn light" type="button" onclick="clearCloudStream()">Retirar vínculo</button>
+      </form>
+      <div id="cloudStreamStatus" class="muted" style="margin-top:12px"></div>
+    </div>
+
     <div class="courseManager libraryAdminBox">
       <h3>Administrar Biblioteca</h3>
       <p class="muted">Solo tú puedes publicar o eliminar recursos. Los alumnos los ven en modo solo lectura.</p>
@@ -540,8 +556,47 @@ async function showAvicoSlide(lessonId,number,count){
     $('#avicoNextSlide').onclick=()=>showAvicoSlide(lessonId,number+1,count);
   }catch(e){status.textContent=e.message;}
 }
+let avicoProgressTimer=null;
+async function openCloudStream(l){
+  const studentToken=sessionStorage.getItem('avico_student_token');
+  if(!studentToken)throw new Error('Inicia sesión para reproducir esta clase.');
+  const headers={Authorization:'Bearer '+studentToken};
+  const [playbackResponse,progressResponse]=await Promise.all([
+    fetch('/api/cloud/lessons/'+l.id+'/playback',{headers}),
+    fetch('/api/cloud/lessons/'+l.id+'/progress',{headers})
+  ]);
+  if(!playbackResponse.ok){
+    const detail=await playbackResponse.json().catch(()=>({}));
+    throw new Error(detail.detail||'No se pudo iniciar el streaming.');
+  }
+  const playback=await playbackResponse.json();
+  const progress=progressResponse.ok?await progressResponse.json():{};
+  const src=playback.playback_url||'';
+  if(!src)throw new Error('La reproducción protegida no está disponible.');
+  const video=document.createElement('video');
+  video.controls=true;video.playsInline=true;video.preload='metadata';video.controlsList='nodownload';video.oncontextmenu=()=>false;
+  video.style.cssText='width:100%;height:100%;object-fit:contain;background:#000';
+  video.src=src;
+  $('#viewerContent').replaceChildren(video);$('#viewer').classList.add('show');
+  const save=async()=>{
+    if(!video.duration||!Number.isFinite(video.duration))return;
+    await fetch('/api/cloud/lessons/'+l.id+'/progress',{method:'PUT',headers:{...headers,'Content-Type':'application/json'},
+      body:JSON.stringify({position_seconds:Math.floor(video.currentTime),duration_seconds:Math.floor(video.duration)})}).catch(()=>{});
+  };
+  video.addEventListener('loadedmetadata',()=>{
+    const pos=Number(progress.position_seconds||0);
+    if(pos>0&&pos<video.duration-5)video.currentTime=pos;
+  },{once:true});
+  video.addEventListener('pause',save);video.addEventListener('ended',save);
+  if(avicoProgressTimer)clearInterval(avicoProgressTimer);
+  avicoProgressTimer=setInterval(()=>{if(!video.paused)save()},15000);
+}
 async function viewLesson(raw,accessToken=null,isAdmin=false){
   const l=JSON.parse(raw); $('#viewerTitle').textContent=l.title; let html='';
+  if(!isAdmin&&l.stream_provider&&l.stream_uid){
+    try{await openCloudStream(l)}catch(err){alert(err.message)}
+    return;
+  }
   if(avicoViewerBlob){URL.revokeObjectURL(avicoViewerBlob);avicoViewerBlob=null;}
   if(avicoSlideBlob){URL.revokeObjectURL(avicoSlideBlob);avicoSlideBlob=null;}
   if(l.kind==='pptx'&&!isAdmin){
@@ -598,7 +653,7 @@ function renderTimedCourse(data,accessToken){
     }
   },1000);
 }
-function closeViewer(){ $('#viewer').classList.remove('show'); if(document.fullscreenElement)document.exitFullscreen()}
+function closeViewer(){ $('#viewer').classList.remove('show'); if(avicoProgressTimer){clearInterval(avicoProgressTimer);avicoProgressTimer=null} const v=$('#viewerContent video');if(v)v.pause(); if(document.fullscreenElement)document.exitFullscreen()}
 function toggleFull(){let el=$('#viewer'); if(!document.fullscreenElement) el.requestFullscreen(); else document.exitFullscreen()}
 function esc(s){return (s??'').toString().replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]))}
 function openAdmin(){ if(token){showAdmin()} else $('#loginModal').classList.add('show') }
@@ -619,12 +674,27 @@ function showAdmin(){
     URL.revokeObjectURL(u);
   }
 }
+function fillCloudLessonSelect(){
+  const el=$('#cloudLessonSelect');if(!el)return;
+  const lessons=courses.flatMap(c=>(c.lessons||[]).map(l=>({...l,course_title:c.title})));
+  el.innerHTML=lessons.length?lessons.map(l=>`<option value="${l.id}">${esc(l.course_title)} · ${esc(l.title)}${l.stream_provider?' · CLOUD':''}</option>`).join(''):'<option value="">No hay clases</option>';
+}
+async function saveCloudStream(provider,uid,duration){
+  const id=parseInt($('#cloudLessonSelect').value,10);if(!id){alert('Selecciona una clase');return}
+  const r=await fetch('/api/lessons/'+id+'/stream',{method:'PUT',headers:{Authorization:'Bearer '+token,'Content-Type':'application/json'},body:JSON.stringify({provider,uid,duration_seconds:duration})});
+  if(!r.ok){const d=await r.json().catch(()=>({}));throw new Error(d.detail||'No se pudo guardar');}
+  $('#cloudStreamStatus').textContent=provider?'Streaming vinculado. El alumno usará AVICO Cloud.':'Vínculo retirado; se mantiene el archivo actual.';
+  await load();
+}
+async function clearCloudStream(){try{await saveCloudStream('','',0)}catch(e){alert(e.message)}}
 function fillSelect(){
+  fillCloudLessonSelect();
   $('#courseSelect').innerHTML=courses.map(c=>`<option value="${c.id}">${esc(c.title)}</option>`).join('');
   const sc=$('#studentCourseSelect');
   if(sc) sc.innerHTML='<option value="">Selecciona un curso</option>'+courses.map(c=>`<option value="${c.id}">${esc(c.title)} · ${c.access_hours||24} h</option>`).join('');
 }
 $('#courseForm').onsubmit=async e=>{e.preventDefault();try{let fd=new FormData(e.target);await fetch('/api/courses',{method:'POST',headers:{Authorization:'Bearer '+token},body:fd}).then(r=>{if(!r.ok)throw Error()});e.target.reset();await load();alert('Curso creado')}catch{alert('No se pudo crear el curso')}}
+$('#cloudStreamForm').onsubmit=async e=>{e.preventDefault();try{await saveCloudStream($('#cloudProvider').value,$('#cloudStreamUid').value.trim(),parseInt($('#cloudDuration').value||'0',10));$('#cloudStreamUid').value='';$('#cloudDuration').value='0';}catch(err){alert(err.message)}};
 $('#lessonForm').onsubmit=async e=>{e.preventDefault();try{let fd=new FormData(e.target);await fetch('/api/lessons',{method:'POST',headers:{Authorization:'Bearer '+token},body:fd}).then(r=>{if(!r.ok)throw Error()});e.target.reset();await load();alert('Clase agregada')}catch{alert('No se pudo cargar la clase')}}
 async function delLesson(id){
   if(!confirm('¿Eliminar esta clase?'))return;
