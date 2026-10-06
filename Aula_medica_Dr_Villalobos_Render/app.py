@@ -2,7 +2,7 @@ from fastapi import FastAPI, UploadFile, File, Form, HTTPException, Request
 from fastapi.responses import HTMLResponse, FileResponse, Response
 from fastapi.staticfiles import StaticFiles
 from pathlib import Path
-import sqlite3, os, secrets, shutil, datetime, json, hashlib, hmac, re, smtplib, ssl
+import sqlite3, os, secrets, shutil, datetime, json, hashlib, hmac, re, smtplib, ssl, urllib.request, urllib.error, base64
 from email.message import EmailMessage
 from urllib.parse import quote
 
@@ -33,7 +33,7 @@ UPLOADS.mkdir(parents=True, exist_ok=True)
 BACKUPS = DATA_DIR / "backups"
 BACKUPS.mkdir(parents=True, exist_ok=True)
 
-app = FastAPI(title="Aula médica · Dr. Villalobos")
+app = FastAPI(title="Curso de Hemorragia Obstétrica · AVICO")
 app.mount("/static", StaticFiles(directory=BASE/"static"), name="static")
 # Private lesson files must not be publicly mounted.
 @app.get("/uploads/{filename}")
@@ -108,6 +108,9 @@ def init_db():
       kind TEXT DEFAULT 'pptx',
       filename TEXT DEFAULT '',
       notes TEXT DEFAULT '',
+      session_date TEXT DEFAULT '',
+      institution TEXT DEFAULT '',
+      speaker TEXT DEFAULT '',
       ord INTEGER DEFAULT 0,
       created_at TEXT DEFAULT CURRENT_TIMESTAMP,
       FOREIGN KEY(course_id) REFERENCES courses(id)
@@ -187,6 +190,39 @@ def init_db():
       message TEXT NOT NULL,
       created_at TEXT DEFAULT CURRENT_TIMESTAMP
     );
+    CREATE TABLE IF NOT EXISTS forum_threads(
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      account_id INTEGER,
+      author TEXT NOT NULL,
+      title TEXT NOT NULL,
+      body TEXT NOT NULL,
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY(account_id) REFERENCES student_accounts(id) ON DELETE SET NULL
+    );
+    CREATE TABLE IF NOT EXISTS forum_replies(
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      thread_id INTEGER NOT NULL,
+      account_id INTEGER,
+      author TEXT NOT NULL,
+      body TEXT NOT NULL,
+      is_admin INTEGER DEFAULT 0,
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY(thread_id) REFERENCES forum_threads(id) ON DELETE CASCADE,
+      FOREIGN KEY(account_id) REFERENCES student_accounts(id) ON DELETE SET NULL
+    );
+    CREATE TABLE IF NOT EXISTS lesson_progress(
+      account_id INTEGER NOT NULL,
+      lesson_id INTEGER NOT NULL,
+      position_seconds REAL DEFAULT 0,
+      duration_seconds REAL DEFAULT 0,
+      percent REAL DEFAULT 0,
+      completed INTEGER DEFAULT 0,
+      updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
+      PRIMARY KEY(account_id,lesson_id),
+      FOREIGN KEY(account_id) REFERENCES student_accounts(id) ON DELETE CASCADE,
+      FOREIGN KEY(lesson_id) REFERENCES lessons(id) ON DELETE CASCADE
+    );
+    CREATE INDEX IF NOT EXISTS idx_lesson_progress_account ON lesson_progress(account_id);
     CREATE TABLE IF NOT EXISTS settings(
       key TEXT PRIMARY KEY,
       value TEXT DEFAULT ''
@@ -197,7 +233,10 @@ def init_db():
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       full_name TEXT NOT NULL,
       email TEXT NOT NULL UNIQUE COLLATE NOCASE,
-      password_hash TEXT NOT NULL,
+      password_hash TEXT NOT NULL DEFAULT '',
+      age INTEGER,
+      institution TEXT DEFAULT '',
+      position TEXT DEFAULT '',
       created_at TEXT DEFAULT CURRENT_TIMESTAMP
     );
     CREATE TABLE IF NOT EXISTS student_sessions(
@@ -221,6 +260,12 @@ def init_db():
     account_cols={r["name"] for r in cur.execute("PRAGMA table_info(student_accounts)")}
     if "email_verified_at" not in account_cols:
         cur.execute("ALTER TABLE student_accounts ADD COLUMN email_verified_at TEXT")
+    if "age" not in account_cols:
+        cur.execute("ALTER TABLE student_accounts ADD COLUMN age INTEGER")
+    if "institution" not in account_cols:
+        cur.execute("ALTER TABLE student_accounts ADD COLUMN institution TEXT DEFAULT ''")
+    if "position" not in account_cols:
+        cur.execute("ALTER TABLE student_accounts ADD COLUMN position TEXT DEFAULT ''")
     # Safe migrations for existing databases
     course_cols={r["name"] for r in cur.execute("PRAGMA table_info(courses)").fetchall()}
     if "access_hours" not in course_cols:
@@ -234,15 +279,19 @@ def init_db():
         cur.execute("ALTER TABLE students ADD COLUMN access_expires_at TEXT")
     if "account_id" not in student_cols:
         cur.execute("ALTER TABLE students ADD COLUMN account_id INTEGER REFERENCES student_accounts(id)")
+    lesson_cols={r["name"] for r in cur.execute("PRAGMA table_info(lessons)").fetchall()}
+    if "session_date" not in lesson_cols:
+        cur.execute("ALTER TABLE lessons ADD COLUMN session_date TEXT DEFAULT ''")
+    if "institution" not in lesson_cols:
+        cur.execute("ALTER TABLE lessons ADD COLUMN institution TEXT DEFAULT ''")
+    if "speaker" not in lesson_cols:
+        cur.execute("ALTER TABLE lessons ADD COLUMN speaker TEXT DEFAULT ''")
     initialized = cur.execute("SELECT value FROM settings WHERE key='initialized'").fetchone()
     if initialized is None:
         n = cur.execute("SELECT COUNT(*) FROM courses").fetchone()[0]
         if n == 0:
             seed = [
-              ("Hemorragia obstétrica","Protocolos, algoritmos y simulación","Urgencias","#hemorragia"),
-              ("Preeclampsia y HTA en el embarazo","Diagnóstico y manejo basado en evidencia","Obstetricia","#preeclampsia"),
-              ("Parto y trabajo de parto","Fisiología, vigilancia y buenas prácticas","Obstetricia","#parto"),
-              ("Cesárea segura","Indicaciones, técnica y seguridad","Cirugía","#cesarea")
+              ("Curso de Hemorragia Obstétrica","Reconocimiento temprano, reanimación, control médico y quirúrgico basado en evidencia","Hemorragia obstétrica","#hemorragia")
             ]
             for t,s,c,cover in seed:
                 cur.execute("INSERT INTO courses(title,subtitle,category,cover) VALUES(?,?,?,?)",(t,s,c,cover))
@@ -299,6 +348,10 @@ def validate_course_access(course_id:int, access_token:str):
 def home():
     return (BASE/"static"/"index.html").read_text(encoding="utf-8")
 
+@app.get("/hemorragia", response_class=HTMLResponse)
+def hemorrhage_home():
+    return (BASE/"static"/"hemorragia.html").read_text(encoding="utf-8")
+
 @app.post("/api/login")
 async def login(payload: dict):
     if payload.get("password") != ADMIN_PASSWORD:
@@ -331,7 +384,7 @@ def student_identity(request:Request):
         raise HTTPException(401,"Inicia sesión")
     token_hash=hashlib.sha256(token.encode()).hexdigest()
     con=db()
-    row=con.execute("""SELECT a.id,a.full_name,a.email,a.email_verified_at FROM student_sessions s
+    row=con.execute("""SELECT a.id,a.full_name,a.email,a.age,a.institution,a.position,a.email_verified_at FROM student_sessions s
         JOIN student_accounts a ON a.id=s.account_id
         WHERE s.token_hash=? AND s.expires_at>?""",(token_hash,utcnow().isoformat())).fetchone()
     con.close()
@@ -343,7 +396,7 @@ def student_session(account_id:int):
     raw=secrets.token_urlsafe(32)
     con=db()
     con.execute("INSERT INTO student_sessions(token_hash,account_id,expires_at) VALUES(?,?,?)",
-        (hashlib.sha256(raw.encode()).hexdigest(),account_id,(utcnow()+datetime.timedelta(days=7)).isoformat()))
+        (hashlib.sha256(raw.encode()).hexdigest(),account_id,(utcnow()+datetime.timedelta(days=3650)).isoformat()))
     con.commit();con.close()
     return raw
 
@@ -389,8 +442,8 @@ def email_action(account_id:int,email:str,purpose:str):
     base=os.environ["AULA_PUBLIC_URL"].rstrip("/")
     action="verify" if purpose=="verify" else "reset"
     link=base+"/?email_action="+action+"&token="+quote(raw)
-    subject="Confirma tu correo · Aula AVICO" if purpose=="verify" else "Restablece tu contraseña · Aula AVICO"
-    message=("Hola.\n\nConfirma tu dirección de correo para Aula AVICO:\n" if purpose=="verify" else "Hola.\n\nSolicitaste restablecer tu contraseña de Aula AVICO:\n")+link+"\n\nEste enlace vence en "+("24 horas." if purpose=="verify" else "1 hora.")+" Si no solicitaste este mensaje, ignóralo.\n"
+    subject="Confirma tu correo · Curso de Hemorragia Obstétrica AVICO" if purpose=="verify" else "Restablece tu contraseña · Curso de Hemorragia Obstétrica AVICO"
+    message=("Hola.\n\nConfirma tu dirección de correo para el Curso de Hemorragia Obstétrica AVICO:\n" if purpose=="verify" else "Hola.\n\nSolicitaste restablecer tu contraseña del Curso de Hemorragia Obstétrica AVICO:\n")+link+"\n\nEste enlace vence en "+("24 horas." if purpose=="verify" else "1 hora.")+" Si no solicitaste este mensaje, ignóralo.\n"
     try:
         send_student_email(email,subject,message)
     except Exception:
@@ -448,38 +501,59 @@ def reset_password(payload:dict):
 
 @app.post("/api/student-auth/register")
 async def student_signup(payload:dict):
+    """Ingreso sin contraseña con acceso inmediato a todas las ponencias publicadas."""
     name=str(payload.get("full_name") or "").strip()
     email=str(payload.get("email") or "").strip().lower()
-    password=str(payload.get("password") or "")
-    if len(name)<3 or len(name)>150 or not re.fullmatch(r"[^\s@]+@[^\s@]+\.[^\s@]+",email) or len(email)>254:
-        raise HTTPException(400,"Nombre o correo inválido")
-    if len(password)<12 or len(password)>128:
-        raise HTTPException(400,"La contraseña debe tener entre 12 y 128 caracteres")
-    if not mail_configured():
-        raise HTTPException(503,"El registro está temporalmente suspendido hasta configurar el correo de confirmación")
-    hashed=password_hash(password)
-    con=db()
+    institution=str(payload.get("institution") or "").strip()
+    position=str(payload.get("position") or "").strip()
     try:
-        cur=con.execute("INSERT INTO student_accounts(full_name,email,password_hash) VALUES(?,?,?)",(name,email,hashed))
+        age=int(payload.get("age")) if payload.get("age") not in (None,"") else None
+    except (TypeError,ValueError):
+        age=None
+    if len(name)<3 or len(name)>150 or not re.fullmatch(r"[^\s@]+@[^\s@]+\.[^\s@]+",email) or len(email)>254:
+        raise HTTPException(400,"Escribe tu nombre completo y un correo válido")
+    if age is not None and not 14<=age<=100:
+        raise HTTPException(400,"Edad fuera de rango")
+
+    con=db()
+    row=con.execute("SELECT id FROM student_accounts WHERE email=?",(email,)).fetchone()
+    if row:
+        account_id=row["id"]
+        con.execute("""UPDATE student_accounts
+            SET full_name=?,age=?,institution=?,position=?,email_verified_at=COALESCE(email_verified_at,?)
+            WHERE id=?""",(name,age,institution,position,utcnow().isoformat(),account_id))
+    else:
+        cur=con.execute("""INSERT INTO student_accounts(full_name,email,password_hash,age,institution,position,email_verified_at)
+            VALUES(?,?,?,?,?,?,?)""",(name,email,"",age,institution,position,utcnow().isoformat()))
         account_id=cur.lastrowid
-        con.commit()
-    except sqlite3.IntegrityError:
-        raise HTTPException(409,"El correo ya tiene una cuenta")
-    finally:
-        con.close()
-    email_action(account_id,email,"verify")
-    return {"token":student_session(account_id),"verification_required":True,"student":{"id":account_id,"full_name":name,"email":email}}
+
+    # Al entrar al aula, registrar asistencia y dar acceso inmediato a todos los cursos publicados.
+    published=con.execute("SELECT id FROM courses WHERE published=1 ORDER BY id").fetchall()
+    now=utcnow()
+    far_future=(now+datetime.timedelta(days=3650)).isoformat()
+    for course in published:
+        course_id=course["id"]
+        existing=con.execute("""SELECT id FROM students
+            WHERE account_id=? AND course_id=? ORDER BY id DESC LIMIT 1""",(account_id,course_id)).fetchone()
+        if existing:
+            con.execute("""UPDATE students SET full_name=?,age=?,institution=?,position=?,email=?,
+                access_expires_at=? WHERE id=?""",
+                (name,age,institution,position,email,far_future,existing["id"]))
+        else:
+            con.execute("""INSERT INTO students(full_name,age,institution,position,email,course_id,
+                access_token,access_started_at,access_expires_at,account_id)
+                VALUES(?,?,?,?,?,?,?,?,?,?)""",
+                (name,age,institution,position,email,course_id,secrets.token_urlsafe(32),
+                 now.isoformat(),far_future,account_id))
+    con.commit();con.close()
+
+    return {"token":student_session(account_id),"student":{"id":account_id,"full_name":name,"email":email,
+        "age":age,"institution":institution,"position":position},"all_presentations_access":True}
 
 @app.post("/api/student-auth/login")
 async def student_signin(payload:dict):
-    email=str(payload.get("email") or "").strip().lower()
-    password=str(payload.get("password") or "")
-    con=db()
-    row=con.execute("SELECT id,full_name,email,password_hash FROM student_accounts WHERE email=?",(email,)).fetchone()
-    con.close()
-    if not row or not password_matches(password,row["password_hash"]):
-        raise HTTPException(401,"Correo o contraseña incorrectos")
-    return {"token":student_session(row["id"]),"student":{"id":row["id"],"full_name":row["full_name"],"email":row["email"]}}
+    # Compatibilidad: el acceso normal se realiza por /register sin contraseña.
+    return await student_signup(payload)
 
 @app.get("/api/student-auth/me")
 def student_me(request:Request):
@@ -535,6 +609,46 @@ def _pptx_lesson(lesson_id:int, request:Request):
     if not path.is_file():
         raise HTTPException(404,"Presentación no disponible")
     return path
+
+@app.get("/api/student-progress")
+def student_progress_all(request:Request):
+    identity=student_identity(request)
+    con=db()
+    rows=[dict(r) for r in con.execute("SELECT lesson_id,position_seconds,duration_seconds,percent,completed,updated_at FROM lesson_progress WHERE account_id=?",(identity["id"],)).fetchall()]
+    con.close()
+    return rows
+
+@app.get("/api/student-progress/{lesson_id}")
+def student_progress_one(lesson_id:int, request:Request):
+    identity=student_identity(request)
+    con=db()
+    row=con.execute("SELECT lesson_id,position_seconds,duration_seconds,percent,completed,updated_at FROM lesson_progress WHERE account_id=? AND lesson_id=?",(identity["id"],lesson_id)).fetchone()
+    con.close()
+    return dict(row) if row else {"lesson_id":lesson_id,"position_seconds":0,"duration_seconds":0,"percent":0,"completed":0}
+
+@app.put("/api/student-progress/{lesson_id}")
+async def student_progress_save(lesson_id:int, request:Request):
+    identity=student_identity(request)
+    payload=await request.json()
+    try:
+        pos=max(0,float(payload.get("position_seconds") or 0))
+        dur=max(0,float(payload.get("duration_seconds") or 0))
+    except Exception: raise HTTPException(400,"Progreso inválido")
+    if dur>0: pos=min(pos,dur)
+    pct=min(100,max(0,(pos/dur*100) if dur else float(payload.get("percent") or 0)))
+    completed=1 if (dur>0 and (pct>=90 or dur-pos<=30)) else int(bool(payload.get("completed")))
+    con=db()
+    exists=con.execute("""SELECT 1 FROM lessons l JOIN courses c ON c.id=l.course_id
+      WHERE l.id=? AND c.published=1""",(lesson_id,)).fetchone()
+    if not exists: con.close();raise HTTPException(404,"Clase no disponible")
+    con.execute("""INSERT INTO lesson_progress(account_id,lesson_id,position_seconds,duration_seconds,percent,completed,updated_at)
+      VALUES(?,?,?,?,?,?,CURRENT_TIMESTAMP)
+      ON CONFLICT(account_id,lesson_id) DO UPDATE SET
+      position_seconds=excluded.position_seconds,duration_seconds=excluded.duration_seconds,
+      percent=MAX(lesson_progress.percent,excluded.percent),completed=MAX(lesson_progress.completed,excluded.completed),
+      updated_at=CURRENT_TIMESTAMP""",(identity["id"],lesson_id,pos,dur,pct,completed))
+    con.commit();con.close()
+    return {"ok":True,"position_seconds":pos,"duration_seconds":dur,"percent":pct,"completed":completed}
 
 @app.get("/api/student-lessons/{lesson_id}/slides")
 def student_slide_manifest(lesson_id:int, request:Request):
@@ -610,6 +724,66 @@ def course_file(lesson_id:int, access_token:str, filename:str):
     }.get(row["kind"],"application/octet-stream")
     return FileResponse(p,media_type=media,headers={"Content-Disposition":"inline","Cache-Control":"private, no-store"})
 
+@app.get("/api/forum")
+def forum_list():
+    con=db()
+    threads=[dict(r) for r in con.execute("""SELECT id,author,title,body,created_at
+        FROM forum_threads ORDER BY id DESC""").fetchall()]
+    for t in threads:
+        t["replies"]=[dict(r) for r in con.execute("""SELECT id,author,body,is_admin,created_at
+            FROM forum_replies WHERE thread_id=? ORDER BY id ASC""",(t["id"],)).fetchall()]
+    con.close()
+    return threads
+
+@app.post("/api/forum")
+async def forum_create(request:Request):
+    identity=student_identity(request)
+    payload=await request.json()
+    title=str(payload.get("title") or "").strip()
+    body=str(payload.get("body") or "").strip()
+    if len(title)<3 or len(title)>180 or len(body)<3 or len(body)>4000:
+        raise HTTPException(400,"Escribe un título y una duda válidos")
+    con=db()
+    cur=con.execute("INSERT INTO forum_threads(account_id,author,title,body) VALUES(?,?,?,?)",
+        (identity["id"],identity["full_name"],title,body))
+    tid=cur.lastrowid
+    con.commit();con.close()
+    return {"ok":True,"id":tid}
+
+@app.post("/api/forum/{thread_id}/replies")
+async def forum_reply(thread_id:int, request:Request):
+    payload=await request.json()
+    body=str(payload.get("body") or "").strip()
+    if len(body)<2 or len(body)>4000:
+        raise HTTPException(400,"Respuesta inválida")
+    bearer=request.headers.get("authorization","")
+    raw=bearer[7:].strip() if bearer.startswith("Bearer ") else ""
+    is_admin=False
+    author=""
+    account_id=None
+    if raw and raw in TOKENS:
+        is_admin=True
+        author="Dr. Alejandro Lenin Villalobos Rodríguez"
+    else:
+        identity=student_identity(request)
+        author=identity["full_name"]; account_id=identity["id"]
+    con=db()
+    if not con.execute("SELECT 1 FROM forum_threads WHERE id=?",(thread_id,)).fetchone():
+        con.close(); raise HTTPException(404,"Tema no encontrado")
+    con.execute("INSERT INTO forum_replies(thread_id,account_id,author,body,is_admin) VALUES(?,?,?,?,?)",
+        (thread_id,account_id,author,body,1 if is_admin else 0))
+    con.commit();con.close()
+    return {"ok":True}
+
+@app.delete("/api/forum/{thread_id}")
+def forum_delete(thread_id:int, request:Request):
+    auth(request)
+    con=db()
+    con.execute("DELETE FROM forum_replies WHERE thread_id=?",(thread_id,))
+    con.execute("DELETE FROM forum_threads WHERE id=?",(thread_id,))
+    con.commit();con.close()
+    return {"ok":True}
+
 @app.get("/api/dashboard")
 def dashboard():
     con=db()
@@ -665,8 +839,96 @@ async def update_course_access_settings(course_id:int, request:Request):
     con.commit(); con.close()
     return {"ok":True,"access_hours":hours}
 
+# ---------- STREAMING DE CLASES (Cloudflare Stream) ----------
+# El video viaja directamente del navegador a Cloudflare Stream mediante TUS.
+# Render solo autoriza la carga y guarda el UID; nunca almacena el MP4.
+def stream_config():
+    account=os.getenv("CLOUDFLARE_STREAM_ACCOUNT_ID","").strip()
+    token=os.getenv("CLOUDFLARE_STREAM_API_TOKEN","").strip()
+    customer=os.getenv("CLOUDFLARE_STREAM_CUSTOMER_CODE","").strip()
+    if not account or not token or not customer:
+        raise HTTPException(503,"Cloudflare Stream todavía no está conectado")
+    return account,token,customer
+
+@app.get("/api/stream/status")
+def stream_status(request:Request):
+    auth(request)
+    return {"configured":all(os.getenv(k) for k in ("CLOUDFLARE_STREAM_ACCOUNT_ID","CLOUDFLARE_STREAM_API_TOKEN","CLOUDFLARE_STREAM_CUSTOMER_CODE"))}
+
+@app.post("/api/stream/tus")
+async def create_stream_tus(request:Request):
+    auth(request)
+    account,token,customer=stream_config()
+    upload_length=request.headers.get("Upload-Length","").strip()
+    upload_metadata=request.headers.get("Upload-Metadata","").strip()
+    if not upload_length.isdigit() or int(upload_length)<=0:
+        raise HTTPException(400,"Tamaño de archivo inválido")
+    # Limita la reserva a 3 horas por clase y exige URL firmada en Stream.
+    extra="maxdurationseconds "+base64.b64encode(b"10800").decode()
+    metadata=(upload_metadata+"," if upload_metadata else "")+extra
+    req=urllib.request.Request(
+        f"https://api.cloudflare.com/client/v4/accounts/{account}/stream?direct_user=true",
+        method="POST",
+        headers={
+          "Authorization":f"Bearer {token}",
+          "Tus-Resumable":"1.0.0",
+          "Upload-Length":upload_length,
+          "Upload-Metadata":metadata,
+        }
+    )
+    try:
+        with urllib.request.urlopen(req,timeout=20) as response:
+            location=response.headers.get("Location","")
+    except urllib.error.HTTPError as exc:
+        detail=exc.read().decode("utf-8","ignore")[:500]
+        raise HTTPException(502,f"Stream rechazó la carga: {detail}")
+    except Exception:
+        raise HTTPException(502,"No se pudo conectar con Cloudflare Stream")
+    if not location:
+        raise HTTPException(502,"Stream no devolvió URL de carga")
+    uid=location.rstrip("/").split("/")[-1]
+    return Response(status_code=201,headers={
+      "Location":location,
+      "Upload-UID":uid,
+      "Access-Control-Expose-Headers":"Location, Upload-UID"
+    })
+
+@app.post("/api/stream/lessons")
+async def add_stream_lesson(request:Request):
+    auth(request)
+    payload=await request.json()
+    try: course_id=int(payload.get("course_id"))
+    except Exception: raise HTTPException(400,"Curso inválido")
+    title=str(payload.get("title") or "").strip()
+    uid=re.sub(r"[^A-Za-z0-9_-]","",str(payload.get("uid") or ""))
+    if not title or not uid: raise HTTPException(400,"Faltan título o identificador del video")
+    con=db();cur=con.cursor()
+    if not cur.execute("SELECT 1 FROM courses WHERE id=?",(course_id,)).fetchone():
+        con.close();raise HTTPException(404,"Curso no encontrado")
+    ordv=cur.execute("SELECT COALESCE(MAX(ord),0)+1 FROM lessons WHERE course_id=?",(course_id,)).fetchone()[0]
+    cur.execute("""INSERT INTO lessons(course_id,title,kind,filename,notes,session_date,institution,speaker,ord)
+                   VALUES(?,?,?,?,?,?,?,?,?)""",(course_id,title,"stream",uid,str(payload.get("notes") or "").strip(),
+                   str(payload.get("session_date") or "").strip(),str(payload.get("institution") or "").strip(),
+                   str(payload.get("speaker") or "").strip(),ordv))
+    cur.execute("INSERT INTO activities(message) VALUES(?)",(f"Se publicó clase en streaming: {title}",))
+    con.commit();con.close()
+    return {"ok":True,"id":cur.lastrowid,"uid":uid}
+
+@app.get("/api/stream/player/{lesson_id}")
+def stream_player(lesson_id:int, request:Request):
+    # Requiere una sesión válida de alumno o administrador.
+    bearer=request.headers.get("authorization","")
+    raw=bearer[7:].strip() if bearer.startswith("Bearer ") else ""
+    if raw not in TOKENS:
+        student_identity(request)
+    account,token,customer=stream_config()
+    con=db();row=con.execute("SELECT filename,kind FROM lessons WHERE id=?",(lesson_id,)).fetchone();con.close()
+    if not row or row["kind"]!="stream": raise HTTPException(404,"Video no encontrado")
+    # El reproductor queda dentro del Aula. El UID nunca corresponde a un archivo en Render.
+    return {"uid":row["filename"],"player_url":f"https://customer-{customer}.cloudflarestream.com/{row['filename']}/iframe"}
+
 @app.post("/api/lessons")
-async def add_lesson(request: Request, course_id:int=Form(...), title:str=Form(...), notes:str=Form(""), file:UploadFile|None=File(None)):
+async def add_lesson(request: Request, course_id:int=Form(...), title:str=Form(...), notes:str=Form(""), session_date:str=Form(""), institution:str=Form(""), speaker:str=Form(""), file:UploadFile|None=File(None)):
     auth(request)
     filename=""; kind="texto"
     if file and file.filename:
@@ -684,7 +946,9 @@ async def add_lesson(request: Request, course_id:int=Form(...), title:str=Form(.
         con.close()
         raise HTTPException(404,"Curso no encontrado")
     ordv=cur.execute("SELECT COALESCE(MAX(ord),0)+1 FROM lessons WHERE course_id=?",(course_id,)).fetchone()[0]
-    cur.execute("INSERT INTO lessons(course_id,title,kind,filename,notes,ord) VALUES(?,?,?,?,?,?)",(course_id,title,kind,filename,notes,ordv))
+    cur.execute("""INSERT INTO lessons(course_id,title,kind,filename,notes,session_date,institution,speaker,ord)
+                   VALUES(?,?,?,?,?,?,?,?,?)""",
+                (course_id,title,kind,filename,notes,session_date.strip(),institution.strip(),speaker.strip(),ordv))
     cur.execute("INSERT INTO activities(message) VALUES(?)",(f"Se agregó la clase: {title}",))
     con.commit(); con.close()
     return {"ok":True}
@@ -789,6 +1053,46 @@ def delete_student(student_id:int, request:Request):
     cur.execute("INSERT INTO activities(message) VALUES(?)",(f"Se eliminó el alumno: {row['full_name']}",))
     con.commit(); con.close()
     return {"ok":True}
+
+@app.get("/api/students/export.xlsx")
+def export_students_xlsx(request:Request):
+    auth(request)
+    import xlsxwriter
+    con=db()
+    rows=con.execute("""
+      SELECT s.id,s.full_name,s.age,s.institution,s.position,s.email,
+             COALESCE(c.title,'') AS course,s.created_at
+      FROM students s
+      LEFT JOIN courses c ON c.id=s.course_id
+      ORDER BY s.created_at,s.full_name
+    """).fetchall()
+    con.close()
+    out=DATA_DIR/"lista_asistencia_hemorragia_obstetrica.xlsx"
+    workbook=xlsxwriter.Workbook(out)
+    ws=workbook.add_worksheet("Asistencia")
+    fmt_head=workbook.add_format({"bold":True,"border":1,"align":"center","valign":"vcenter"})
+    fmt_cell=workbook.add_format({"border":1,"valign":"top"})
+    headers=["No.","Nombre completo","Edad","Institución / Adscripción","Puesto / Grado","Correo","Curso","Fecha de registro","Firma"]
+    for col,h in enumerate(headers):
+        ws.write(0,col,h,fmt_head)
+    for i,r in enumerate(rows, start=1):
+        values=[i,r["full_name"],r["age"] or "",r["institution"],r["position"],r["email"],r["course"],r["created_at"],""]
+        for col,v in enumerate(values):
+            ws.write(i,col,v,fmt_cell)
+    ws.set_column(0,0,6)
+    ws.set_column(1,1,32)
+    ws.set_column(2,2,8)
+    ws.set_column(3,3,30)
+    ws.set_column(4,4,24)
+    ws.set_column(5,5,30)
+    ws.set_column(6,6,36)
+    ws.set_column(7,7,20)
+    ws.set_column(8,8,24)
+    ws.freeze_panes(1,0)
+    workbook.close()
+    return FileResponse(out,
+      media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      filename="lista_asistencia_hemorragia_obstetrica.xlsx")
 
 @app.get("/api/students/export.csv")
 def export_students_csv(request:Request):
