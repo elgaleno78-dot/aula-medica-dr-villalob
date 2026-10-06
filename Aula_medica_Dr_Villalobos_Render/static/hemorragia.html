@@ -1,0 +1,1254 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Curso de Hemorragia Obstétrica · AVICO</title>
+
+<style>
+:root{--navy:#08243d;--navy2:#0e3655;--red:#b21727;--red2:#d82332;--bg:#f6f8fb;--ink:#10243a;--muted:#68788a;--card:#fff;--line:#e3e9ef}
+*{box-sizing:border-box}body{margin:0;font-family:Inter,ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Arial;background:var(--bg);color:var(--ink)}
+button,input,textarea,select{font:inherit}.app{display:grid;grid-template-columns:250px 1fr;min-height:100vh}
+.sidebar{background:linear-gradient(180deg,#061e35,#0a2e4c);color:white;padding:24px 18px;position:sticky;top:0;height:100vh;overflow:auto}
+.brand{display:flex;align-items:center;gap:12px;font-size:22px;line-height:1.05;margin-bottom:28px}.brand b{color:#ff3344}.logo{width:42px;height:42px;border:2px solid white;border-radius:50%;display:grid;place-items:center;font-size:22px}
+.nav button{width:100%;border:0;background:transparent;color:white;padding:12px 14px;border-radius:12px;text-align:left;margin:4px 0;cursor:pointer}.nav button.active,.nav button:hover{background:linear-gradient(90deg,var(--red2),var(--red))}
+.profile{margin-top:28px;padding:16px 8px;border-top:1px solid #ffffff2d;text-align:center}.profile img{width:112px;height:112px;border-radius:50%;object-fit:cover;border:4px solid var(--red)}.profile h3{font-size:15px;margin:10px 0 4px}.profile p{font-size:12px;line-height:1.4;color:#d7e3ed}
+.main{padding:28px;max-width:1500px;width:100%;margin:auto}
+.topbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:18px}.adminBtn{border:1px solid var(--line);background:white;padding:10px 14px;border-radius:10px;cursor:pointer}
+.hero{display:grid;grid-template-columns:minmax(0,1.9fr) minmax(290px,.8fr);gap:18px;align-items:stretch}
+.heroCopy,.bookCard,.toolsCard,.panel,.course,.stat,.quick{background:white;border:1px solid var(--line);box-shadow:0 10px 26px #1232a20b;border-radius:18px}
+.heroCopy{padding:38px;position:relative;overflow:hidden;min-height:430px;background:linear-gradient(145deg,#fff 0%,#fff 66%,#f7f9fc 100%)}
+.heroCopy:after{content:"";position:absolute;right:-80px;bottom:-115px;width:440px;height:280px;border-radius:55% 0 0 0;background:linear-gradient(150deg,transparent 0 30%,#b21727 31% 34%,#08243d 35% 100%);opacity:.98}
+.heroCopy h1{font-family:Georgia,serif;font-size:58px;margin:0 0 18px;line-height:.98;position:relative;z-index:2}.heroCopy h1 span{color:var(--red)}
+.heroCopy p{max-width:590px;color:#42566b;line-height:1.62;font-size:16px;position:relative;z-index:2}
+.heroCopy .tag{display:inline-block;color:var(--red);font-weight:850;letter-spacing:.08em;text-transform:uppercase;font-size:13px;margin-bottom:15px;position:relative;z-index:2}
+.heroMark{position:absolute;right:42px;top:40px;width:132px;height:132px;border:4px solid #b21727;border-radius:28px;display:grid;place-items:center;color:#b21727;font-size:70px;font-weight:700;background:#fff;box-shadow:0 14px 32px #10243a13;z-index:2}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:32px;max-width:720px;position:relative;z-index:3}
+.stat{padding:18px 10px;text-align:center;min-height:105px;display:flex;flex-direction:column;justify-content:center}.stat b{display:block;font-size:31px;color:var(--navy)}.stat small{color:var(--muted);font-weight:650;margin-top:4px}
+.bookCard{padding:22px;display:flex;flex-direction:column}.bookCard h3,.toolsCard h3{margin:0 0 14px;color:var(--red);font-size:15px;letter-spacing:.06em}
+.bookImg{width:100%;height:100%;max-height:430px;object-fit:contain;object-position:center;border-radius:14px;background:#fff}
+.toolsCard{padding:22px;margin-top:18px}.toolGrid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}.tool{border:1px solid var(--line);border-radius:14px;padding:14px;text-align:center;background:#fff}.tool img{width:100%;max-width:130px}.tool a{font-size:12px;color:var(--navy);text-decoration:none;font-weight:700}
+.sectionTitle{display:flex;align-items:end;justify-content:space-between;margin:26px 0 12px}.sectionTitle h2{margin:0}.muted{color:var(--muted)}
+.courseGrid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}.course{overflow:hidden;cursor:pointer;transition:.2s}.course:hover{transform:translateY(-3px);box-shadow:0 16px 36px #133e6812}.cover{height:110px;background:linear-gradient(135deg,var(--navy),#24567c);display:flex;align-items:center;justify-content:center;color:white;font-size:42px}.course:nth-child(2) .cover{background:linear-gradient(135deg,#1b3047,#657486)}.course:nth-child(3) .cover{background:linear-gradient(135deg,#b44c44,#f2b0a3)}.course:nth-child(4) .cover{background:linear-gradient(135deg,#0a4e67,#2f9fb0)}.courseBody{padding:16px}.courseBody h3{font-size:16px;margin:0 0 6px}.courseBody p{font-size:13px;color:var(--muted);min-height:38px}.badge{display:inline-block;padding:5px 8px;border-radius:8px;background:#f4e5e7;color:var(--red);font-size:11px;font-weight:700}
+.quickGrid{display:grid;grid-template-columns:repeat(7,1fr);gap:12px}.quick{padding:18px 10px;text-align:center;font-size:12px}.quick .ico{font-size:26px;margin-bottom:7px}
+.panel{padding:20px;margin-top:18px}.lessonRow{display:grid;grid-template-columns:1fr auto auto;gap:10px;padding:12px;border-bottom:1px solid var(--line);align-items:center}.lessonRow:last-child{border-bottom:0}.btn{border:0;background:var(--navy);color:white;border-radius:10px;padding:9px 12px;cursor:pointer}.btn.red{background:var(--red)}.btn.light{background:#edf2f7;color:var(--ink)}.btn.danger{background:#fbeaec;color:#a11220}
+.footer{margin-top:24px;background:var(--navy);color:white;border-radius:18px;padding:20px;display:flex;justify-content:space-between;gap:18px;flex-wrap:wrap}.footer b{font-family:Georgia,serif}.footer small{color:#c7d7e4}
+.modal{position:fixed;inset:0;background:#06182dcc;display:none;align-items:center;justify-content:center;padding:16px;z-index:100}.modal.show{display:flex}.modalBox{background:white;border-radius:18px;padding:22px;width:min(680px,100%);max-height:90vh;overflow:auto}.modalBox h2{margin-top:0}.field{margin:12px 0}.field label{display:block;font-size:12px;font-weight:700;margin-bottom:5px}.field input,.field textarea,.field select{width:100%;padding:11px;border:1px solid #ccd6e0;border-radius:10px}.actions{display:flex;gap:10px;justify-content:flex-end;margin-top:16px}
+.viewer{position:fixed;inset:0;background:#06182d;display:none;z-index:90;color:white}.viewer.show{display:flex;flex-direction:column}.viewerBar{display:flex;gap:10px;align-items:center;padding:10px 14px;background:#071f36}.viewerContent{flex:1;background:#111;display:grid;place-items:center;overflow:auto}.viewerContent iframe,.viewerContent video,.viewerContent img{width:100%;height:100%;object-fit:contain;border:0}.pptBox{max-width:700px;text-align:center;padding:30px}.pptBox h2{font-size:32px}.pptBox p{color:#bcd0df;line-height:1.5}
+.adminPanel{display:none}.adminPanel.show{display:block}
+.courseManager{margin-top:22px;padding-top:18px;border-top:1px solid var(--line)}
+.courseManageRow{display:grid;grid-template-columns:1fr auto;gap:12px;align-items:center;padding:12px 0;border-bottom:1px solid var(--line)}
+.courseManageRow:last-child{border-bottom:0}
+.courseMeta{display:flex;flex-direction:column;gap:3px}
+.courseMeta small{color:var(--muted)}
+@media(max-width:1100px){.hero{grid-template-columns:1fr}.bookCard{min-height:360px}.toolGrid{grid-template-columns:repeat(2,1fr)}.courseGrid{grid-template-columns:repeat(2,1fr)}.quickGrid{grid-template-columns:repeat(4,1fr)}}
+@media(max-width:760px){.app{grid-template-columns:1fr}.sidebar{height:auto;position:relative}.nav{display:grid;grid-template-columns:repeat(2,1fr)}.profile{display:none}.main{padding:14px}.hero{grid-template-columns:1fr}.heroCopy{min-height:500px;padding:26px}.heroMark{width:88px;height:88px;right:20px;top:24px;font-size:46px;opacity:.16}.stats{grid-template-columns:repeat(2,1fr)}.toolGrid{grid-template-columns:repeat(2,1fr)}.courseGrid{grid-template-columns:1fr}.quickGrid{grid-template-columns:repeat(2,1fr)}.heroCopy h1{font-size:43px;max-width:90%}}
+
+.studentPanel{padding:22px;margin-top:18px}
+.studentIntro{display:grid;grid-template-columns:1.05fr 1.4fr;gap:22px;align-items:start}
+.studentLead{padding:22px;border-radius:16px;background:linear-gradient(145deg,#08243d,#0e3655);color:#fff}
+.studentLead h3{margin:0 0 8px;font-size:25px}.studentLead p{color:#d7e3ed;line-height:1.55}
+.studentForm{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}
+.studentForm .field{margin:0}.studentForm .span2{grid-column:1/-1}
+.studentAdmin{margin-top:22px;border-top:1px solid var(--line);padding-top:18px}
+.studentToolbar{display:flex;gap:10px;justify-content:space-between;align-items:center;flex-wrap:wrap;margin-bottom:12px}
+.studentTableWrap{overflow:auto;border:1px solid var(--line);border-radius:14px}
+.studentTable{width:100%;border-collapse:collapse;min-width:860px;background:#fff}
+.studentTable th,.studentTable td{padding:10px 12px;border-bottom:1px solid var(--line);text-align:left;font-size:12px;vertical-align:top}
+.studentTable th{background:#f7f9fc;color:var(--navy);font-size:11px;text-transform:uppercase;letter-spacing:.03em}
+.studentTable tr:last-child td{border-bottom:0}
+@media(max-width:760px){.studentIntro{grid-template-columns:1fr}.studentForm{grid-template-columns:1fr}.studentForm .span2{grid-column:auto}}
+
+
+.aboutPanel{padding:26px;margin-top:18px}
+.aboutGrid{display:grid;grid-template-columns:220px 1fr;gap:26px;align-items:start}
+.aboutPhoto{width:190px;height:190px;border-radius:24px;object-fit:cover;border:5px solid #fff;box-shadow:0 14px 34px #10243a20}
+.aboutName{font-family:Georgia,serif;font-size:31px;margin:0 0 6px;color:var(--navy)}
+.aboutRole{color:var(--red);font-weight:800;margin-bottom:16px}
+.aboutText{color:#42566b;line-height:1.7;font-size:15px}
+.aboutHighlights{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:20px}
+.aboutHighlight{padding:16px;border:1px solid var(--line);border-radius:14px;background:#fbfcfe;text-align:center}
+.aboutHighlight b{display:block;color:var(--navy);font-size:20px;margin-bottom:4px}
+.aboutHighlight small{color:var(--muted)}
+.aboutQuote{margin-top:20px;padding:18px 20px;border-left:5px solid var(--red);background:#fff7f8;border-radius:12px;font-family:Georgia,serif;font-size:21px;color:var(--navy)}
+@media(max-width:900px){.aboutGrid{grid-template-columns:1fr}.aboutHighlights{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:560px){.aboutHighlights{grid-template-columns:1fr}.aboutPhoto{width:150px;height:150px}}
+
+
+.academicPanel{padding:24px;margin-top:18px}
+.academicGrid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+.academicCard{border:1px solid var(--line);border-radius:16px;background:#fff;padding:18px;box-shadow:0 8px 22px #1232a20a}
+.academicCard h3{margin:0 0 8px;color:var(--navy)}.academicCard p{color:var(--muted);font-size:13px;line-height:1.55}
+.videoGrid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+.videoCard{border:1px solid var(--line);border-radius:16px;overflow:hidden;background:#fff}
+.videoFrame{aspect-ratio:16/9;background:#071f36;display:grid;place-items:center;color:#fff}
+.videoFrame iframe,.videoFrame video{width:100%;height:100%;border:0}
+.videoBody{padding:14px}.videoBody h3{margin:0 0 6px;font-size:16px}.videoBody p{font-size:12px;color:var(--muted);line-height:1.45}
+.quizCard,.caseCard{border:1px solid var(--line);border-radius:16px;background:#fff;padding:18px;margin-bottom:14px}
+.quizQuestion{padding:14px;border:1px solid var(--line);border-radius:12px;margin:10px 0;background:#fbfcfe}
+.quizOption{display:block;padding:8px 10px;border-radius:9px;margin:5px 0;background:#fff;border:1px solid #e6ebf0;cursor:pointer}
+.resultGood{color:#11733b;font-weight:800}.resultBad{color:#b21727;font-weight:800}
+.caseComment{padding:10px 12px;border-left:3px solid #d5dde6;background:#f8fafc;border-radius:8px;margin:8px 0}
+.caseComment b{color:var(--navy)}
+.adminAcademic{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin-top:18px}
+.noticeBox{padding:12px 14px;background:#fff7e8;border:1px solid #f0d6a5;border-radius:12px;color:#6d5323;font-size:12px;line-height:1.5}
+@media(max-width:1100px){.academicGrid,.videoGrid,.adminAcademic{grid-template-columns:1fr 1fr}}
+@media(max-width:760px){.academicGrid,.videoGrid,.adminAcademic{grid-template-columns:1fr}}
+
+
+.courseTimer{display:flex;align-items:center;gap:10px;padding:11px 14px;border-radius:12px;background:#fff4f5;border:1px solid #f2c9ce;color:#8f1320;font-weight:800;margin:10px 0 14px}
+.courseTimer .clock{font-variant-numeric:tabular-nums;font-size:18px}
+.accessExpired{padding:18px;border-radius:14px;background:#f7f8fa;border:1px solid var(--line);color:var(--muted);text-align:center}
+.accessSettings{display:grid;grid-template-columns:1fr 90px auto;gap:10px;align-items:center;margin-top:8px}
+
+
+.libraryPanel{padding:24px;margin-top:18px}
+.libraryToolbar{display:flex;gap:10px;justify-content:space-between;align-items:center;flex-wrap:wrap;margin-bottom:14px}
+.libraryGrid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+.libraryCard{border:1px solid var(--line);border-radius:16px;background:#fff;padding:18px;box-shadow:0 8px 22px #1232a20a;display:flex;flex-direction:column;gap:9px}
+.libraryCard h3{margin:0;color:var(--navy);font-size:17px}
+.libraryCard p{margin:0;color:var(--muted);font-size:13px;line-height:1.5}
+.libraryMeta{font-size:12px;color:#4f6275;line-height:1.5}
+.libraryActions{display:flex;gap:8px;flex-wrap:wrap;margin-top:auto;padding-top:6px}
+.libraryAdminBox{margin-top:18px;padding-top:18px;border-top:1px solid var(--line)}
+@media(max-width:1100px){.libraryGrid{grid-template-columns:1fr 1fr}}
+@media(max-width:760px){.libraryGrid{grid-template-columns:1fr}}
+
+
+/* Lista de ponencias estilo sesión académica */
+.ponenciasWrap{background:#fff;border-radius:16px;border:1px solid var(--line);padding:0 24px;margin-top:12px}
+.ponenciaRow{display:grid;grid-template-columns:320px minmax(0,1fr) 170px;gap:34px;align-items:center;padding:28px 6px;border-bottom:1px solid #dfe4e8;min-height:205px}
+.ponenciaRow:last-child{border-bottom:0}
+.ponenciaVisual{height:130px;display:flex;align-items:center;justify-content:flex-start;position:relative}
+.ponenciaBadge{width:110px;height:110px;border-radius:50%;position:relative;display:grid;place-items:center;background:#fff;border:8px solid #8bd74b;box-shadow:inset 0 0 0 7px #edf7e4}
+.ponenciaBadge:before{content:"";position:absolute;inset:-15px;border-radius:50%;border:5px solid transparent;border-top-color:#b4e789;border-left-color:#66bc31;transform:rotate(-28deg)}
+.ponenciaBadge:after{content:"AVICO";font-size:19px;font-weight:900;color:var(--navy);letter-spacing:.03em}
+.ponenciaRibbon{position:absolute;left:98px;top:38px;width:190px;height:58px;background:linear-gradient(180deg,#fff,#f4f4f4);border:1px solid #d4d7da;border-radius:0 30px 30px 0;box-shadow:0 2px 5px #0002;padding:12px 16px 8px 18px;color:#58b72d;font-size:11px;font-weight:800;text-transform:uppercase;display:flex;align-items:center}
+.ponenciaRibbon small{position:absolute;right:0;bottom:-15px;background:#70c93d;color:white;padding:3px 9px;border-radius:8px 0 8px 8px;font-size:9px;white-space:nowrap}
+.ponenciaInfo h3{font-size:32px;line-height:1.15;margin:0 0 10px;color:#27313c;font-weight:800}
+.ponenciaDate{font-size:18px;margin-bottom:20px;color:#1f2429}
+.ponenciaInstitution{font-size:18px;font-weight:800;margin-bottom:20px;color:#20262d}
+.ponenciaSpeaker{font-size:17px;line-height:1.5;color:#252b32}
+.ponenciaSpeaker b{font-weight:800}
+.ponenciaAction{display:flex;align-items:center;justify-content:center}
+.ponenciaAction .btn{background:#253765;font-size:16px;padding:14px 18px;border-radius:5px;min-width:145px}
+.ponenciaAdminActions{margin-top:10px;display:flex;gap:8px}
+@media(max-width:980px){.ponenciaRow{grid-template-columns:220px 1fr}.ponenciaAction{grid-column:2;justify-content:flex-start}.ponenciaVisual{height:105px}.ponenciaBadge{width:90px;height:90px}.ponenciaRibbon{left:80px;width:135px;top:28px}.ponenciaInfo h3{font-size:26px}}
+@media(max-width:700px){.ponenciasWrap{padding:0 14px}.ponenciaRow{grid-template-columns:1fr;gap:12px;padding:22px 0}.ponenciaVisual{height:105px}.ponenciaAction{grid-column:1;justify-content:flex-start}.ponenciaInfo h3{font-size:24px}.ponenciaDate,.ponenciaInstitution,.ponenciaSpeaker{font-size:15px}}
+
+
+@media(max-width:900px){
+  #adminPanel > div[style*="repeat(4,1fr)"]{grid-template-columns:repeat(2,1fr)!important}
+}
+@media(max-width:560px){
+  #adminPanel > div[style*="repeat(4,1fr)"]{grid-template-columns:1fr!important}
+}
+
+.forumThread{border:1px solid var(--line);border-radius:14px;padding:16px;margin:12px 0;background:#fff}
+.forumThread h3{margin:0 0 6px;color:var(--navy)}
+.forumMeta{font-size:12px;color:var(--muted);margin-bottom:10px}
+.forumBody{line-height:1.6;color:#34495e}
+.forumReply{margin:10px 0 0 18px;padding:12px 14px;border-left:3px solid #b8c9d9;background:#f8fbfe;border-radius:8px}
+.forumReply.admin{border-left-color:#1764a8;background:#eef6ff}
+.forumReplyForm{display:flex;gap:8px;margin-top:12px}
+.forumReplyForm input{flex:1;padding:10px;border:1px solid var(--line);border-radius:9px}
+</style>
+<link rel="stylesheet" href="/static/avico-theme.css">
+</head>
+<body>
+<div id="avicoWelcome" class="avico-welcome" role="dialog" aria-modal="true" aria-label="Bienvenida al Curso de Hemorragia Obstétrica AVICO">
+  <section class="avico-welcome-left">
+    <div class="avico-identity"><div class="avico-emblem" aria-hidden="true">AV</div><div><strong>AVICO</strong><span>CURSO ESPECIALIZADO</span><p>Hemorragia obstétrica<br>de la evidencia a la práctica</p></div></div>
+    <div class="avico-benefits"><p><b>Hemorragia obstétrica</b><br>Actualización basada en evidencia y toma de decisiones</p></div>
+    <p class="avico-tagline">Conocimiento hoy,<br>mejores pacientes mañana.</p><p class="avico-signature">Dr. Alejandro Villalobos</p>
+  </section>
+  <section class="avico-welcome-right"><div class="avico-entry-card"><h1>Bienvenido(a) al<br><strong>Curso de Hemorragia Obstétrica</strong></h1><p>Formación AVICO para reconocer, reanimar y controlar la hemorragia obstétrica.</p>
+  <form id="avicoAccountForm" class="avico-account-form">
+    <label for="avicoName">Nombre completo</label><input id="avicoName" autocomplete="name" required placeholder="Nombre y apellidos">
+    <label for="avicoEmail">Correo electrónico</label><input id="avicoEmail" type="email" autocomplete="email" required placeholder="alumno@correo.com">
+    <label for="avicoAge">Edad</label><input id="avicoAge" type="number" min="14" max="100" placeholder="Edad">
+    <label for="avicoInstitution">Institución / Adscripción</label><input id="avicoInstitution" autocomplete="organization" placeholder="Hospital, universidad o institución">
+    <label for="avicoPosition">Puesto / Grado</label><input id="avicoPosition" placeholder="Médico, residente, estudiante...">
+    <p id="avicoAccountError" role="alert" class="avico-account-error"></p>
+    <button type="submit" class="avico-enter" id="avicoAccountSubmit">Entrar al curso →</button>
+  </form>
+  <button type="button" class="avico-register" id="avicoAdminEnter">Ingresar como administrador</button>
+  <p class="avico-auth-note">Al entrar tendrás acceso inmediato a todas las ponencias publicadas. No necesitas contraseña.</p>
+  </div></section>
+</div>
+<script>
+(function(){
+ const splash=document.getElementById('avicoWelcome'),form=document.getElementById('avicoAccountForm');
+ const error=document.getElementById('avicoAccountError');
+ function enter(){
+   localStorage.setItem('avicoEntered','1');
+   splash.hidden=true;
+ }
+ document.getElementById('avicoAdminEnter').addEventListener('click',()=>{enter();openAdmin();});
+ form.addEventListener('submit',async e=>{
+   e.preventDefault(); error.textContent='';
+   const payload={
+     full_name:document.getElementById('avicoName').value.trim(),
+     email:document.getElementById('avicoEmail').value.trim(),
+     age:document.getElementById('avicoAge').value,
+     institution:document.getElementById('avicoInstitution').value.trim(),
+     position:document.getElementById('avicoPosition').value.trim()
+   };
+   try{
+     const response=await fetch('/api/student-auth/register',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
+     const data=await response.json();
+     if(!response.ok)throw Error(data.detail||'No se pudo registrar el acceso');
+     localStorage.setItem('avico_student_token',data.token);
+     localStorage.setItem('avico_student_name',data.student.full_name);
+     localStorage.setItem('avico_student_email',data.student.email);
+     localStorage.setItem('avico_student_profile',JSON.stringify(data.student));
+     sessionStorage.setItem('avico_student_token',data.token);
+     sessionStorage.setItem('avico_student_name',data.student.full_name);
+     sessionStorage.setItem('avico_student_email',data.student.email);
+     enter();
+     window.avicoRefreshStudent?.();
+   }catch(err){error.textContent=err.message;}
+ });
+ const saved=localStorage.getItem('avico_student_token');
+ if(saved){
+   sessionStorage.setItem('avico_student_token',saved);
+   sessionStorage.setItem('avico_student_name',localStorage.getItem('avico_student_name')||'');
+   sessionStorage.setItem('avico_student_email',localStorage.getItem('avico_student_email')||'');
+   splash.hidden=true;
+ }
+})();
+</script>
+
+<div class="app">
+<aside class="sidebar">
+  <div class="brand"><div class="logo">♡</div><div>Curso AVICO<br><b>Hemorragia Obstétrica</b></div></div>
+  <div class="nav">
+    <button class="active" onclick="scrollToId('inicio')">⌂ Inicio</button>
+    <button onclick="scrollToId('cursos')">▤ Mis cursos</button>
+    <button id="studentsNavBtn" style="display:none" onclick="scrollToId('alumnos')">♙ Alumnos inscritos</button>
+    <button onclick="scrollToId('biblioteca')">▣ Biblioteca</button>
+    <button onclick="scrollToId('acerca')">◉ Acerca de mí</button>
+    <button onclick="scrollToId('videosMedicos')">▶ Videos médicos</button>
+    <button onclick="scrollToId('casosClinicos')">♙ Casos clínicos</button>
+    <button onclick="scrollToId('autoevaluaciones')">◎ Autoevaluaciones</button>
+    <button id="adminNavBtn" style="display:none" onclick="showAdmin()">⚙ Zona del administrador</button>
+    <button onclick="scrollToId('foroDudas')">◌ Foro de dudas</button>
+  </div>
+  <div class="profile">
+    <img src="/static/assets/perfil_dr_villalobos.jpg">
+    <h3>Dr. Alejandro Lenin Villalobos Rodríguez</h3>
+    <p>Jefe de Servicio de<br>Ginecología y Obstetricia</p>
+  </div>
+</aside>
+<main class="main">
+  <div class="topbar"><div><b>Curso de Hemorragia Obstétrica · AVICO</b><div class="muted" style="font-size:12px">Formación médica basada en evidencia · Dr. Alejandro Lenin Villalobos Rodríguez</div></div><button class="adminBtn" onclick="openAdmin()">⚙ Administrar</button></div>
+
+  <section class="hero" id="inicio">
+    <div class="heroCopy">
+      <div class="tag">Curso especializado AVICO</div>
+      <h1>Hemorragia<br><span>Obstétrica</span></h1>
+      <p>Reconocimiento temprano, cuantificación de la pérdida sanguínea, reanimación hemodinámica, tratamiento farmacológico, dispositivos y control quirúrgico de la hemorragia obstétrica.</p>
+      <div class="heroMark">⚕</div>
+      <div class="stats">
+        <div class="stat"><b id="statCourses">–</b><small>Curso</small></div>
+        <div class="stat"><b id="statStudents">–</b><small>Alumnos</small></div>
+        <div class="stat"><b id="statProgress">–</b><small>Avance promedio</small></div>
+        <div class="stat"><b id="statSat">–</b><small>Satisfacción</small></div>
+      </div>
+    </div>
+    <div class="bookCard">
+      <h3>MI LIBRO</h3>
+      <img class="bookImg" src="/static/assets/promo_libro.jpg" alt="Manual práctico para el manejo de la hemorragia posparto">
+      <div style="padding-top:16px">
+        <h3 style="color:var(--navy);font-size:20px;letter-spacing:0;line-height:1.25;margin-bottom:8px">Manual práctico para el manejo de la hemorragia posparto</h3>
+        <p class="muted" style="font-size:13px;line-height:1.55;margin:0 0 14px">Evidencia, algoritmos y protocolos para salvar vidas.</p>
+        <a href="https://www.amazon.com.mx/Manual-pr%C3%A1ctico-manejo-hemorragia-posparto-ebook/dp/B0FRK11B4V" target="_blank" rel="noopener noreferrer" class="btn red" style="display:block;text-align:center;text-decoration:none;font-size:14px;padding:13px 16px">Comprar en Amazon</a>
+      </div>
+    </div>
+  </section>
+
+  <div class="toolsCard" id="herramientas">
+    <h3>HERRAMIENTAS CLÍNICAS</h3>
+    <div class="toolGrid">
+      <div class="tool"><img src="/static/assets/calculadora_de_hemorragia_obstetrica.png"><a target="_blank" href="https://calculadora-hemorragia-obstetrica.swift-chime-6180.chatgpt.site">Calculadora de hemorragia</a></div>
+      <div class="tool"><img src="/static/assets/meows.png"><a target="_blank" href="https://calculadora-meows-clinica.swift-chime-6180.chatgpt.site">MEOWS</a></div>
+      <div class="tool"><img src="/static/assets/ruta_clinica_interactiva.png"><a target="_blank" href="https://ruta-hemorragia-obstetrica.swift-chime-6180.chatgpt.site">Ruta clínica interactiva</a></div>
+      <div class="tool"><div style="height:120px;display:grid;place-items:center;font-size:38px">＋</div><a href="#" onclick="alert('Desde el panel de administrador puedes agregar más herramientas.');return false">Agregar recurso</a></div>
+    </div>
+  </div>
+
+  <div class="panel libraryPanel" id="biblioteca">
+    <div class="libraryToolbar">
+      <div><h2 style="margin:0">Biblioteca de Hemorragia Obstétrica</h2><div class="muted">Artículos, guías, protocolos, manuales y presentaciones seleccionados para el curso</div></div>
+      <span class="badge">Solo lectura para alumnos</span>
+    </div>
+    <div class="noticeBox">Los recursos publicados pueden ser consultados por alumnos y visitantes, pero solo el administrador puede agregar o eliminar contenido.</div>
+    <div id="libraryGrid" class="libraryGrid" style="margin-top:14px"><p class="muted">Cargando recursos...</p></div>
+  </div>
+
+  <div class="panel academicPanel" id="videosMedicos">
+    <div class="sectionTitle" style="margin:0 0 14px">
+      <div><h2>Videos médicos</h2><div class="muted">Biblioteca audiovisual para reforzar los temas de clase</div></div>
+    </div>
+    <div id="videoGrid" class="videoGrid"><p class="muted">Cargando videos...</p></div>
+  </div>
+
+  <div class="panel academicPanel" id="autoevaluaciones">
+    <div class="sectionTitle" style="margin:0 0 14px">
+      <div><h2>Autoevaluaciones</h2><div class="muted">Comprueba tu aprendizaje y recibe retroalimentación inmediata</div></div>
+    </div>
+    <div id="quizList"><p class="muted">Cargando evaluaciones...</p></div>
+  </div>
+
+  <div class="panel academicPanel" id="casosClinicos">
+    <div class="sectionTitle" style="margin:0 0 14px">
+      <div><h2>Discusión de casos clínicos</h2><div class="muted">Analiza, argumenta y comparte tu razonamiento clínico</div></div>
+    </div>
+    <div class="noticeBox">Utiliza únicamente casos docentes anonimizados. No publiques nombres, números de expediente, teléfonos, fotografías identificables ni otros datos personales de pacientes.</div>
+    <div id="caseList" style="margin-top:14px"><p class="muted">Cargando casos...</p></div>
+  </div>
+
+
+  <div class="panel academicPanel" id="foroDudas">
+    <div class="sectionTitle" style="margin:0 0 14px">
+      <div><h2>Foro de dudas</h2><div class="muted">Pregunta, comenta y revisa las respuestas del curso</div></div>
+    </div>
+    <div class="noticeBox">Espacio académico del curso. Evita compartir datos identificables de pacientes.</div>
+    <form id="forumForm" style="margin-top:16px">
+      <div class="field"><label>Título de la duda</label><input id="forumTitle" maxlength="180" placeholder="Ej. ¿Cuándo iniciar protocolo transfusional?"></div>
+      <div class="field"><label>Pregunta</label><textarea id="forumBody" rows="4" maxlength="4000" placeholder="Escribe tu duda clínica o académica"></textarea></div>
+      <button class="btn red" type="submit">Publicar duda</button>
+    </form>
+    <div id="forumList" style="margin-top:20px"><p class="muted">Cargando foro...</p></div>
+  </div>
+
+  <div class="panel aboutPanel" id="acerca">
+    <div class="sectionTitle" style="margin:0 0 22px">
+      <div>
+        <h2 style="margin:0">Acerca de mí</h2>
+        <div class="muted">Trayectoria clínica, académica y docente</div>
+      </div>
+    </div>
+    <div class="aboutGrid">
+      <div style="text-align:center">
+        <img class="aboutPhoto" src="/static/assets/perfil_dr_villalobos.jpg" alt="Dr. Alejandro Lenin Villalobos Rodríguez">
+      </div>
+      <div>
+        <h2 class="aboutName">Dr. Alejandro Lenin Villalobos Rodríguez</h2>
+        <div class="aboutRole">Ginecología y Obstetricia · Docencia · Investigación · Salud materna</div>
+        <div class="aboutText">
+          Médico especialista en Ginecología y Obstetricia con más de 20 años de experiencia clínica, académica y de liderazgo institucional. Su trayectoria se ha desarrollado principalmente en la atención de la salud materna, las emergencias obstétricas y la formación de médicos y residentes.
+          <br><br>
+          Se desempeña como Jefe del Servicio del Hospital General de Playa del Carmen y Coordinador del Comité de Mortalidad Materna. Su formación integra la medicina con una Maestría en Ciencias de la Educación y una Licenciatura en Administración Pública y Ciencias Políticas.
+          <br><br>
+          Ha participado durante años en la formación de estudiantes y especialistas como profesor de Ginecología y Obstetricia en instituciones como la Universidad Autónoma del Estado de Quintana Roo, la Universidad Anáhuac Cancún y la Universidad Autónoma de Yucatán.
+          <br><br>
+          Su trabajo académico incluye más de 30 publicaciones científicas y el desarrollo de la AVICO Technique (Advanced Villalobos Compression and Occlusion) para el control quirúrgico de la hemorragia obstétrica. Es autor del libro <i>Manual práctico para el manejo de la hemorragia posparto</i>.
+          <br><br>
+          Aula Médica Dr. Villalobos nace como una extensión de esta vocación docente: un espacio para acercar la medicina basada en evidencia, la experiencia clínica y herramientas prácticas a estudiantes, residentes y profesionales de la salud.
+        </div>
+        <div class="aboutHighlights">
+          <div class="aboutHighlight"><b>20+ años</b><small>Experiencia clínica</small></div>
+          <div class="aboutHighlight"><b>30+</b><small>Publicaciones científicas</small></div>
+          <div class="aboutHighlight"><b>AVICO</b><small>Innovación quirúrgica</small></div>
+          <div class="aboutHighlight"><b>Docencia</b><small>Pregrado y residencia</small></div>
+        </div>
+        <div class="aboutQuote">“Del conocimiento a la práctica clínica.”</div>
+        <div id="declaracionIA" style="margin-top:26px;padding:22px 24px;border:1px solid var(--line);border-left:5px solid var(--navy);border-radius:14px;background:#f8fbfe">
+          <h3 style="margin:0 0 14px;color:var(--navy);font-size:20px">Declaración de autoría y uso de inteligencia artificial</h3>
+          <div class="aboutText" style="font-size:14px;line-height:1.7">
+            El contenido académico de esta presentación es responsabilidad del autor.
+            <br><br>
+            La búsqueda y selección de las referencias bibliográficas, así como la lectura, análisis e interpretación de los artículos científicos citados, fueron realizadas personalmente por el autor.
+            <br><br>
+            El material parte de presentaciones y contenidos docentes previamente desarrollados por el autor, los cuales fueron revisados y actualizados con literatura científica reciente.
+            <br><br>
+            Se utilizaron herramientas de inteligencia artificial como apoyo para optimizar el diseño visual, la organización y presentación del contenido, así como para la generación audiovisual mediante un avatar digital basado en la imagen y voz del autor.
+            <br><br>
+            La inteligencia artificial se empleó como una herramienta de asistencia tecnológica y no sustituyó la revisión crítica, el criterio clínico ni la responsabilidad académica del autor.
+            <br><br>
+            <b>Dr. Alejandro Lenin Villalobos Rodríguez</b><br>
+            <b>AVICO Salud</b>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <div class="panel studentPanel" id="alumnos" style="display:none">
+    <div class="sectionTitle" style="margin:0 0 14px">
+      <div><h2>Alumnos inscritos</h2><div class="muted">Padrón privado de asistentes · visible solo para el administrador</div></div>
+    </div>
+    <div class="studentIntro" style="display:none">
+      <div class="studentLead">
+        <h3>Tu perfil del curso</h3>
+        <p>Tu perfil permite mantener tu acceso en este dispositivo sin contraseña ni recuperación por correo.</p>
+        <small>Los datos de alumnos solo son visibles para el administrador.</small>
+      </div>
+      <div id="avicoStudentStatus" class="noticeBox span2">Tu acceso queda guardado en este dispositivo.</div><form id="studentRegisterForm" class="studentForm">
+        <div class="field span2"><label>Nombre completo *</label><input name="full_name" required placeholder="Nombre y apellidos"></div>
+        <div class="field"><label>Edad</label><input type="number" name="age" min="14" max="100" placeholder="Edad"></div>
+        <div class="field"><label>Correo</label><input type="email" name="email" placeholder="correo@ejemplo.com"></div>
+        <div class="field"><label>Institución / Adscripción</label><input name="institution" placeholder="Hospital, universidad o institución"></div>
+        <div class="field"><label>Puesto / Grado</label><input name="position" placeholder="Médico, residente, estudiante..."></div>
+        <div class="field span2"><label>Curso *</label><select name="course_id" id="studentCourseSelect" required><option value="">Selecciona un curso</option></select></div><div class="span2 noticeBox"><b>Acceso persistente:</b> no necesitas contraseña. El curso recordará tu sesión en este dispositivo.</div>
+        <div class="span2"><button class="btn red" type="submit">Guardar mis datos</button></div>
+      </form>
+    </div>
+    <div class="studentAdmin" id="studentAdmin" style="display:none">
+      <div class="studentToolbar">
+        <div><h3 style="margin:0">Alumnos inscritos</h3><div class="muted" id="studentCountText" style="font-size:12px"></div></div>
+        <button class="btn red" onclick="exportStudentsExcel()">Descargar lista de asistencia · Excel</button>
+      </div>
+      <div class="studentTableWrap">
+        <table class="studentTable">
+          <thead><tr><th>Nombre</th><th>Edad</th><th>Institución</th><th>Puesto/Grado</th><th>Correo</th><th>Curso</th><th>Fecha</th><th></th></tr></thead>
+          <tbody id="studentTableBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="sectionTitle" id="cursos">
+    <div><h2>Ponencias</h2><div class="muted">Todas las ponencias están disponibles desde el momento en que ingresas al aula</div></div>
+    <button class="btn light" onclick="openAdmin()">+ Nueva ponencia</button>
+  </div>
+  <div class="ponenciasWrap" id="sessionList"><p class="muted" style="padding:28px 8px">Cargando ponencias...</p></div>
+
+  <div class="sectionTitle"><div><h2>Recursos del curso</h2></div></div>
+  <div class="quickGrid">
+    <div class="quick" onclick="scrollToId('casosClinicos')" style="cursor:pointer"><div class="ico">🩺</div>Casos clínicos</div>
+    <div class="quick" onclick="scrollToId('autoevaluaciones')" style="cursor:pointer"><div class="ico">📝</div>Autoevaluaciones</div>
+    <div class="quick" onclick="scrollToId('biblioteca')" style="cursor:pointer"><div class="ico">📚</div>Biblioteca</div>
+    <div class="quick"><div class="ico">🧭</div>Algoritmos</div>
+    <div class="quick" onclick="scrollToId('videosMedicos')" style="cursor:pointer"><div class="ico">▶</div>Videos</div>
+    <div class="quick" onclick="scrollToId('foroDudas')" style="cursor:pointer"><div class="ico">💬</div>Foro de dudas</div>
+    <div class="quick"><div class="ico">🏅</div>Certificados</div>
+  </div>
+
+  <div class="panel" id="lessonPanel" style="display:none">
+    <div class="sectionTitle" style="margin:0 0 12px"><div><h2 id="lessonCourseTitle">Curso</h2><div class="muted" id="lessonCourseSubtitle"></div></div></div>
+    <div id="lessons"></div>
+  </div>
+
+  <div class="panel adminPanel" id="adminPanel">
+    <div style="display:flex;justify-content:space-between;gap:18px;align-items:flex-start;flex-wrap:wrap">
+      <div>
+        <div class="badge">ACCESO PRIVADO</div>
+        <h2 style="margin:8px 0 6px">Zona del administrador</h2>
+        <p class="muted" style="margin:0">Control exclusivo del Curso de Hemorragia Obstétrica · AVICO.</p>
+      </div>
+      <button class="btn light" onclick="document.getElementById('adminPanel').classList.remove('show')">Cerrar panel</button>
+    </div>
+
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin:20px 0">
+      <div class="stat"><b id="adminStatPonencias">–</b><small>Ponencias</small></div>
+      <div class="stat"><b id="adminStatAlumnos">–</b><small>Alumnos</small></div>
+      <div class="stat"><b id="adminStatCursos">–</b><small>Cursos</small></div>
+      <div class="stat"><b>AVICO</b><small>Administración</small></div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:24px">
+      <button class="quick" onclick="document.getElementById('lessonForm').scrollIntoView({behavior:'smooth'})"><div class="ico">＋</div>Nueva ponencia</button>
+      <button class="quick" onclick="scrollToId('alumnos')"><div class="ico">♙</div>Ver alumnos</button>
+      <button class="quick" onclick="document.getElementById('libraryForm').scrollIntoView({behavior:'smooth'})"><div class="ico">📚</div>Biblioteca</button>
+      <button class="quick" onclick="document.getElementById('quizForm').scrollIntoView({behavior:'smooth'})"><div class="ico">📝</div>Evaluaciones</button>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px">
+      <form id="courseForm">
+        <h3>Crear curso</h3>
+        <div class="field"><label>Título</label><input name="title" required placeholder="Ej. Hemorragia obstétrica avanzada"></div>
+        <div class="field"><label>Subtítulo</label><input name="subtitle" placeholder="Descripción breve"></div>
+        <div class="field"><label>Categoría</label><input name="category" placeholder="Obstetricia"></div>
+        <button class="btn red">Crear curso</button>
+      </form>
+      <form id="lessonForm">
+        <h3>Agregar ponencia / presentación</h3>
+        <div class="field"><label>Curso</label><select name="course_id" id="courseSelect" required></select></div>
+        <div class="field"><label>Título de la ponencia</label><input name="title" required placeholder="Ej. Choque hemorrágico obstétrico"></div>
+        <div class="field"><label>Fecha de la sesión</label><input name="session_date" type="date"></div>
+        <div class="field"><label>Institución / sede académica</label><input name="institution" placeholder="Ej. AVICO · Educación Médica"></div>
+        <div class="field"><label>Ponente / profesor</label><input name="speaker" placeholder="Ej. Dr. Alejandro Lenin Villalobos Rodríguez"></div>
+        <div class="field"><label>Archivo</label><input name="file" type="file" accept=".pptx,.pdf,.png,.jpg,.jpeg,.webp"></div>
+        <div class="field"><label>Descripción breve</label><textarea name="notes" rows="3"></textarea></div>
+        <button class="btn red">Publicar ponencia</button>
+        <div style="margin:18px 0;border-top:1px solid var(--line)"></div>
+        <h3 style="margin-bottom:6px">Subir clase en video · Streaming</h3>
+        <p class="muted" style="font-size:13px">El video se envía directamente a AVICO Streaming y no ocupa almacenamiento de Render.</p>
+        <div class="field"><label>Video MP4 / MOV</label><input id="streamVideoFile" type="file" accept="video/mp4,video/quicktime"></div>
+        <div id="streamProgress" class="muted" style="font-size:13px;margin:8px 0"></div>
+        <button class="btn" type="button" id="streamUploadBtn">Subir clase en streaming</button>
+      </form>
+    </div>
+
+    <div class="courseManager libraryAdminBox">
+      <h3>Administrar Biblioteca</h3>
+      <p class="muted">Solo tú puedes publicar o eliminar recursos. Los alumnos los ven en modo solo lectura.</p>
+      <form id="libraryForm">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+          <div class="field" style="grid-column:1/-1"><label>Título del recurso *</label><input name="title" required placeholder="Ej. Manejo de la hemorragia posparto"></div>
+          <div class="field"><label>Categoría</label><select name="category"><option>Artículo científico</option><option>Guía clínica</option><option>Protocolo</option><option>Manual</option><option>Presentación</option><option>Libro / capítulo</option><option>Otro</option></select></div>
+          <div class="field"><label>Año</label><input name="year" placeholder="2026"></div>
+          <div class="field"><label>Autor(es)</label><input name="authors" placeholder="Autores del recurso"></div>
+          <div class="field"><label>Fuente / revista</label><input name="source" placeholder="Revista, institución, editorial..."></div>
+          <div class="field" style="grid-column:1/-1"><label>Descripción</label><textarea name="description" rows="3" placeholder="Breve reseña del contenido"></textarea></div>
+          <div class="field"><label>Archivo</label><input name="file" type="file" accept=".pdf,.docx,.xlsx,.pptx,.png,.jpg,.jpeg,.webp"></div>
+          <div class="field"><label>O enlace externo</label><input name="url" type="url" placeholder="https://..."></div>
+        </div>
+        <button class="btn red" type="submit">Publicar en Biblioteca</button>
+      </form>
+    </div>
+
+    <div class="courseManager">
+      <h3>Contenido académico interactivo</h3>
+      <div class="adminAcademic">
+        <form id="videoForm">
+          <h3>Agregar video médico</h3>
+          <div class="field"><label>Título</label><input name="title" required></div>
+          <div class="field"><label>Categoría</label><input name="category" placeholder="Hemorragia, preeclampsia..."></div>
+          <div class="field"><label>URL del video</label><input name="url" required placeholder="YouTube o enlace directo"></div>
+          <div class="field"><label>Descripción</label><textarea name="description" rows="3"></textarea></div>
+          <button class="btn red">Agregar video</button>
+        </form>
+
+        <form id="quizForm">
+          <h3>Crear autoevaluación</h3>
+          <div class="field"><label>Título</label><input name="title" required></div>
+          <div class="field"><label>Curso</label><select name="course_id" id="quizCourseSelect"><option value="">General</option></select></div>
+          <div class="field"><label>Descripción</label><textarea name="description" rows="3"></textarea></div>
+          <button class="btn red">Crear evaluación</button>
+        </form>
+
+        <form id="caseForm">
+          <h3>Crear caso clínico</h3>
+          <div class="field"><label>Título</label><input name="title" required></div>
+          <div class="field"><label>Categoría</label><input name="category"></div>
+          <div class="field"><label>Resumen clínico anonimizado</label><textarea name="summary" rows="4" required></textarea></div>
+          <div class="field"><label>Pregunta para discusión</label><textarea name="question" rows="2"></textarea></div>
+          <button class="btn red">Publicar caso</button>
+        </form>
+      </div>
+
+      <form id="questionForm" style="margin-top:18px">
+        <h3>Agregar pregunta a una autoevaluación</h3>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+          <div class="field" style="grid-column:1/-1"><label>Evaluación</label><select name="quiz_id" id="questionQuizSelect" required></select></div>
+          <div class="field" style="grid-column:1/-1"><label>Pregunta</label><textarea name="question" required></textarea></div>
+          <div class="field"><label>Opción A</label><input name="option_a" required></div>
+          <div class="field"><label>Opción B</label><input name="option_b" required></div>
+          <div class="field"><label>Opción C</label><input name="option_c" required></div>
+          <div class="field"><label>Opción D</label><input name="option_d" required></div>
+          <div class="field"><label>Respuesta correcta</label><select name="correct"><option>A</option><option>B</option><option>C</option><option>D</option></select></div>
+          <div class="field"><label>Retroalimentación</label><input name="explanation" placeholder="Explica por qué es correcta"></div>
+        </div>
+        <button class="btn red">Agregar pregunta</button>
+      </form>
+      <div id="academicAdminLists" style="margin-top:18px"></div>
+    </div>
+
+    <div class="courseManager">
+      <div class="sectionTitle" style="margin:0 0 10px">
+        <div>
+          <h3 style="margin:0">Administrar cursos</h3>
+          <div class="muted" style="font-size:13px">Elimina cursos completos junto con todas sus clases.</div>
+        </div>
+      </div>
+      <div id="courseManagerList"></div>
+    </div>
+    <div style="margin-top:18px"><a class="btn light" id="exportBtn" href="#">Exportar estructura y datos</a></div>
+  </div>
+
+  <div class="footer"><div><b>Contenido basado en evidencia</b><br><small>Algoritmos · protocolos · casos clínicos · evaluación</small><br><small><a href="#declaracionIA" style="color:#c7d7e4;text-decoration:underline">Transparencia académica y uso de IA</a></small></div><div><b>Dr. Alejandro Lenin Villalobos Rodríguez</b><br><small>Jefe de Servicio de Ginecología y Obstetricia</small></div></div>
+</main>
+</div>
+
+<div class="modal" id="loginModal">
+  <div class="modalBox">
+    <h2>Acceso de administrador</h2>
+    <p class="muted">Ingresa la contraseña configurada en el servidor.</p>
+    <div class="field"><label>Contraseña</label><input type="password" id="password" placeholder="Contraseña"></div>
+    <div class="actions"><button class="btn light" onclick="closeLogin()">Cancelar</button><button class="btn red" onclick="login()">Entrar</button></div>
+  </div>
+</div>
+
+<div class="viewer" id="viewer">
+ <div class="viewerBar"><button class="btn light" onclick="closeViewer()">← Salir</button><b id="viewerTitle">Clase</b><span style="flex:1"></span><button class="btn red" onclick="toggleFull()">⛶ Modo expositor</button></div>
+ <div class="viewerContent" id="viewerContent"></div>
+</div>
+
+<script>
+let courses=[], token=localStorage.getItem('aula_admin_token')||'';
+const $=s=>document.querySelector(s);
+function scrollToId(id){document.getElementById(id)?.scrollIntoView({behavior:'smooth'})}
+async function api(url,opt={}){let r=await fetch(url,opt); if(!r.ok) throw new Error(await r.text()); return r.json()}
+async function load(){
+  courses=await api('/api/courses'); const d=await api('/api/dashboard');
+  if(token){
+    const adminNav=document.getElementById('adminNavBtn'); if(adminNav) adminNav.style.display='block';
+    const studentsNav=document.getElementById('studentsNavBtn'); if(studentsNav) studentsNav.style.display='block';
+    const studentsPanel=document.getElementById('alumnos'); if(studentsPanel) studentsPanel.style.display='block';
+  }
+  $('#statCourses').textContent=d.courses; $('#statStudents').textContent=d.students; $('#statProgress').textContent=d.progress+'%'; $('#statSat').textContent=d.satisfaction+'%';
+  renderCourses(); fillSelect(); fillAcademicSelects(); loadAcademic(); loadLibrary(); loadForum();
+}
+function formatSessionDate(value){
+  if(!value)return 'Sesión académica';
+  const d=new Date(value+'T12:00:00');
+  return new Intl.DateTimeFormat('es-MX',{day:'numeric',month:'long',year:'numeric'}).format(d);
+}
+function openPonencia(courseId,lessonId){
+  const c=courses.find(x=>x.id===courseId);
+  if(!c)return;
+  const l=c.lessons.find(x=>x.id===lessonId);
+  if(!l)return;
+  const raw=JSON.stringify(l);
+  if(token){viewLesson(raw,null,true);return;}
+  const studentToken=sessionStorage.getItem('avico_student_token')||localStorage.getItem('avico_student_token');
+  if(!studentToken){
+    document.getElementById('avicoWelcome').hidden=false;
+    return;
+  }
+  sessionStorage.setItem('avico_student_token',studentToken);
+  viewLesson(raw,null,false);
+}
+function renderCourses(){
+  const box=$('#sessionList');
+  const lessons=courses.flatMap(c=>(c.lessons||[]).map(l=>({...l,course_id:c.id,course_title:c.title})));
+  if(!lessons.length){
+    box.innerHTML='<p class="muted" style="padding:30px 8px">Todavía no hay ponencias publicadas.</p>';
+  }else{
+    box.innerHTML=lessons.map((l,i)=>`
+      <article class="ponenciaRow">
+        <div class="ponenciaVisual" aria-hidden="true">
+          <div class="ponenciaBadge"></div>
+          <div class="ponenciaRibbon">Sesión académica<small>${esc((l.session_date||'AVICO').toUpperCase())}</small></div>
+        </div>
+        <div class="ponenciaInfo">
+          <h3>${esc(l.title)}</h3>
+          <div class="ponenciaDate">${esc(formatSessionDate(l.session_date))}</div>
+          ${l.institution?`<div class="ponenciaInstitution">${esc(l.institution)}</div>`:''}
+          ${l.speaker?`<div class="ponenciaSpeaker">• <b>Ponente:</b><br>&nbsp;&nbsp;&nbsp;${esc(l.speaker)}</div>`:''}
+          ${l.notes?`<div class="muted" style="margin-top:12px;line-height:1.5">${esc(l.notes)}</div>`:''}
+          ${token?`<div class="ponenciaAdminActions"><button class="btn danger" onclick="event.stopPropagation();delLesson(${l.id})">Eliminar</button></div>`:''}
+        </div>
+        <div class="ponenciaAction"><button class="btn" onclick="openPonencia(${l.course_id},${l.id})">Ir a la ponencia</button></div>
+      </article>`).join('');
+  }
+  renderCourseManager(); loadStudents(); loadAcademic(); loadLibrary();
+}
+function renderCourseManager(){
+  const box=$('#courseManagerList'); if(!box) return;
+  if(!token){box.innerHTML=''; return;}
+  if(!courses.length){box.innerHTML='<p class="muted">No hay cursos creados.</p>'; return;}
+  box.innerHTML=courses.map(c=>`
+    <div class="courseManageRow">
+      <div class="courseMeta">
+        <b>${esc(c.title)}</b>
+        <small>${esc(c.subtitle||'Sin subtítulo')} · ${esc(c.category||'Sin categoría')} · ${c.lessons.length} ponencia(s)</small>
+        <div class="muted" style="font-size:12px;margin-top:6px">Acceso completo e inmediato para todos los asistentes registrados.</div>
+      </div>
+      <button class="btn danger" onclick="delCourse(${c.id})">Eliminar curso</button>
+    </div>`).join('');
+}
+async function saveAccessHours(id){
+  const hours=parseInt($('#hours-'+id).value||'24',10);
+  const r=await fetch('/api/courses/'+id+'/access-settings',{method:'PUT',headers:{Authorization:'Bearer '+token,'Content-Type':'application/json'},body:JSON.stringify({access_hours:hours})});
+  if(!r.ok){alert('No se pudo cambiar la duración');return}
+  await load();
+  alert('Duración actualizada para nuevas inscripciones.');
+}
+async function openCourse(id){
+  const c=courses.find(x=>x.id===id); if(!c)return;
+  $('#lessonPanel').style.display='block';
+  $('#lessonCourseTitle').textContent=c.title;
+  $('#lessonCourseSubtitle').textContent=c.subtitle||'';
+  $('#lessonPanel').scrollIntoView({behavior:'smooth'});
+
+  // Administrador: acceso permanente y visor original.
+  if(token){
+    if(courseTimerInterval) clearInterval(courseTimerInterval);
+    $('#lessons').innerHTML=c.lessons.length?c.lessons.map(l=>`
+      <div class="lessonRow">
+        <div><b>${esc(l.title)}</b><div class="muted" style="font-size:12px">${esc(l.notes||'')} · ${l.kind.toUpperCase()}</div></div>
+        <button class="btn" onclick='event.stopPropagation();viewLesson(${JSON.stringify(JSON.stringify(l))},null,true)'>Abrir</button>
+        <button class="btn danger" onclick="event.stopPropagation();delLesson(${l.id})">Eliminar</button>
+      </div>`).join(''):'<p class="muted">Todavía no hay clases.</p>';
+    return;
+  }
+
+  const studentToken=sessionStorage.getItem('avico_student_token')||localStorage.getItem('avico_student_token');
+  if(!studentToken){
+    $('#lessons').innerHTML='<div class="accessExpired"><b>Inicia sesión para ver las clases.</b><br>Tu cuenta da acceso a todos los cursos publicados.<br><button type="button" class="btn" onclick="document.getElementById(\'avicoWelcome\').hidden=false">Iniciar sesión</button></div>';
+    return;
+  }
+  try{
+    const r=await fetch(`/api/student-courses/${id}/access`,{headers:{Authorization:'Bearer '+studentToken}});
+    if(r.status===401){
+      $('#lessons').innerHTML='<div class="accessExpired"><b>El servidor no reconoce esta sesión.</b><br>La clase permanece abierta. Vuelve a iniciar sesión desde el botón de abajo.<br><button type="button" class="btn" onclick="document.getElementById(\'avicoWelcome\').hidden=false">Iniciar sesión</button></div>';
+      return;
+    }
+    if(!r.ok)throw Error('No se pudo abrir el curso.');
+    const data=await r.json();
+    if(courseTimerInterval)clearInterval(courseTimerInterval);
+    $('#lessons').innerHTML=data.lessons.length?data.lessons.map(l=>`
+      <div class="lessonRow">
+        <div><b>${esc(l.title)}</b><div class="muted" style="font-size:12px">${esc(l.notes||'')} · ${l.kind.toUpperCase()}</div></div>
+        <button class="btn" onclick='event.stopPropagation();viewLesson(${JSON.stringify(JSON.stringify(l))},null,false)'>Ver clase</button>
+      </div>`).join(''):'<p class="muted">Todavía no hay clases.</p>';
+  }catch(err){$('#lessons').textContent=err.message||'No se pudo abrir el curso.';}
+}
+let avicoViewerBlob=null;
+let avicoSlideBlob=null;
+async function showAvicoSlide(lessonId,number,count){
+  const status=$('#avicoSlideStatus'), image=$('#avicoSlideImage');
+  status.textContent='Cargando diapositiva '+number+' de '+count+'…';
+  try{
+    const r=await fetch('/api/student-lessons/'+lessonId+'/slides/'+number,{headers:{Authorization:'Bearer '+sessionStorage.getItem('avico_student_token')}});
+    if(!r.ok)throw Error('No se pudo cargar la diapositiva.');
+    const url=URL.createObjectURL(await r.blob());
+    image.onload=()=>{if(avicoSlideBlob)URL.revokeObjectURL(avicoSlideBlob);avicoSlideBlob=url;status.textContent=number+' / '+count;};
+    image.src=url;
+    $('#avicoPrevSlide').disabled=number<=1;
+    $('#avicoNextSlide').disabled=number>=count;
+    $('#avicoPrevSlide').onclick=()=>showAvicoSlide(lessonId,number-1,count);
+    $('#avicoNextSlide').onclick=()=>showAvicoSlide(lessonId,number+1,count);
+  }catch(e){status.textContent=e.message;}
+}
+let avicoProgressTimer=null;
+async function getLessonProgress(lessonId){
+  const st=sessionStorage.getItem('avico_student_token'); if(!st)return {position_seconds:0};
+  try{const r=await fetch('/api/student-progress/'+lessonId,{headers:{Authorization:'Bearer '+st}});return r.ok?await r.json():{position_seconds:0};}catch{return {position_seconds:0}}
+}
+async function saveLessonProgress(lessonId,position,duration,completed=false){
+  const st=sessionStorage.getItem('avico_student_token'); if(!st)return;
+  try{await fetch('/api/student-progress/'+lessonId,{method:'PUT',headers:{Authorization:'Bearer '+st,'Content-Type':'application/json'},body:JSON.stringify({position_seconds:position||0,duration_seconds:duration||0,completed})});}catch{}
+}
+function trackHtmlVideo(video,lessonId,startAt){
+  if(startAt>0) video.addEventListener('loadedmetadata',()=>{video.currentTime=Math.min(startAt,Math.max(0,video.duration-1));},{once:true});
+  let last=0;
+  video.addEventListener('timeupdate',()=>{if(video.currentTime-last>=10){last=video.currentTime;saveLessonProgress(lessonId,video.currentTime,video.duration)}});
+  video.addEventListener('pause',()=>saveLessonProgress(lessonId,video.currentTime,video.duration));
+  video.addEventListener('ended',()=>saveLessonProgress(lessonId,video.duration,video.duration,true));
+}
+async function viewLesson(raw,accessToken=null,isAdmin=false){
+  const l=JSON.parse(raw); $('#viewerTitle').textContent=l.title; let html='';
+  if(avicoViewerBlob){URL.revokeObjectURL(avicoViewerBlob);avicoViewerBlob=null;}
+  if(avicoSlideBlob){URL.revokeObjectURL(avicoSlideBlob);avicoSlideBlob=null;}
+  if(l.kind==='stream'){
+    $('#viewerContent').innerHTML='<div class="pptBox"><p>Preparando streaming seguro…</p></div>';
+    $('#viewer').classList.add('show');
+    try{
+      const authToken=isAdmin?token:sessionStorage.getItem('avico_student_token');
+      const response=await fetch('/api/stream/player/'+l.id,{headers:{Authorization:'Bearer '+authToken}});
+      if(!response.ok)throw Error('No se pudo abrir el video.');
+      const data=await response.json();
+      const progress=isAdmin?{position_seconds:0}:await getLessonProgress(l.id);
+      const resume=Math.max(0,Math.floor(progress.position_seconds||0));
+      const src=data.player_url+(resume?'?startTime='+resume:'');
+      $('#viewerContent').innerHTML='<iframe src="'+esc(src)+'" style="width:100%;height:100%;border:0" allow="accelerometer;gyroscope;autoplay;encrypted-media;picture-in-picture" allowfullscreen></iframe>';
+      if(!isAdmin){
+        // Cloudflare Stream Player API reports currentTime/duration by postMessage.
+        const frame=$('#viewerContent iframe');
+        const onMsg=e=>{if(!e.data||typeof e.data!=='object')return;const d=e.data;
+          if(d.currentTime!=null&&d.duration){saveLessonProgress(l.id,Number(d.currentTime),Number(d.duration),d.ended===true);}
+        };
+        window.addEventListener('message',onMsg);
+      }
+    }catch(e){$('#viewerContent').innerHTML='<div class="pptBox"><p>'+esc(e.message)+'</p></div>';}
+    return;
+  }
+  if(l.kind==='pptx'&&!isAdmin){
+    $('#viewerContent').innerHTML='<div class="pptBox" style="max-width:none;width:100%;padding:12px"><div style="display:flex;justify-content:center;align-items:center;gap:12px;margin-bottom:10px"><button class="btn" id="avicoPrevSlide" disabled>← Anterior</button><span id="avicoSlideStatus" aria-live="polite">Preparando presentación…</span><button class="btn" id="avicoNextSlide" disabled>Siguiente →</button></div><img id="avicoSlideImage" alt="Diapositiva de la clase" style="display:block;width:100%;height:calc(100vh - 170px);object-fit:contain" oncontextmenu="return false"></div>';
+    $('#viewer').classList.add('show');
+    try{
+      const response=await fetch('/api/student-lessons/'+l.id+'/slides',{headers:{Authorization:'Bearer '+sessionStorage.getItem('avico_student_token')}});
+      if(!response.ok)throw Error('No se pudo abrir esta presentación.');
+      const data=await response.json();
+      if(!data.count)throw Error('La presentación no contiene diapositivas.');
+      await showAvicoSlide(l.id,1,data.count);
+    }catch(e){$('#avicoSlideStatus').textContent=e.message;}
+    return;
+  }
+  let fileUrl='';
+  if(l.filename){
+    const url=isAdmin?`/uploads/${encodeURIComponent(l.filename)}`:`/student-course-file/${l.id}/${encodeURIComponent(l.filename)}`;
+    try{
+      const response=await fetch(url,{headers:{Authorization:'Bearer '+(isAdmin?token:sessionStorage.getItem('avico_student_token'))}});
+      if(!response.ok)throw Error('Inicia sesión para acceder a este archivo.');
+      avicoViewerBlob=URL.createObjectURL(await response.blob());fileUrl=avicoViewerBlob;
+    }catch(err){alert(err.message);return;}
+  }
+  if(!l.filename)html=`<div class="pptBox"><h2>${esc(l.title)}</h2><p>${esc(l.notes||'Contenido de texto')}</p></div>`;
+  else if(l.kind==='pdf')html=`<iframe src="${fileUrl}#toolbar=0&navpanes=0"></iframe>`;
+  else if(['mp4','mov'].includes(l.kind))html=`<video controls controlsList="nodownload" src="${fileUrl}" oncontextmenu="return false"></video>`;
+  else if(['png','jpg','jpeg','webp'].includes(l.kind))html=`<img src="${fileUrl}" oncontextmenu="return false">`;
+  else if(l.kind==='pptx')html='<div class="pptBox"><p>Vista previa de PowerPoint disponible para alumnos en su cuenta.</p></div>';
+  $('#viewerContent').innerHTML=html;
+  $('#viewer').classList.add('show');
+  if(!isAdmin&&['mp4','mov'].includes(l.kind)){
+    const progress=await getLessonProgress(l.id);
+    const video=$('#viewerContent video');
+    if(video)trackHtmlVideo(video,l.id,Number(progress.position_seconds||0));
+  }
+}
+let courseTimerInterval=null;
+function formatRemaining(sec){
+  sec=Math.max(0,Math.floor(sec));
+  const h=Math.floor(sec/3600),m=Math.floor((sec%3600)/60),s=sec%60;
+  return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+}
+function renderTimedCourse(data,accessToken){
+  if(courseTimerInterval) clearInterval(courseTimerInterval);
+  let remaining=data.remaining_seconds||0;
+  const rows=data.lessons.length?data.lessons.map(l=>`
+    <div class="lessonRow">
+      <div><b>${esc(l.title)}</b><div class="muted" style="font-size:12px">${esc(l.notes||'')} · ${l.kind.toUpperCase()}</div></div>
+      <button class="btn" onclick='event.stopPropagation();viewLesson(${JSON.stringify(JSON.stringify(l))},${JSON.stringify(accessToken)},false)'>Ver clase</button>
+    </div>`).join(''):'<p class="muted">Todavía no hay clases.</p>';
+  $('#lessons').innerHTML=`<div class="courseTimer">⏱ Tiempo restante: <span class="clock" id="courseCountdown">${formatRemaining(remaining)}</span></div>${rows}`;
+  courseTimerInterval=setInterval(()=>{
+    remaining--;
+    const el=$('#courseCountdown'); if(el) el.textContent=formatRemaining(remaining);
+    if(remaining<=0){
+      clearInterval(courseTimerInterval);
+      closeViewer();
+      $('#lessons').innerHTML='<div class="accessExpired"><b>Tiempo finalizado</b><br>Se cumplieron las horas permitidas para revisar este curso.</div>';
+    }
+  },1000);
+}
+function closeViewer(){ $('#viewer').classList.remove('show'); if(document.fullscreenElement)document.exitFullscreen()}
+function toggleFull(){let el=$('#viewer'); if(!document.fullscreenElement) el.requestFullscreen(); else document.exitFullscreen()}
+function esc(s){return (s??'').toString().replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]))}
+function openAdmin(){ if(token){showAdmin()} else $('#loginModal').classList.add('show') }
+function closeLogin(){ $('#loginModal').classList.remove('show') }
+async function login(){
+ try{let d=await api('/api/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({password:$('#password').value})}); token=d.token;localStorage.setItem('aula_admin_token',token);closeLogin();showAdmin();load()}
+ catch(e){alert('Contraseña incorrecta')}
+}
+function showAdmin(){
+  $('#adminPanel').classList.add('show');
+  const adminNav=document.getElementById('adminNavBtn'); if(adminNav) adminNav.style.display='block';
+  const studentsNav=document.getElementById('studentsNavBtn'); if(studentsNav) studentsNav.style.display='block';
+  const studentsPanel=document.getElementById('alumnos'); if(studentsPanel) studentsPanel.style.display='block';
+  const totalPonencias=courses.reduce((n,c)=>n+(c.lessons?.length||0),0);
+  const p=document.getElementById('adminStatPonencias'); if(p)p.textContent=totalPonencias;
+  const c=document.getElementById('adminStatCursos'); if(c)c.textContent=courses.length;
+  const a=document.getElementById('adminStatAlumnos'); if(a)a.textContent=document.getElementById('statStudents')?.textContent||'–';
+  $('#adminPanel').scrollIntoView({behavior:'smooth'});
+  renderCourseManager(); loadStudents(); loadAcademic();
+  $('#exportBtn').onclick=async(e)=>{
+    e.preventDefault();
+    let r=await fetch('/api/export',{headers:{Authorization:'Bearer '+token}});
+    let b=await r.blob(); let u=URL.createObjectURL(b);
+    let a=document.createElement('a'); a.href=u; a.download='aula_medica_export.json'; a.click();
+    URL.revokeObjectURL(u);
+  }
+}
+function fillSelect(){
+  $('#courseSelect').innerHTML=courses.map(c=>`<option value="${c.id}">${esc(c.title)}</option>`).join('');
+  const sc=$('#studentCourseSelect');
+  if(sc) sc.innerHTML='<option value="">Selecciona un curso</option>'+courses.map(c=>`<option value="${c.id}">${esc(c.title)} · ${c.access_hours||24} h</option>`).join('');
+}
+$('#courseForm').onsubmit=async e=>{e.preventDefault();try{let fd=new FormData(e.target);await fetch('/api/courses',{method:'POST',headers:{Authorization:'Bearer '+token},body:fd}).then(r=>{if(!r.ok)throw Error()});e.target.reset();await load();alert('Curso creado')}catch{alert('No se pudo crear el curso')}}
+async function uploadStreamLesson(){
+  const form=$('#lessonForm'), file=$('#streamVideoFile').files[0], status=$('#streamProgress'), btn=$('#streamUploadBtn');
+  if(!file){alert('Selecciona el video de la clase');return}
+  const courseId=form.querySelector('[name="course_id"]').value, title=form.querySelector('[name="title"]').value.trim();
+  if(!courseId||!title){alert('Selecciona el curso y escribe el título de la ponencia');return}
+  btn.disabled=true; status.textContent='Preparando carga directa…';
+  try{
+    const name64=btoa(unescape(encodeURIComponent(file.name)));
+    const provision=await fetch('/api/stream/tus',{method:'POST',headers:{
+      Authorization:'Bearer '+token,'Upload-Length':String(file.size),'Upload-Metadata':'name '+name64
+    }});
+    if(!provision.ok)throw Error((await provision.text())||'No se pudo preparar el streaming');
+    const uploadURL=provision.headers.get('Location'), uid=provision.headers.get('Upload-UID');
+    if(!uploadURL||!uid)throw Error('No se recibió la dirección de carga');
+    let offset=0, chunkSize=50*1024*1024;
+    while(offset<file.size){
+      const chunk=file.slice(offset,Math.min(offset+chunkSize,file.size));
+      const r=await fetch(uploadURL,{method:'PATCH',headers:{'Tus-Resumable':'1.0.0','Upload-Offset':String(offset),'Content-Type':'application/offset+octet-stream'},body:chunk});
+      if(!r.ok)throw Error('La carga se interrumpió. Intenta nuevamente.');
+      offset=Number(r.headers.get('Upload-Offset')||offset+chunk.size);
+      status.textContent='Subiendo a streaming… '+Math.min(100,Math.round(offset/file.size*100))+'%';
+    }
+    status.textContent='Guardando clase en el aula…';
+    const payload={course_id:Number(courseId),title,uid,
+      notes:form.querySelector('[name="notes"]').value,
+      session_date:form.querySelector('[name="session_date"]').value,
+      institution:form.querySelector('[name="institution"]').value,
+      speaker:form.querySelector('[name="speaker"]').value};
+    const save=await fetch('/api/stream/lessons',{method:'POST',headers:{Authorization:'Bearer '+token,'Content-Type':'application/json'},body:JSON.stringify(payload)});
+    if(!save.ok)throw Error('El video subió, pero no se pudo registrar la clase');
+    form.reset(); $('#streamVideoFile').value=''; status.textContent='✓ Video enviado a streaming. Cloudflare está procesándolo.';
+    await load();
+  }catch(err){status.textContent='Error: '+err.message;}finally{btn.disabled=false}
+}
+$('#streamUploadBtn').onclick=uploadStreamLesson;
+$('#lessonForm').onsubmit=async e=>{e.preventDefault();try{let fd=new FormData(e.target);await fetch('/api/lessons',{method:'POST',headers:{Authorization:'Bearer '+token},body:fd}).then(r=>{if(!r.ok)throw Error()});e.target.reset();await load();alert('Ponencia agregada')}catch{alert('No se pudo cargar la ponencia')}}
+async function delLesson(id){
+  if(!confirm('¿Eliminar esta clase?'))return;
+  await fetch('/api/lessons/'+id,{method:'DELETE',headers:{Authorization:'Bearer '+token}});
+  await load();
+  $('#lessonPanel').style.display='none';
+}
+async function delCourse(id){
+  const c=courses.find(x=>x.id===id);
+  const name=c?c.title:'este curso';
+  if(!confirm(`¿Eliminar el curso "${name}"?\n\nTambién se eliminarán todas las clases asociadas. Esta acción no se puede deshacer.`)) return;
+  try{
+    const r=await fetch('/api/courses/'+id,{method:'DELETE',headers:{Authorization:'Bearer '+token}});
+    if(!r.ok) throw Error();
+    $('#lessonPanel').style.display='none';
+    await load();
+    alert('Curso eliminado correctamente');
+  }catch{
+    alert('No se pudo eliminar el curso');
+  }
+}
+
+$('#studentRegisterForm').onsubmit=async e=>{
+  e.preventDefault();
+  try{
+    const studentToken=sessionStorage.getItem('avico_student_token');if(!studentToken)throw new Error('Inicia sesión como alumno para inscribirte.');
+    const fd=new FormData(e.target);
+    const r=await fetch('/api/register',{method:'POST',headers:{Authorization:'Bearer '+studentToken},body:fd});
+    if(!r.ok){
+      if(r.status===409) throw new Error('Este correo ya fue inscrito en este curso.');
+      const detail=await r.json();throw new Error(detail.detail||'No se pudo registrar');
+    }
+    const d=await r.json();
+    const map=JSON.parse(localStorage.getItem('aula_course_tokens')||'{}');
+    map[String(d.course_id)]=d.access_token;
+    localStorage.setItem('aula_course_tokens',JSON.stringify(map));
+    e.target.reset();
+    fillSelect();
+    await load();
+    alert(`Inscripción registrada. Tu acceso estará disponible durante ${d.access_hours} horas.`);
+    openCourse(d.course_id);
+    window.avicoRefreshStudent?.();
+    if(token) loadStudents();
+  }catch(err){ alert(err.message||'No se pudo registrar al alumno') }
+}
+async function loadStudents(){
+  if(!token) return;
+  const panel=$('#studentAdmin'); if(panel) panel.style.display='block';
+  try{
+    let r=await fetch('/api/students',{headers:{Authorization:'Bearer '+token}});
+    if(r.status===401){token='';localStorage.removeItem('aula_admin_token');return}
+    if(!r.ok) throw Error();
+    const students=await r.json();
+    $('#studentCountText').textContent=`${students.length} alumno(s) registrado(s)`;
+    $('#studentTableBody').innerHTML=students.length?students.map(s=>`
+      <tr>
+        <td><b>${esc(s.full_name)}</b></td>
+        <td>${s.age??''}</td>
+        <td>${esc(s.institution||'')}</td>
+        <td>${esc(s.position||'')}</td>
+        <td>${esc(s.email||'')}</td>
+        <td>${esc(s.course_title||'General')}</td>
+        <td>${esc((s.created_at||'').slice(0,10))}</td>
+        <td><button class="btn danger" onclick="deleteStudent(${s.id})">Eliminar</button></td>
+      </tr>`).join(''):'<tr><td colspan="8" class="muted">Aún no hay alumnos inscritos.</td></tr>';
+  }catch{ alert('No se pudo cargar la lista de alumnos') }
+}
+async function deleteStudent(id){
+  if(!confirm('¿Eliminar este alumno del registro?')) return;
+  const r=await fetch('/api/students/'+id,{method:'DELETE',headers:{Authorization:'Bearer '+token}});
+  if(!r.ok){alert('No se pudo eliminar');return}
+  await load(); await loadStudents();
+}
+async function exportStudents(){
+  let r=await fetch('/api/students/export.csv',{headers:{Authorization:'Bearer '+token}});
+  if(!r.ok){alert('No se pudo exportar');return}
+  let b=await r.blob(), u=URL.createObjectURL(b), a=document.createElement('a');
+  a.href=u;a.download='alumnos_aula_medica.csv';a.click();URL.revokeObjectURL(u);
+}
+async function exportStudentsExcel(){
+  let r=await fetch('/api/students/export.xlsx',{headers:{Authorization:'Bearer '+token}});
+  if(!r.ok){alert('No se pudo generar la lista de asistencia');return}
+  let b=await r.blob(), u=URL.createObjectURL(b), a=document.createElement('a');
+  a.href=u;a.download='lista_asistencia_hemorragia_obstetrica.xlsx';a.click();URL.revokeObjectURL(u);
+}
+
+
+
+async function loadForum(){
+  const box=$('#forumList'); if(!box)return;
+  try{
+    const threads=await api('/api/forum');
+    box.innerHTML=threads.length?threads.map(t=>`
+      <div class="forumThread">
+        <h3>${esc(t.title)}</h3>
+        <div class="forumMeta">${esc(t.author)} · ${esc((t.created_at||'').replace('T',' ').slice(0,16))}</div>
+        <div class="forumBody">${esc(t.body)}</div>
+        <div>
+          ${(t.replies||[]).map(r=>`<div class="forumReply ${r.is_admin?'admin':''}">
+            <b>${esc(r.author)}${r.is_admin?' · Administrador':''}</b>
+            <div style="margin-top:4px">${esc(r.body)}</div>
+          </div>`).join('')}
+        </div>
+        <div class="forumReplyForm">
+          <input id="reply-${t.id}" placeholder="Responder a esta duda">
+          <button class="btn" onclick="replyForum(${t.id})">Responder</button>
+          ${token?`<button class="btn danger" onclick="deleteForumThread(${t.id})">Eliminar</button>`:''}
+        </div>
+      </div>`).join(''):'<p class="muted">Aún no hay dudas publicadas.</p>';
+  }catch{box.innerHTML='<p class="muted">No se pudo cargar el foro.</p>'}
+}
+async function replyForum(id){
+  const input=document.getElementById('reply-'+id); if(!input||!input.value.trim())return;
+  const authToken=token||sessionStorage.getItem('avico_student_token')||localStorage.getItem('avico_student_token');
+  if(!authToken){document.getElementById('avicoWelcome').hidden=false;return}
+  const r=await fetch('/api/forum/'+id+'/replies',{method:'POST',headers:{Authorization:'Bearer '+authToken,'Content-Type':'application/json'},body:JSON.stringify({body:input.value.trim()})});
+  if(!r.ok){alert('No se pudo publicar la respuesta');return}
+  input.value=''; await loadForum();
+}
+async function deleteForumThread(id){
+  if(!confirm('¿Eliminar esta duda y sus respuestas?'))return;
+  const r=await fetch('/api/forum/'+id,{method:'DELETE',headers:{Authorization:'Bearer '+token}});
+  if(!r.ok){alert('No se pudo eliminar');return}
+  await loadForum();
+}
+document.getElementById('forumForm')?.addEventListener('submit',async e=>{
+  e.preventDefault();
+  const authToken=sessionStorage.getItem('avico_student_token')||localStorage.getItem('avico_student_token');
+  if(!authToken){document.getElementById('avicoWelcome').hidden=false;return}
+  const title=$('#forumTitle').value.trim(),body=$('#forumBody').value.trim();
+  const r=await fetch('/api/forum',{method:'POST',headers:{Authorization:'Bearer '+authToken,'Content-Type':'application/json'},body:JSON.stringify({title,body})});
+  if(!r.ok){alert('No se pudo publicar la duda');return}
+  e.target.reset(); await loadForum();
+});
+
+async function loadLibrary(){
+  try{
+    const items=await api('/api/library');
+    const box=$('#libraryGrid'); if(!box)return;
+    box.innerHTML=items.length?items.map(r=>{
+      const href=r.filename?('/uploads/'+encodeURIComponent(r.filename)):(r.url||'#');
+      const kind=(r.file_kind||'enlace').toUpperCase();
+      const meta=[r.authors,r.source,r.year].filter(Boolean).map(esc).join(' · ');
+      return `<div class="libraryCard">
+        <div><span class="badge">${esc(r.category||'Recurso')}</span></div>
+        <h3>${esc(r.title)}</h3>
+        ${meta?`<div class="libraryMeta">${meta}</div>`:''}
+        ${r.description?`<p>${esc(r.description)}</p>`:''}
+        <div class="libraryMeta">${r.filename?'Archivo '+kind:'Enlace externo'}</div>
+        <div class="libraryActions">
+          <a class="btn" target="_blank" rel="noopener noreferrer" href="${esc(href)}" style="text-decoration:none">Abrir recurso</a>
+          ${token?`<button class="btn danger" onclick="deleteLibraryResource(${r.id})">Eliminar</button>`:''}
+        </div>
+      </div>`;
+    }).join(''):'<p class="muted">Todavía no hay recursos publicados en la Biblioteca.</p>';
+  }catch{
+    const box=$('#libraryGrid'); if(box) box.innerHTML='<p class="muted">No se pudo cargar la Biblioteca.</p>';
+  }
+}
+
+async function deleteLibraryResource(id){
+  if(!confirm('¿Eliminar este recurso de la Biblioteca?'))return;
+  const r=await fetch('/api/library/'+id,{method:'DELETE',headers:{Authorization:'Bearer '+token}});
+  if(!r.ok){alert('No se pudo eliminar el recurso');return}
+  await loadLibrary();
+}
+
+$('#libraryForm').onsubmit=async e=>{
+  e.preventDefault();
+  const fd=new FormData(e.target);
+  const r=await fetch('/api/library',{method:'POST',headers:{Authorization:'Bearer '+token},body:fd});
+  if(!r.ok){
+    let msg='No se pudo publicar el recurso';
+    try{const d=await r.json(); if(d.detail)msg=d.detail}catch{}
+    alert(msg);return;
+  }
+  e.target.reset(); await loadLibrary(); alert('Recurso publicado en Biblioteca');
+};
+
+function youtubeEmbed(url){
+  try{
+    const u=new URL(url);
+    if(u.hostname.includes('youtu.be')) return 'https://www.youtube.com/embed/'+u.pathname.replace('/','');
+    if(u.hostname.includes('youtube.com')){
+      const v=u.searchParams.get('v');
+      if(v) return 'https://www.youtube.com/embed/'+v;
+      if(u.pathname.includes('/embed/')) return url;
+    }
+  }catch{}
+  return '';
+}
+async function loadAcademic(){
+  await Promise.all([loadVideos(),loadQuizzes(),loadCases()]);
+}
+async function loadVideos(){
+  try{
+    const videos=await api('/api/videos');
+    const g=$('#videoGrid'); if(!g)return;
+    g.innerHTML=videos.length?videos.map(v=>{
+      const emb=youtubeEmbed(v.url);
+      const media=emb?`<iframe src="${emb}" allowfullscreen loading="lazy"></iframe>`:
+        `<div style="padding:20px;text-align:center"><a class="btn red" target="_blank" href="${esc(v.url)}">Abrir video</a></div>`;
+      return `<div class="videoCard"><div class="videoFrame">${media}</div><div class="videoBody"><span class="badge">${esc(v.category||'Video')}</span><h3>${esc(v.title)}</h3><p>${esc(v.description||'')}</p>${token?`<button class="btn danger" onclick="deleteVideo(${v.id})">Eliminar</button>`:''}</div></div>`;
+    }).join(''):'<p class="muted">Todavía no hay videos médicos publicados.</p>';
+  }catch{}
+}
+async function loadQuizzes(){
+  try{
+    const quizzes=await api('/api/quizzes');
+    const box=$('#quizList'); if(!box)return;
+    box.innerHTML=quizzes.length?quizzes.map(q=>`
+      <div class="quizCard">
+        <span class="badge">${esc(q.course_title||'General')}</span>
+        <h3>${esc(q.title)}</h3><p class="muted">${esc(q.description||'')}</p>
+        <div id="quizQuestions-${q.id}" style="display:none">
+          <div class="field"><label>Nombre</label><input id="quizName-${q.id}" placeholder="Tu nombre"></div>
+          <div class="field"><label>Correo (opcional)</label><input id="quizEmail-${q.id}" type="email"></div>
+          ${q.questions.map((qq,i)=>`
+            <div class="quizQuestion">
+              <b>${i+1}. ${esc(qq.question)}</b>
+              ${['A','B','C','D'].map(letter=>`<label class="quizOption"><input type="radio" name="q${qq.id}" value="${letter}"> ${letter}. ${esc(qq['option_'+letter.toLowerCase()])}</label>`).join('')}
+            </div>`).join('')}
+          <button class="btn red" onclick="submitQuiz(${q.id})">Calificar</button>
+          <div id="quizResult-${q.id}" style="margin-top:12px"></div>
+        </div>
+        <button class="btn" onclick="toggleQuiz(${q.id})">${q.questions.length?'Iniciar autoevaluación':'Sin preguntas todavía'}</button>
+        ${token?`<button class="btn danger" onclick="deleteQuiz(${q.id})">Eliminar evaluación</button>`:''}
+      </div>`).join(''):'<p class="muted">Todavía no hay autoevaluaciones publicadas.</p>';
+    const sel=$('#questionQuizSelect');
+    if(sel) sel.innerHTML=quizzes.map(q=>`<option value="${q.id}">${esc(q.title)}</option>`).join('');
+  }catch{}
+}
+function toggleQuiz(id){
+  const el=$('#quizQuestions-'+id); if(!el)return;
+  el.style.display=el.style.display==='none'?'block':'none';
+}
+async function submitQuiz(id){
+  const quizzes=await api('/api/quizzes');
+  const q=quizzes.find(x=>x.id===id); if(!q)return;
+  const answers={};
+  q.questions.forEach(qq=>{
+    const checked=document.querySelector(`input[name="q${qq.id}"]:checked`);
+    if(checked) answers[String(qq.id)]=checked.value;
+  });
+  const payload={student_name:$('#quizName-'+id).value,email:$('#quizEmail-'+id).value,answers};
+  const r=await fetch('/api/quizzes/'+id+'/submit',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
+  if(!r.ok){alert('Completa tu nombre antes de enviar.');return}
+  const d=await r.json();
+  const pct=d.total?Math.round(d.score*100/d.total):0;
+  $('#quizResult-'+id).innerHTML=`<div class="${pct>=70?'resultGood':'resultBad'}">Resultado: ${d.score}/${d.total} (${pct}%)</div>`+
+    d.review.filter(x=>!x.ok&&x.explanation).map(x=>`<div class="muted" style="margin-top:6px">Retroalimentación: ${esc(x.explanation)}</div>`).join('');
+}
+async function loadCases(){
+  try{
+    const cases=await api('/api/cases');
+    const box=$('#caseList'); if(!box)return;
+    box.innerHTML=cases.length?cases.map(c=>`
+      <div class="caseCard">
+        <span class="badge">${esc(c.category||'Caso clínico')}</span><h3>${esc(c.title)}</h3>
+        <p style="line-height:1.65">${esc(c.summary)}</p>
+        ${c.question?`<p><b>Pregunta para discusión:</b> ${esc(c.question)}</p>`:''}
+        <div>${c.comments.map(cm=>`<div class="caseComment"><b>${esc(cm.author)}</b><div>${esc(cm.comment)}</div><small class="muted">${esc((cm.created_at||'').slice(0,16))}</small></div>`).join('')}</div>
+        <form onsubmit="postCaseComment(event,${c.id})" style="margin-top:10px">
+          <div class="field"><input name="author" required placeholder="Tu nombre"></div>
+          <div class="field"><textarea name="comment" required rows="3" placeholder="Comparte tu razonamiento clínico..."></textarea></div>
+          <button class="btn">Publicar comentario</button>
+          ${token?`<button type="button" class="btn danger" onclick="deleteCase(${c.id})">Eliminar caso</button>`:''}
+        </form>
+      </div>`).join(''):'<p class="muted">Todavía no hay casos clínicos publicados.</p>';
+  }catch{}
+}
+async function postCaseComment(e,id){
+  e.preventDefault(); const fd=new FormData(e.target);
+  const r=await fetch('/api/cases/'+id+'/comments',{method:'POST',body:fd});
+  if(!r.ok){alert('No se pudo publicar el comentario');return}
+  e.target.reset(); await loadCases();
+}
+async function deleteVideo(id){
+  if(!confirm('¿Eliminar este video?'))return;
+  await fetch('/api/videos/'+id,{method:'DELETE',headers:{Authorization:'Bearer '+token}}); await loadVideos();
+}
+async function deleteQuiz(id){
+  if(!confirm('¿Eliminar esta autoevaluación y sus resultados?'))return;
+  await fetch('/api/quizzes/'+id,{method:'DELETE',headers:{Authorization:'Bearer '+token}}); await loadQuizzes();
+}
+async function deleteCase(id){
+  if(!confirm('¿Eliminar este caso y su discusión?'))return;
+  await fetch('/api/cases/'+id,{method:'DELETE',headers:{Authorization:'Bearer '+token}}); await loadCases();
+}
+function fillAcademicSelects(){
+  const s=$('#quizCourseSelect');
+  if(s) s.innerHTML='<option value="">General</option>'+courses.map(c=>`<option value="${c.id}">${esc(c.title)}</option>`).join('');
+}
+$('#videoForm').onsubmit=async e=>{
+  e.preventDefault(); const fd=new FormData(e.target);
+  const r=await fetch('/api/videos',{method:'POST',headers:{Authorization:'Bearer '+token},body:fd});
+  if(!r.ok){alert('No se pudo agregar el video');return}
+  e.target.reset(); await loadVideos(); alert('Video agregado');
+}
+$('#quizForm').onsubmit=async e=>{
+  e.preventDefault(); const fd=new FormData(e.target);
+  const r=await fetch('/api/quizzes',{method:'POST',headers:{Authorization:'Bearer '+token},body:fd});
+  if(!r.ok){alert('No se pudo crear la evaluación');return}
+  e.target.reset(); await loadQuizzes(); alert('Autoevaluación creada');
+}
+$('#questionForm').onsubmit=async e=>{
+  e.preventDefault(); const fd=new FormData(e.target); const qid=fd.get('quiz_id'); fd.delete('quiz_id');
+  const r=await fetch('/api/quizzes/'+qid+'/questions',{method:'POST',headers:{Authorization:'Bearer '+token},body:fd});
+  if(!r.ok){alert('No se pudo agregar la pregunta');return}
+  e.target.reset(); await loadQuizzes(); alert('Pregunta agregada');
+}
+$('#caseForm').onsubmit=async e=>{
+  e.preventDefault(); const fd=new FormData(e.target);
+  const r=await fetch('/api/cases',{method:'POST',headers:{Authorization:'Bearer '+token},body:fd});
+  if(!r.ok){alert('No se pudo publicar el caso');return}
+  e.target.reset(); await loadCases(); alert('Caso publicado');
+}
+
+load();
+</script>
+<script>
+window.avicoRefreshStudent=async function(){
+ const t=sessionStorage.getItem('avico_student_token'),box=document.getElementById('avicoStudentStatus'),form=document.getElementById('studentRegisterForm');
+ if(!box||!form)return;
+ if(!t){box.textContent='Inicia sesión para acceder a todos los cursos.';form.hidden=true;document.getElementById('avicoStudentLogout').hidden=true;return;}
+ try{
+  const r=await fetch('/api/student-auth/me',{headers:{Authorization:'Bearer '+t}});
+  if(r.status===401){
+   sessionStorage.removeItem('avico_student_token');
+   sessionStorage.removeItem('avicoEntered');
+   box.textContent='Tu sesión ha vencido. Inicia sesión nuevamente.';
+   form.hidden=true;document.getElementById('avicoStudentLogout').hidden=true;
+   document.getElementById('avicoWelcome').hidden=false;return;
+  }
+  if(!r.ok){box.textContent='No se pudo verificar la sesión. Puedes seguir navegando y volver a intentar.';return;}
+  const data=await r.json();
+  box.textContent='Cuenta de alumno: '+data.student.full_name+' ('+data.student.email+') · Acceso a todos los cursos publicados';
+  form.hidden=true;document.getElementById('avicoStudentLogout').hidden=false;
+  if(form.elements.namedItem('email'))form.elements.namedItem('email').value=data.student.email;
+  if(form.elements.namedItem('full_name'))form.elements.namedItem('full_name').value=data.student.full_name;
+ }catch(err){
+  console.warn('No se pudo actualizar el estado del alumno',err);
+  box.textContent='No se pudo actualizar el estado de tu cuenta. Tu sesión se conserva.';
+ }
+};document.getElementById('avicoStudentLogout').addEventListener('click',async()=>{const t=sessionStorage.getItem('avico_student_token');if(t)await fetch('/api/student-auth/logout',{method:'POST',headers:{Authorization:'Bearer '+t}}).catch(()=>{});sessionStorage.removeItem('avico_student_token');sessionStorage.removeItem('avicoEntered');localStorage.removeItem('aula_course_tokens');document.getElementById('avicoWelcome').hidden=false;window.avicoRefreshStudent();});window.avicoRefreshStudent();
+</script><script>
+(async function(){
+ const q=new URLSearchParams(location.search),action=q.get('email_action'),token=q.get('token');
+ if(!token||!['verify','reset'].includes(action))return;
+ history.replaceState({},'',location.pathname);
+ try{
+  if(action==='verify'){
+   const r=await fetch('/api/student-auth/verify-email',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({token})});
+   const d=await r.json();if(!r.ok)throw Error(d.detail||'Enlace inválido');
+   alert('Tu correo ha sido confirmado. Ya puedes inscribirte.');window.avicoRefreshStudent?.();
+  }else{
+   const password=prompt('Escribe tu nueva contraseña (mínimo 12 caracteres):');
+   if(!password)return;
+   const r=await fetch('/api/student-auth/reset-password',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({token,password})});
+   const d=await r.json();if(!r.ok)throw Error(d.detail||'Enlace inválido');
+   sessionStorage.removeItem('avico_student_token');localStorage.removeItem('aula_course_tokens');document.getElementById('avicoWelcome').hidden=false;alert('Contraseña actualizada. Inicia sesión nuevamente.');
+  }
+ }catch(e){alert(e.message);}
+})();
+</script></body>
+</html>
