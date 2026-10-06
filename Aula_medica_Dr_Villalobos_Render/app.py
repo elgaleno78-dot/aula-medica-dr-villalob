@@ -210,6 +210,19 @@ def init_db():
       FOREIGN KEY(thread_id) REFERENCES forum_threads(id) ON DELETE CASCADE,
       FOREIGN KEY(account_id) REFERENCES student_accounts(id) ON DELETE SET NULL
     );
+    CREATE TABLE IF NOT EXISTS lesson_progress(
+      account_id INTEGER NOT NULL,
+      lesson_id INTEGER NOT NULL,
+      position_seconds REAL DEFAULT 0,
+      duration_seconds REAL DEFAULT 0,
+      percent REAL DEFAULT 0,
+      completed INTEGER DEFAULT 0,
+      updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
+      PRIMARY KEY(account_id,lesson_id),
+      FOREIGN KEY(account_id) REFERENCES student_accounts(id) ON DELETE CASCADE,
+      FOREIGN KEY(lesson_id) REFERENCES lessons(id) ON DELETE CASCADE
+    );
+    CREATE INDEX IF NOT EXISTS idx_lesson_progress_account ON lesson_progress(account_id);
     CREATE TABLE IF NOT EXISTS settings(
       key TEXT PRIMARY KEY,
       value TEXT DEFAULT ''
@@ -592,6 +605,46 @@ def _pptx_lesson(lesson_id:int, request:Request):
     if not path.is_file():
         raise HTTPException(404,"Presentación no disponible")
     return path
+
+@app.get("/api/student-progress")
+def student_progress_all(request:Request):
+    identity=student_identity(request)
+    con=db()
+    rows=[dict(r) for r in con.execute("SELECT lesson_id,position_seconds,duration_seconds,percent,completed,updated_at FROM lesson_progress WHERE account_id=?",(identity["id"],)).fetchall()]
+    con.close()
+    return rows
+
+@app.get("/api/student-progress/{lesson_id}")
+def student_progress_one(lesson_id:int, request:Request):
+    identity=student_identity(request)
+    con=db()
+    row=con.execute("SELECT lesson_id,position_seconds,duration_seconds,percent,completed,updated_at FROM lesson_progress WHERE account_id=? AND lesson_id=?",(identity["id"],lesson_id)).fetchone()
+    con.close()
+    return dict(row) if row else {"lesson_id":lesson_id,"position_seconds":0,"duration_seconds":0,"percent":0,"completed":0}
+
+@app.put("/api/student-progress/{lesson_id}")
+async def student_progress_save(lesson_id:int, request:Request):
+    identity=student_identity(request)
+    payload=await request.json()
+    try:
+        pos=max(0,float(payload.get("position_seconds") or 0))
+        dur=max(0,float(payload.get("duration_seconds") or 0))
+    except Exception: raise HTTPException(400,"Progreso inválido")
+    if dur>0: pos=min(pos,dur)
+    pct=min(100,max(0,(pos/dur*100) if dur else float(payload.get("percent") or 0)))
+    completed=1 if (dur>0 and (pct>=90 or dur-pos<=30)) else int(bool(payload.get("completed")))
+    con=db()
+    exists=con.execute("""SELECT 1 FROM lessons l JOIN courses c ON c.id=l.course_id
+      WHERE l.id=? AND c.published=1""",(lesson_id,)).fetchone()
+    if not exists: con.close();raise HTTPException(404,"Clase no disponible")
+    con.execute("""INSERT INTO lesson_progress(account_id,lesson_id,position_seconds,duration_seconds,percent,completed,updated_at)
+      VALUES(?,?,?,?,?,?,CURRENT_TIMESTAMP)
+      ON CONFLICT(account_id,lesson_id) DO UPDATE SET
+      position_seconds=excluded.position_seconds,duration_seconds=excluded.duration_seconds,
+      percent=MAX(lesson_progress.percent,excluded.percent),completed=MAX(lesson_progress.completed,excluded.completed),
+      updated_at=CURRENT_TIMESTAMP""",(identity["id"],lesson_id,pos,dur,pct,completed))
+    con.commit();con.close()
+    return {"ok":True,"position_seconds":pos,"duration_seconds":dur,"percent":pct,"completed":completed}
 
 @app.get("/api/student-lessons/{lesson_id}/slides")
 def student_slide_manifest(lesson_id:int, request:Request):
