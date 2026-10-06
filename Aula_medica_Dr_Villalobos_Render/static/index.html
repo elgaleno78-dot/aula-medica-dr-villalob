@@ -470,9 +470,15 @@ button,input,textarea,select{font:inherit}.app{display:grid;grid-template-column
         <div class="field"><label>Fecha de la sesión</label><input name="session_date" type="date"></div>
         <div class="field"><label>Institución / sede académica</label><input name="institution" placeholder="Ej. AVICO · Educación Médica"></div>
         <div class="field"><label>Ponente / profesor</label><input name="speaker" placeholder="Ej. Dr. Alejandro Lenin Villalobos Rodríguez"></div>
-        <div class="field"><label>Archivo</label><input name="file" type="file" accept=".pptx,.pdf,.mp4,.mov,.png,.jpg,.jpeg,.webp"></div>
+        <div class="field"><label>Archivo</label><input name="file" type="file" accept=".pptx,.pdf,.png,.jpg,.jpeg,.webp"></div>
         <div class="field"><label>Descripción breve</label><textarea name="notes" rows="3"></textarea></div>
         <button class="btn red">Publicar ponencia</button>
+        <div style="margin:18px 0;border-top:1px solid var(--line)"></div>
+        <h3 style="margin-bottom:6px">Subir clase en video · Streaming</h3>
+        <p class="muted" style="font-size:13px">El video se envía directamente a AVICO Streaming y no ocupa almacenamiento de Render.</p>
+        <div class="field"><label>Video MP4 / MOV</label><input id="streamVideoFile" type="file" accept="video/mp4,video/quicktime"></div>
+        <div id="streamProgress" class="muted" style="font-size:13px;margin:8px 0"></div>
+        <button class="btn" type="button" id="streamUploadBtn">Subir clase en streaming</button>
       </form>
     </div>
 
@@ -713,6 +719,18 @@ async function viewLesson(raw,accessToken=null,isAdmin=false){
   const l=JSON.parse(raw); $('#viewerTitle').textContent=l.title; let html='';
   if(avicoViewerBlob){URL.revokeObjectURL(avicoViewerBlob);avicoViewerBlob=null;}
   if(avicoSlideBlob){URL.revokeObjectURL(avicoSlideBlob);avicoSlideBlob=null;}
+  if(l.kind==='stream'){
+    $('#viewerContent').innerHTML='<div class="pptBox"><p>Preparando streaming seguro…</p></div>';
+    $('#viewer').classList.add('show');
+    try{
+      const authToken=isAdmin?token:sessionStorage.getItem('avico_student_token');
+      const response=await fetch('/api/stream/player/'+l.id,{headers:{Authorization:'Bearer '+authToken}});
+      if(!response.ok)throw Error('No se pudo abrir el video.');
+      const data=await response.json();
+      $('#viewerContent').innerHTML='<iframe src="'+esc(data.player_url)+'" style="width:100%;height:100%;border:0" allow="accelerometer;gyroscope;autoplay;encrypted-media;picture-in-picture" allowfullscreen></iframe>';
+    }catch(e){$('#viewerContent').innerHTML='<div class="pptBox"><p>'+esc(e.message)+'</p></div>';}
+    return;
+  }
   if(l.kind==='pptx'&&!isAdmin){
     $('#viewerContent').innerHTML='<div class="pptBox" style="max-width:none;width:100%;padding:12px"><div style="display:flex;justify-content:center;align-items:center;gap:12px;margin-bottom:10px"><button class="btn" id="avicoPrevSlide" disabled>← Anterior</button><span id="avicoSlideStatus" aria-live="polite">Preparando presentación…</span><button class="btn" id="avicoNextSlide" disabled>Siguiente →</button></div><img id="avicoSlideImage" alt="Diapositiva de la clase" style="display:block;width:100%;height:calc(100vh - 170px);object-fit:contain" oncontextmenu="return false"></div>';
     $('#viewer').classList.add('show');
@@ -801,6 +819,41 @@ function fillSelect(){
   if(sc) sc.innerHTML='<option value="">Selecciona un curso</option>'+courses.map(c=>`<option value="${c.id}">${esc(c.title)} · ${c.access_hours||24} h</option>`).join('');
 }
 $('#courseForm').onsubmit=async e=>{e.preventDefault();try{let fd=new FormData(e.target);await fetch('/api/courses',{method:'POST',headers:{Authorization:'Bearer '+token},body:fd}).then(r=>{if(!r.ok)throw Error()});e.target.reset();await load();alert('Curso creado')}catch{alert('No se pudo crear el curso')}}
+async function uploadStreamLesson(){
+  const form=$('#lessonForm'), file=$('#streamVideoFile').files[0], status=$('#streamProgress'), btn=$('#streamUploadBtn');
+  if(!file){alert('Selecciona el video de la clase');return}
+  const courseId=form.querySelector('[name="course_id"]').value, title=form.querySelector('[name="title"]').value.trim();
+  if(!courseId||!title){alert('Selecciona el curso y escribe el título de la ponencia');return}
+  btn.disabled=true; status.textContent='Preparando carga directa…';
+  try{
+    const name64=btoa(unescape(encodeURIComponent(file.name)));
+    const provision=await fetch('/api/stream/tus',{method:'POST',headers:{
+      Authorization:'Bearer '+token,'Upload-Length':String(file.size),'Upload-Metadata':'name '+name64
+    }});
+    if(!provision.ok)throw Error((await provision.text())||'No se pudo preparar el streaming');
+    const uploadURL=provision.headers.get('Location'), uid=provision.headers.get('Upload-UID');
+    if(!uploadURL||!uid)throw Error('No se recibió la dirección de carga');
+    let offset=0, chunkSize=50*1024*1024;
+    while(offset<file.size){
+      const chunk=file.slice(offset,Math.min(offset+chunkSize,file.size));
+      const r=await fetch(uploadURL,{method:'PATCH',headers:{'Tus-Resumable':'1.0.0','Upload-Offset':String(offset),'Content-Type':'application/offset+octet-stream'},body:chunk});
+      if(!r.ok)throw Error('La carga se interrumpió. Intenta nuevamente.');
+      offset=Number(r.headers.get('Upload-Offset')||offset+chunk.size);
+      status.textContent='Subiendo a streaming… '+Math.min(100,Math.round(offset/file.size*100))+'%';
+    }
+    status.textContent='Guardando clase en el aula…';
+    const payload={course_id:Number(courseId),title,uid,
+      notes:form.querySelector('[name="notes"]').value,
+      session_date:form.querySelector('[name="session_date"]').value,
+      institution:form.querySelector('[name="institution"]').value,
+      speaker:form.querySelector('[name="speaker"]').value};
+    const save=await fetch('/api/stream/lessons',{method:'POST',headers:{Authorization:'Bearer '+token,'Content-Type':'application/json'},body:JSON.stringify(payload)});
+    if(!save.ok)throw Error('El video subió, pero no se pudo registrar la clase');
+    form.reset(); $('#streamVideoFile').value=''; status.textContent='✓ Video enviado a streaming. Cloudflare está procesándolo.';
+    await load();
+  }catch(err){status.textContent='Error: '+err.message;}finally{btn.disabled=false}
+}
+$('#streamUploadBtn').onclick=uploadStreamLesson;
 $('#lessonForm').onsubmit=async e=>{e.preventDefault();try{let fd=new FormData(e.target);await fetch('/api/lessons',{method:'POST',headers:{Authorization:'Bearer '+token},body:fd}).then(r=>{if(!r.ok)throw Error()});e.target.reset();await load();alert('Ponencia agregada')}catch{alert('No se pudo cargar la ponencia')}}
 async function delLesson(id){
   if(!confirm('¿Eliminar esta clase?'))return;
