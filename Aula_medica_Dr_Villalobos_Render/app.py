@@ -807,7 +807,7 @@ async def create_stream_tus(request:Request):
     if not upload_length.isdigit() or int(upload_length)<=0:
         raise HTTPException(400,"Tamaño de archivo inválido")
     # Limita la reserva a 3 horas por clase y exige URL firmada en Stream.
-    extra="maxdurationseconds "+base64.b64encode(b"10800").decode()+",requiresignedurls "+base64.b64encode(b"true").decode()
+    extra="maxdurationseconds "+base64.b64encode(b"10800").decode()
     metadata=(upload_metadata+"," if upload_metadata else "")+extra
     req=urllib.request.Request(
         f"https://api.cloudflare.com/client/v4/accounts/{account}/stream?direct_user=true",
