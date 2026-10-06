@@ -2,7 +2,7 @@ from fastapi import FastAPI, UploadFile, File, Form, HTTPException, Request
 from fastapi.responses import HTMLResponse, FileResponse, Response
 from fastapi.staticfiles import StaticFiles
 from pathlib import Path
-import sqlite3, os, secrets, shutil, datetime, json, hashlib, hmac, re, smtplib, ssl
+import sqlite3, os, secrets, shutil, datetime, json, hashlib, hmac, re, smtplib, ssl, urllib.request, urllib.error, base64
 from email.message import EmailMessage
 from urllib.parse import quote
 
@@ -781,6 +781,94 @@ async def update_course_access_settings(course_id:int, request:Request):
     con.execute("UPDATE courses SET access_hours=? WHERE id=?",(hours,course_id))
     con.commit(); con.close()
     return {"ok":True,"access_hours":hours}
+
+# ---------- STREAMING DE CLASES (Cloudflare Stream) ----------
+# El video viaja directamente del navegador a Cloudflare Stream mediante TUS.
+# Render solo autoriza la carga y guarda el UID; nunca almacena el MP4.
+def stream_config():
+    account=os.getenv("CLOUDFLARE_STREAM_ACCOUNT_ID","").strip()
+    token=os.getenv("CLOUDFLARE_STREAM_API_TOKEN","").strip()
+    customer=os.getenv("CLOUDFLARE_STREAM_CUSTOMER_CODE","").strip()
+    if not account or not token or not customer:
+        raise HTTPException(503,"Cloudflare Stream todavía no está conectado")
+    return account,token,customer
+
+@app.get("/api/stream/status")
+def stream_status(request:Request):
+    auth(request)
+    return {"configured":all(os.getenv(k) for k in ("CLOUDFLARE_STREAM_ACCOUNT_ID","CLOUDFLARE_STREAM_API_TOKEN","CLOUDFLARE_STREAM_CUSTOMER_CODE"))}
+
+@app.post("/api/stream/tus")
+async def create_stream_tus(request:Request):
+    auth(request)
+    account,token,customer=stream_config()
+    upload_length=request.headers.get("Upload-Length","").strip()
+    upload_metadata=request.headers.get("Upload-Metadata","").strip()
+    if not upload_length.isdigit() or int(upload_length)<=0:
+        raise HTTPException(400,"Tamaño de archivo inválido")
+    # Limita la reserva a 3 horas por clase y exige URL firmada en Stream.
+    extra="maxdurationseconds "+base64.b64encode(b"10800").decode()+",requiresignedurls "+base64.b64encode(b"true").decode()
+    metadata=(upload_metadata+"," if upload_metadata else "")+extra
+    req=urllib.request.Request(
+        f"https://api.cloudflare.com/client/v4/accounts/{account}/stream?direct_user=true",
+        method="POST",
+        headers={
+          "Authorization":f"Bearer {token}",
+          "Tus-Resumable":"1.0.0",
+          "Upload-Length":upload_length,
+          "Upload-Metadata":metadata,
+        }
+    )
+    try:
+        with urllib.request.urlopen(req,timeout=20) as response:
+            location=response.headers.get("Location","")
+    except urllib.error.HTTPError as exc:
+        detail=exc.read().decode("utf-8","ignore")[:500]
+        raise HTTPException(502,f"Stream rechazó la carga: {detail}")
+    except Exception:
+        raise HTTPException(502,"No se pudo conectar con Cloudflare Stream")
+    if not location:
+        raise HTTPException(502,"Stream no devolvió URL de carga")
+    uid=location.rstrip("/").split("/")[-1]
+    return Response(status_code=201,headers={
+      "Location":location,
+      "Upload-UID":uid,
+      "Access-Control-Expose-Headers":"Location, Upload-UID"
+    })
+
+@app.post("/api/stream/lessons")
+async def add_stream_lesson(request:Request):
+    auth(request)
+    payload=await request.json()
+    try: course_id=int(payload.get("course_id"))
+    except Exception: raise HTTPException(400,"Curso inválido")
+    title=str(payload.get("title") or "").strip()
+    uid=re.sub(r"[^A-Za-z0-9_-]","",str(payload.get("uid") or ""))
+    if not title or not uid: raise HTTPException(400,"Faltan título o identificador del video")
+    con=db();cur=con.cursor()
+    if not cur.execute("SELECT 1 FROM courses WHERE id=?",(course_id,)).fetchone():
+        con.close();raise HTTPException(404,"Curso no encontrado")
+    ordv=cur.execute("SELECT COALESCE(MAX(ord),0)+1 FROM lessons WHERE course_id=?",(course_id,)).fetchone()[0]
+    cur.execute("""INSERT INTO lessons(course_id,title,kind,filename,notes,session_date,institution,speaker,ord)
+                   VALUES(?,?,?,?,?,?,?,?,?)""",(course_id,title,"stream",uid,str(payload.get("notes") or "").strip(),
+                   str(payload.get("session_date") or "").strip(),str(payload.get("institution") or "").strip(),
+                   str(payload.get("speaker") or "").strip(),ordv))
+    cur.execute("INSERT INTO activities(message) VALUES(?)",(f"Se publicó clase en streaming: {title}",))
+    con.commit();con.close()
+    return {"ok":True,"id":cur.lastrowid,"uid":uid}
+
+@app.get("/api/stream/player/{lesson_id}")
+def stream_player(lesson_id:int, request:Request):
+    # Requiere una sesión válida de alumno o administrador.
+    bearer=request.headers.get("authorization","")
+    raw=bearer[7:].strip() if bearer.startswith("Bearer ") else ""
+    if raw not in TOKENS:
+        student_identity(request)
+    account,token,customer=stream_config()
+    con=db();row=con.execute("SELECT filename,kind FROM lessons WHERE id=?",(lesson_id,)).fetchone();con.close()
+    if not row or row["kind"]!="stream": raise HTTPException(404,"Video no encontrado")
+    # El reproductor queda dentro del Aula. El UID nunca corresponde a un archivo en Render.
+    return {"uid":row["filename"],"player_url":f"https://customer-{customer}.cloudflarestream.com/{row['filename']}/iframe"}
 
 @app.post("/api/lessons")
 async def add_lesson(request: Request, course_id:int=Form(...), title:str=Form(...), notes:str=Form(""), session_date:str=Form(""), institution:str=Form(""), speaker:str=Form(""), file:UploadFile|None=File(None)):
