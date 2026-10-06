@@ -297,6 +297,19 @@ def init_db():
                 cur.execute("INSERT INTO courses(title,subtitle,category,cover) VALUES(?,?,?,?)",(t,s,c,cover))
             cur.execute("INSERT INTO activities(message) VALUES(?)",("Plataforma inicializada y lista para agregar clases.",))
         cur.execute("INSERT OR REPLACE INTO settings(key,value) VALUES('initialized','1')")
+    # Prueba controlada AVICO: clase ficticia e idempotente para validar el aula persistente.
+    test_title = "CLASE DE PRUEBA AVICO — Hemorragia Obstétrica"
+    test_course = cur.execute("SELECT id FROM courses WHERE category=? ORDER BY id LIMIT 1",("Hemorragia obstétrica",)).fetchone()
+    if test_course:
+        exists_test = cur.execute("SELECT 1 FROM lessons WHERE course_id=? AND title=?",(test_course["id"],test_title)).fetchone()
+        if not exists_test:
+            ordv = cur.execute("SELECT COALESCE(MAX(ord),0)+1 FROM lessons WHERE course_id=?",(test_course["id"],)).fetchone()[0]
+            cur.execute("""INSERT INTO lessons(course_id,title,kind,filename,notes,session_date,institution,speaker,ord)
+                           VALUES(?,?,?,?,?,?,?,?,?)""",
+                        (test_course["id"],test_title,"texto","",
+                         "Clase ficticia para verificar publicación, acceso y persistencia del Aula AVICO Hemorragia. No forma parte del contenido académico definitivo.",
+                         "","AVICO Salud","Dr. Alejandro Lenin Villalobos Rodríguez",ordv))
+            cur.execute("INSERT INTO activities(message) VALUES(?)",(f"Se agregó la clase de prueba: {test_title}",))
     con.commit()
     con.close()
 
