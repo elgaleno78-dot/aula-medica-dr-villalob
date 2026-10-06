@@ -715,6 +715,22 @@ async function showAvicoSlide(lessonId,number,count){
     $('#avicoNextSlide').onclick=()=>showAvicoSlide(lessonId,number+1,count);
   }catch(e){status.textContent=e.message;}
 }
+let avicoProgressTimer=null;
+async function getLessonProgress(lessonId){
+  const st=sessionStorage.getItem('avico_student_token'); if(!st)return {position_seconds:0};
+  try{const r=await fetch('/api/student-progress/'+lessonId,{headers:{Authorization:'Bearer '+st}});return r.ok?await r.json():{position_seconds:0};}catch{return {position_seconds:0}}
+}
+async function saveLessonProgress(lessonId,position,duration,completed=false){
+  const st=sessionStorage.getItem('avico_student_token'); if(!st)return;
+  try{await fetch('/api/student-progress/'+lessonId,{method:'PUT',headers:{Authorization:'Bearer '+st,'Content-Type':'application/json'},body:JSON.stringify({position_seconds:position||0,duration_seconds:duration||0,completed})});}catch{}
+}
+function trackHtmlVideo(video,lessonId,startAt){
+  if(startAt>0) video.addEventListener('loadedmetadata',()=>{video.currentTime=Math.min(startAt,Math.max(0,video.duration-1));},{once:true});
+  let last=0;
+  video.addEventListener('timeupdate',()=>{if(video.currentTime-last>=10){last=video.currentTime;saveLessonProgress(lessonId,video.currentTime,video.duration)}});
+  video.addEventListener('pause',()=>saveLessonProgress(lessonId,video.currentTime,video.duration));
+  video.addEventListener('ended',()=>saveLessonProgress(lessonId,video.duration,video.duration,true));
+}
 async function viewLesson(raw,accessToken=null,isAdmin=false){
   const l=JSON.parse(raw); $('#viewerTitle').textContent=l.title; let html='';
   if(avicoViewerBlob){URL.revokeObjectURL(avicoViewerBlob);avicoViewerBlob=null;}
@@ -727,7 +743,18 @@ async function viewLesson(raw,accessToken=null,isAdmin=false){
       const response=await fetch('/api/stream/player/'+l.id,{headers:{Authorization:'Bearer '+authToken}});
       if(!response.ok)throw Error('No se pudo abrir el video.');
       const data=await response.json();
-      $('#viewerContent').innerHTML='<iframe src="'+esc(data.player_url)+'" style="width:100%;height:100%;border:0" allow="accelerometer;gyroscope;autoplay;encrypted-media;picture-in-picture" allowfullscreen></iframe>';
+      const progress=isAdmin?{position_seconds:0}:await getLessonProgress(l.id);
+      const resume=Math.max(0,Math.floor(progress.position_seconds||0));
+      const src=data.player_url+(resume?'?startTime='+resume:'');
+      $('#viewerContent').innerHTML='<iframe src="'+esc(src)+'" style="width:100%;height:100%;border:0" allow="accelerometer;gyroscope;autoplay;encrypted-media;picture-in-picture" allowfullscreen></iframe>';
+      if(!isAdmin){
+        // Cloudflare Stream Player API reports currentTime/duration by postMessage.
+        const frame=$('#viewerContent iframe');
+        const onMsg=e=>{if(!e.data||typeof e.data!=='object')return;const d=e.data;
+          if(d.currentTime!=null&&d.duration){saveLessonProgress(l.id,Number(d.currentTime),Number(d.duration),d.ended===true);}
+        };
+        window.addEventListener('message',onMsg);
+      }
     }catch(e){$('#viewerContent').innerHTML='<div class="pptBox"><p>'+esc(e.message)+'</p></div>';}
     return;
   }
@@ -759,6 +786,11 @@ async function viewLesson(raw,accessToken=null,isAdmin=false){
   else if(l.kind==='pptx')html='<div class="pptBox"><p>Vista previa de PowerPoint disponible para alumnos en su cuenta.</p></div>';
   $('#viewerContent').innerHTML=html;
   $('#viewer').classList.add('show');
+  if(!isAdmin&&['mp4','mov'].includes(l.kind)){
+    const progress=await getLessonProgress(l.id);
+    const video=$('#viewerContent video');
+    if(video)trackHtmlVideo(video,l.id,Number(progress.position_seconds||0));
+  }
 }
 let courseTimerInterval=null;
 function formatRemaining(sec){
