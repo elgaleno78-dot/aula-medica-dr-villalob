@@ -583,7 +583,7 @@ const $=s=>document.querySelector(s);
 function scrollToId(id){document.getElementById(id)?.scrollIntoView({behavior:'smooth'})}
 async function api(url,opt={}){let r=await fetch(url,opt); if(!r.ok) throw new Error(await r.text()); return r.json()}
 async function load(){
-  courses=await api('/api/courses'); const d=await api('/api/dashboard');
+  courses=await api('/api/hemorragia/courses'); const d=await api('/api/dashboard');
   if(token){
     const adminNav=document.getElementById('adminNavBtn'); if(adminNav) adminNav.style.display='block';
     const studentsNav=document.getElementById('studentsNavBtn'); if(studentsNav) studentsNav.style.display='block';
