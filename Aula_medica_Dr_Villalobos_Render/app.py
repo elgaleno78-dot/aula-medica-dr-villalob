@@ -852,6 +852,25 @@ async def update_course_access_settings(course_id:int, request:Request):
     con.commit(); con.close()
     return {"ok":True,"access_hours":hours}
 
+
+# Vincula el video privado de prueba del Aula Hemorragia sin exponer una URL pública.
+def ensure_drive_test_lesson():
+    con=db(); cur=con.cursor()
+    course=cur.execute("SELECT id FROM courses WHERE lower(category)=lower(?) OR lower(title) LIKE ? ORDER BY id LIMIT 1",
+                       ("Hemorragia obstétrica","%hemorrag%")).fetchone()
+    if course:
+        title="PRESENTACION — Clase de prueba AVICO"
+        row=cur.execute("SELECT id FROM lessons WHERE course_id=? AND title=?",(course["id"],title)).fetchone()
+        if not row:
+            ordv=cur.execute("SELECT COALESCE(MAX(ord),0)+1 FROM lessons WHERE course_id=?",(course["id"],)).fetchone()[0]
+            cur.execute("""INSERT INTO lessons(course_id,title,kind,filename,notes,ord)
+                           VALUES(?,?,?,?,?,?)""",(course["id"],title,"drive","1H-PyuBKjjUXRYkYUVO9PJeRWwyhXRESW",
+                           "Video privado alojado en Google Drive y reproducido dentro de AVICO.",ordv))
+            con.commit()
+    con.close()
+
+ensure_drive_test_lesson()
+
 # ---------- STREAMING DE CLASES (Cloudflare Stream) ----------
 # El video viaja directamente del navegador a Cloudflare Stream mediante TUS.
 # Render solo autoriza la carga y guarda el UID; nunca almacena el MP4.
@@ -939,6 +958,93 @@ def stream_player(lesson_id:int, request:Request):
     if not row or row["kind"]!="stream": raise HTTPException(404,"Video no encontrado")
     # El reproductor queda dentro del Aula. El UID nunca corresponde a un archivo en Render.
     return {"uid":row["filename"],"player_url":f"https://customer-{customer}.cloudflarestream.com/{row['filename']}/iframe"}
+
+
+# ---------- GOOGLE DRIVE PRIVADO (Aula Hemorragia) ----------
+DRIVE_SECRET_FILE = Path("/etc/secrets/google-drive-service-account.json")
+DRIVE_PLAYBACK_TOKENS = {}
+
+def _drive_credentials():
+    if not DRIVE_SECRET_FILE.exists():
+        raise HTTPException(503, "Google Drive privado todavía no está conectado")
+    try:
+        from google.oauth2 import service_account
+        return service_account.Credentials.from_service_account_file(
+            str(DRIVE_SECRET_FILE),
+            scopes=["https://www.googleapis.com/auth/drive.readonly"],
+        )
+    except Exception:
+        raise HTTPException(503, "No fue posible iniciar la conexión privada con Google Drive")
+
+def _new_drive_playback_token(account_id:int, lesson_id:int):
+    token=secrets.token_urlsafe(32)
+    DRIVE_PLAYBACK_TOKENS[token]={
+        "account_id":account_id,
+        "lesson_id":lesson_id,
+        "expires":utcnow()+datetime.timedelta(hours=2),
+    }
+    return token
+
+@app.get("/api/drive/player/{lesson_id}")
+def drive_player(lesson_id:int, request:Request):
+    identity=student_identity(request)
+    con=db()
+    row=con.execute("SELECT id,title,filename,kind FROM lessons WHERE id=?",(lesson_id,)).fetchone()
+    con.close()
+    if not row or row["kind"]!="drive":
+        raise HTTPException(404,"Video no encontrado")
+    token=_new_drive_playback_token(int(identity["id"]),lesson_id)
+    return {
+        "title":row["title"],
+        "media_url":f"/api/drive/media/{lesson_id}?playback_token={token}",
+    }
+
+@app.get("/api/drive/media/{lesson_id}")
+def drive_media(lesson_id:int, request:Request, playback_token:str=""):
+    grant=DRIVE_PLAYBACK_TOKENS.get(playback_token)
+    if not grant or grant["lesson_id"]!=lesson_id or grant["expires"]<utcnow():
+        raise HTTPException(401,"Acceso al video vencido o inválido")
+    con=db()
+    row=con.execute("SELECT filename,kind FROM lessons WHERE id=?",(lesson_id,)).fetchone()
+    con.close()
+    if not row or row["kind"]!="drive":
+        raise HTTPException(404,"Video no encontrado")
+    file_id=re.sub(r"[^A-Za-z0-9_-]","",row["filename"] or "")
+    if not file_id:
+        raise HTTPException(404,"Archivo de Drive no configurado")
+    try:
+        import requests
+        from google.auth.transport.requests import AuthorizedSession
+        session=AuthorizedSession(_drive_credentials())
+        headers={}
+        range_header=request.headers.get("range")
+        if range_header:
+            headers["Range"]=range_header
+        upstream=session.get(
+            f"https://www.googleapis.com/drive/v3/files/{file_id}?alt=media",
+            headers=headers,stream=True,timeout=30
+        )
+        if upstream.status_code not in (200,206):
+            upstream.close()
+            raise HTTPException(502,"Google Drive no pudo entregar el video")
+        passthrough={}
+        for h in ("Content-Length","Content-Range","Accept-Ranges","Content-Type"):
+            if upstream.headers.get(h):
+                passthrough[h]=upstream.headers[h]
+        passthrough["Cache-Control"]="private, no-store"
+        passthrough["Content-Disposition"]="inline"
+        def body():
+            try:
+                for chunk in upstream.iter_content(chunk_size=1024*256):
+                    if chunk: yield chunk
+            finally:
+                upstream.close()
+        return StreamingResponse(body(),status_code=upstream.status_code,headers=passthrough,media_type=upstream.headers.get("Content-Type","video/mp4"))
+    except HTTPException:
+        raise
+    except Exception:
+        raise HTTPException(502,"No fue posible reproducir el video privado")
+
 
 @app.post("/api/lessons")
 async def add_lesson(request: Request, course_id:int=Form(...), title:str=Form(...), notes:str=Form(""), session_date:str=Form(""), institution:str=Form(""), speaker:str=Form(""), file:UploadFile|None=File(None)):
