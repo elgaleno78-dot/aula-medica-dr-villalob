@@ -735,6 +735,23 @@ async function viewLesson(raw,accessToken=null,isAdmin=false){
   const l=JSON.parse(raw); $('#viewerTitle').textContent=l.title; let html='';
   if(avicoViewerBlob){URL.revokeObjectURL(avicoViewerBlob);avicoViewerBlob=null;}
   if(avicoSlideBlob){URL.revokeObjectURL(avicoSlideBlob);avicoSlideBlob=null;}
+  if(l.kind==='drive'){
+    $('#viewerContent').innerHTML='<div class="pptBox"><p>Preparando video privado…</p></div>';
+    $('#viewer').classList.add('show');
+    try{
+      const authToken=isAdmin?token:sessionStorage.getItem('avico_student_token');
+      if(isAdmin) throw Error('La prueba del video privado debe realizarse con una sesión de alumno.');
+      const response=await fetch('/api/drive/player/'+l.id,{headers:{Authorization:'Bearer '+authToken}});
+      if(!response.ok)throw Error('No se pudo abrir el video privado.');
+      const data=await response.json();
+      const progress=await getLessonProgress(l.id);
+      const resume=Math.max(0,Number(progress.position_seconds||0));
+      $('#viewerContent').innerHTML='<video id="avicoDriveVideo" controls controlsList="nodownload" disablePictureInPicture playsinline oncontextmenu="return false" style="width:100%;height:100%;background:#000"><source src="'+esc(data.media_url)+'" type="video/mp4"></video>';
+      const video=$('#avicoDriveVideo');
+      trackHtmlVideo(video,l.id,resume);
+    }catch(e){$('#viewerContent').innerHTML='<div class="pptBox"><p>'+esc(e.message)+'</p></div>';}
+    return;
+  }
   if(l.kind==='stream'){
     $('#viewerContent').innerHTML='<div class="pptBox"><p>Preparando streaming seguro…</p></div>';
     $('#viewer').classList.add('show');
