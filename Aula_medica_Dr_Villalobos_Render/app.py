@@ -874,17 +874,53 @@ async def update_course_access_settings(course_id:int, request:Request):
 # Vincula el video privado de prueba del Aula Hemorragia sin exponer una URL pública.
 def ensure_drive_test_lesson():
     con=db(); cur=con.cursor()
-    course=cur.execute("SELECT id FROM courses WHERE lower(category)=lower(?) OR lower(title) LIKE ? ORDER BY id LIMIT 1",
-                       ("Hemorragia obstétrica","%hemorrag%")).fetchone()
-    if course:
-        title="PRESENTACIÓN"
-        row=cur.execute("SELECT id FROM lessons WHERE course_id=? AND title=?",(course["id"],title)).fetchone()
-        if not row:
-            ordv=cur.execute("SELECT COALESCE(MAX(ord),0)+1 FROM lessons WHERE course_id=?",(course["id"],)).fetchone()[0]
-            cur.execute("""INSERT INTO lessons(course_id,title,kind,filename,notes,ord)
-                           VALUES(?,?,?,?,?,?)""",(course["id"],title,"drive","1H-PyuBKjjUXRYkYUVO9PJeRWwyhXRESW",
-                           "Ponencia de apertura del curso de Hemorragia Obstétrica. Video privado alojado en Google Drive y reproducido dentro de Aula AVICO.",ordv))
-            con.commit()
+    course=cur.execute(
+        "SELECT id FROM courses WHERE lower(category) LIKE ? OR lower(title) LIKE ? ORDER BY id LIMIT 1",
+        ("%hemorrag%","%hemorrag%")
+    ).fetchone()
+    if not course:
+        cur.execute(
+            """INSERT INTO courses(title,subtitle,category,published)
+               VALUES(?,?,?,1)""",
+            ("Hemorragia Obstétrica",
+             "Curso AVICO de Hemorragia Obstétrica",
+             "Hemorragia obstétrica")
+        )
+        con.commit()
+        course=cur.execute("SELECT id FROM courses WHERE id=last_insert_rowid()").fetchone()
+
+    # Elimina únicamente las antiguas clases ficticias de prueba de esta integración.
+    cur.execute(
+        """DELETE FROM lessons
+           WHERE course_id=? AND title IN (?,?)""",
+        (course["id"],
+         "CLASE DE PRUEBA AVICO — Hemorragia Obstétrica",
+         "PRESENTACION — Clase de prueba AVICO")
+    )
+
+    title="PRESENTACIÓN"
+    row=cur.execute(
+        "SELECT id FROM lessons WHERE course_id=? AND title=?",
+        (course["id"],title)
+    ).fetchone()
+    if row:
+        cur.execute(
+            """UPDATE lessons
+               SET kind='drive', filename=?, notes=?, ord=1
+               WHERE id=?""",
+            ("1H-PyuBKjjUXRYkYUVO9PJeRWwyhXRESW",
+             "Ponencia de apertura del curso de Hemorragia Obstétrica.",
+             row["id"])
+        )
+    else:
+        cur.execute(
+            """INSERT INTO lessons(course_id,title,kind,filename,notes,ord)
+               VALUES(?,?,?,?,?,1)""",
+            (course["id"],title,"drive",
+             "1H-PyuBKjjUXRYkYUVO9PJeRWwyhXRESW",
+             "Ponencia de apertura del curso de Hemorragia Obstétrica.")
+        )
+    con.commit()
     con.close()
 
 ensure_drive_test_lesson()
