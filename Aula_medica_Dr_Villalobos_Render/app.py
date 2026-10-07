@@ -597,6 +597,24 @@ def courses():
     return rows
 
 
+
+@app.get("/api/hemorragia/courses")
+def hemorrhage_courses():
+    """Cursos y ponencias exclusivos del Aula AVICO Hemorragia."""
+    ensure_drive_test_lesson()
+    con=db()
+    rows=[dict(r) for r in con.execute(
+        """SELECT * FROM courses
+           WHERE published=1 AND (lower(category) LIKE '%hemorrag%' OR lower(title) LIKE '%hemorrag%')
+           ORDER BY id"""
+    ).fetchall()]
+    for r in rows:
+        r["lessons"]=[dict(x) for x in con.execute(
+            "SELECT * FROM lessons WHERE course_id=? ORDER BY ord,id",(r["id"],)
+        ).fetchall()]
+    con.close()
+    return rows
+
 @app.get("/api/student-courses/{course_id}/access")
 def student_course_access(course_id:int, request:Request):
     """All published lessons are available to every authenticated student account."""
