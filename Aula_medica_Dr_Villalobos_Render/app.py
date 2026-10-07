@@ -920,6 +920,29 @@ def ensure_drive_test_lesson():
              "1H-PyuBKjjUXRYkYUVO9PJeRWwyhXRESW",
              "Ponencia de apertura del curso de Hemorragia Obstétrica.")
         )
+    # Segunda ponencia: Introducción
+    intro_title="Introducción"
+    intro=cur.execute(
+        "SELECT id FROM lessons WHERE course_id=? AND lower(title)=lower(?)",
+        (course["id"],intro_title)
+    ).fetchone()
+    if intro:
+        cur.execute(
+            """UPDATE lessons
+               SET kind='drive', filename=?, notes=?, ord=2
+               WHERE id=?""",
+            ("1rE3brEXNZnzifDLVgo3c0_pOZNvUt_As",
+             "Introducción al curso de Hemorragia Obstétrica.",
+             intro["id"])
+        )
+    else:
+        cur.execute(
+            """INSERT INTO lessons(course_id,title,kind,filename,notes,ord)
+               VALUES(?,?,?,?,?,2)""",
+            (course["id"],intro_title,"drive",
+             "1rE3brEXNZnzifDLVgo3c0_pOZNvUt_As",
+             "Introducción al curso de Hemorragia Obstétrica.")
+        )
     con.commit()
     con.close()
 
