@@ -859,13 +859,13 @@ def ensure_drive_test_lesson():
     course=cur.execute("SELECT id FROM courses WHERE lower(category)=lower(?) OR lower(title) LIKE ? ORDER BY id LIMIT 1",
                        ("Hemorragia obstétrica","%hemorrag%")).fetchone()
     if course:
-        title="PRESENTACION — Clase de prueba AVICO"
+        title="PRESENTACIÓN"
         row=cur.execute("SELECT id FROM lessons WHERE course_id=? AND title=?",(course["id"],title)).fetchone()
         if not row:
             ordv=cur.execute("SELECT COALESCE(MAX(ord),0)+1 FROM lessons WHERE course_id=?",(course["id"],)).fetchone()[0]
             cur.execute("""INSERT INTO lessons(course_id,title,kind,filename,notes,ord)
                            VALUES(?,?,?,?,?,?)""",(course["id"],title,"drive","1H-PyuBKjjUXRYkYUVO9PJeRWwyhXRESW",
-                           "Video privado alojado en Google Drive y reproducido dentro de AVICO.",ordv))
+                           "Ponencia de apertura del curso de Hemorragia Obstétrica. Video privado alojado en Google Drive y reproducido dentro de Aula AVICO.",ordv))
             con.commit()
     con.close()
 
