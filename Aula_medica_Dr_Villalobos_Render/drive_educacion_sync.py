@@ -38,39 +38,26 @@ def sync(db):
         key=lambda item: item.get("name", "").casefold()
     )
     con = db()
-    added = 0
+    pending = 0
     try:
-        con.execute("BEGIN IMMEDIATE")
-        course = con.execute("SELECT id FROM courses WHERE title=?", (COURSE_TITLE,)).fetchone()
-        if not course and videos:
+        con.execute("""CREATE TABLE IF NOT EXISTS education_drive_reviews(
+            file_id TEXT PRIMARY KEY,
+            title TEXT NOT NULL,
+            status TEXT NOT NULL DEFAULT 'pending',
+            detected_at TEXT DEFAULT CURRENT_TIMESTAMP
+        )""")
+        for item in videos:
+            file_id = item["id"]
+            title = item["name"].rsplit(".", 1)[0].replace("_", " ").strip()
+            exists = con.execute("SELECT 1 FROM lessons WHERE kind='drive' AND filename=?", (file_id,)).fetchone()
+            if exists:
+                continue
             con.execute(
-                "INSERT INTO courses(title,subtitle,category,published) VALUES(?,?,?,1)",
-                (COURSE_TITLE, "Ponencias audiovisuales de AVICO Educación", CATEGORY)
+                "INSERT OR IGNORE INTO education_drive_reviews(file_id,title,status) VALUES(?,?,'pending')",
+                (file_id, title)
             )
-            course = con.execute("SELECT id FROM courses WHERE title=?", (COURSE_TITLE,)).fetchone()
-        if course:
-            for item in videos:
-                file_id = item["id"]
-                exists = con.execute(
-                    "SELECT id FROM lessons WHERE course_id=? AND kind='drive' AND filename=?",
-                    (course["id"], file_id)
-                ).fetchone()
-                if exists:
-                    continue
-                title = item["name"].rsplit(".", 1)[0].replace("_", " ").strip()
-                order = con.execute(
-                    "SELECT COALESCE(MAX(ord),0)+1 FROM lessons WHERE course_id=?",
-                    (course["id"],)
-                ).fetchone()[0]
-                con.execute(
-                    "INSERT INTO lessons(course_id,title,kind,filename,notes,ord) VALUES(?,?,?,?,?,?)",
-                    (course["id"], title, "drive", file_id, "Ponencia incorporada automáticamente desde Drive.", order)
-                )
-                added += 1
+        pending = con.execute("SELECT COUNT(*) FROM education_drive_reviews WHERE status='pending'").fetchone()[0]
         con.commit()
-    except Exception:
-        con.rollback()
-        raise
     finally:
         con.close()
-    return {"videos_en_carpeta": len(videos), "ponencias_nuevas": added}
+    return {"videos_en_carpeta": len(videos), "pendientes": pending}
