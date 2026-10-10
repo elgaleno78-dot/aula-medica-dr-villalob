@@ -321,17 +321,68 @@ def _education_drive_sync_loop():
     while True:
         try:
             outcome = sync(db)
-            if outcome["ponencias_nuevas"]:
-                print("[AULA EDUCACION] Nuevas ponencias publicadas:", outcome["ponencias_nuevas"])
+            if outcome["pendientes"]:
+                print("[AULA EDUCACION] Ponencias pendientes de autorización:", outcome["pendientes"])
         except Exception as exc:
             print("[AULA EDUCACION] Sincronización pendiente:", type(exc).__name__, str(exc)[:180])
         time.sleep(600)
+
+@app.get("/api/admin/education-drive/pending")
+def education_drive_pending(request: Request):
+    auth(request)
+    con=db()
+    con.execute("""CREATE TABLE IF NOT EXISTS education_drive_reviews(
+        file_id TEXT PRIMARY KEY,title TEXT NOT NULL,status TEXT NOT NULL DEFAULT 'pending',
+        detected_at TEXT DEFAULT CURRENT_TIMESTAMP)""")
+    rows=[dict(r) for r in con.execute(
+        "SELECT file_id,title,status,detected_at FROM education_drive_reviews WHERE status='pending' ORDER BY detected_at"
+    ).fetchall()]
+    con.close()
+    return rows
+
+@app.post("/api/admin/education-drive/{file_id}/decision")
+async def education_drive_decision(file_id:str, request:Request):
+    auth(request)
+    if not re.fullmatch(r"[A-Za-z0-9_-]{10,}",file_id):
+        raise HTTPException(400,"Identificador inválido")
+    payload=await request.json()
+    decision=payload.get("decision")
+    if decision not in ("approve","reject"):
+        raise HTTPException(400,"Decisión inválida")
+    con=db()
+    try:
+        con.execute("BEGIN IMMEDIATE")
+        row=con.execute("SELECT * FROM education_drive_reviews WHERE file_id=? AND status='pending'",(file_id,)).fetchone()
+        if not row:
+            raise HTTPException(404,"Ponencia pendiente no encontrada")
+        if decision=="approve":
+            title="AVICO® Educación — Ponencias"
+            course=con.execute("SELECT id FROM courses WHERE title=?",(title,)).fetchone()
+            if not course:
+                con.execute("INSERT INTO courses(title,subtitle,category,published) VALUES(?,?,?,1)",
+                            (title,"Ponencias audiovisuales de AVICO Educación","Obstetricia clínica"))
+                course=con.execute("SELECT id FROM courses WHERE title=?",(title,)).fetchone()
+            exists=con.execute("SELECT 1 FROM lessons WHERE course_id=? AND kind='drive' AND filename=?",
+                               (course["id"],file_id)).fetchone()
+            if not exists:
+                order=con.execute("SELECT COALESCE(MAX(ord),0)+1 FROM lessons WHERE course_id=?",(course["id"],)).fetchone()[0]
+                con.execute("INSERT INTO lessons(course_id,title,kind,filename,notes,ord) VALUES(?,?,?,?,?,?)",
+                            (course["id"],row["title"],"drive",file_id,"Ponencia autorizada por el administrador.",order))
+        con.execute("UPDATE education_drive_reviews SET status=? WHERE file_id=?",
+                    ("approved" if decision=="approve" else "rejected",file_id))
+        con.commit()
+    except Exception:
+        con.rollback()
+        raise
+    finally:
+        con.close()
+    return {"ok":True,"status":"approved" if decision=="approve" else "rejected"}
 
 @app.on_event("startup")
 def startup():
     init_db()
     import threading
-    # Sincronización automática pausada hasta activar revisión y autorización del administrador.
+    threading.Thread(target=_education_drive_sync_loop,daemon=True,name="avico-educacion-drive").start()
     # Si ya existe información en el disco persistente, deja un respaldo al iniciar.
     try:
         backup_database()
