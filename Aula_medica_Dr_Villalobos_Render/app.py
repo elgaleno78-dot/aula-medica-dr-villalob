@@ -331,7 +331,7 @@ def _education_drive_sync_loop():
 def startup():
     init_db()
     import threading
-    threading.Thread(target=_education_drive_sync_loop,daemon=True,name="avico-educacion-drive").start()
+    # Sincronización automática pausada hasta activar revisión y autorización del administrador.
     # Si ya existe información en el disco persistente, deja un respaldo al iniciar.
     try:
         backup_database()
