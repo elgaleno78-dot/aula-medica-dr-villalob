@@ -325,6 +325,12 @@ button,input,textarea,select{font:inherit}.app{display:grid;grid-template-column
 
   <div class="panel adminPanel" id="adminPanel">
     <h2>Panel de administrador</h2>
+    <section class="panel" style="margin:16px 0;padding:18px;border:1px solid #dce6f0;border-radius:12px;background:#f7fbff">
+      <h3>Autorizar ponencias de Drive · AVICO® Educación</h3>
+      <p class="muted">Los videos nuevos permanecen pendientes hasta tu aprobación. No necesitas copiar ningún token.</p>
+      <button type="button" class="btn" id="driveReviewRefresh" onclick="loadDriveReviews()">Consultar ponencias pendientes</button>
+      <div id="driveReviewList" style="margin-top:12px" aria-live="polite">Selecciona «Consultar ponencias pendientes».</div>
+    </section>
     <p class="muted">Solo el administrador puede crear, cargar o eliminar contenido.</p>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px">
       <form id="courseForm">
@@ -456,7 +462,7 @@ function renderCourses(){
       <div class="cover">${icons[i%icons.length]}</div>
       <div class="courseBody"><span class="badge">${c.category||'Curso'}</span><h3>${esc(c.title)}</h3><p>${esc(c.subtitle||'')}</p><small>${c.lessons.length} clase(s)</small></div>
     </div>`).join('');
-  renderCourseManager(); loadStudents(); loadAcademic(); loadLibrary();
+  renderCourseManager(); loadStudents(); loadAcademic(); loadDriveReviews(); loadLibrary();
 }
 function renderCourseManager(){
   const box=$('#courseManagerList'); if(!box) return;
@@ -606,6 +612,39 @@ function closeLogin(){ $('#loginModal').classList.remove('show') }
 async function login(){
  try{let d=await api('/api/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({password:$('#password').value})}); token=d.token;localStorage.setItem('aula_admin_token',token);closeLogin();showAdmin();load()}
  catch(e){alert('Contraseña incorrecta')}
+}
+async function loadDriveReviews(){
+  const target=document.getElementById('driveReviewList');
+  if(!target)return;
+  target.textContent='Consultando ponencias...';
+  try{
+    const response=await fetch('/api/admin/education-drive/pending',{headers:{Authorization:'Bearer '+token},cache:'no-store'});
+    if(!response.ok)throw new Error('No se pudieron consultar las ponencias ('+response.status+').');
+    const items=await response.json();
+    target.replaceChildren();
+    if(!items.length){target.textContent='No hay ponencias pendientes de autorización.';return;}
+    for(const item of items){
+      const wrap=document.createElement('div');
+      wrap.style.cssText='border-top:1px solid #dce6f0;padding:12px 0';
+      const heading=document.createElement('strong');heading.textContent=item.title;wrap.appendChild(heading);
+      const line=document.createElement('div');line.className='muted';line.textContent='Pendiente desde: '+item.detected_at;wrap.appendChild(line);
+      for(const [label,decision] of [['Autorizar','approve'],['Rechazar','reject']]){
+        const btn=document.createElement('button');btn.type='button';btn.className='btn'+(decision==='reject'?' red':'');btn.style.margin='8px 8px 0 0';btn.textContent=label;
+        btn.onclick=async()=>{
+          if(!confirm((decision==='approve'?'¿Publicar':'¿Rechazar')+' «'+item.title+'»?'))return;
+          btn.disabled=true;
+          try{
+            const r=await fetch('/api/admin/education-drive/'+encodeURIComponent(item.file_id)+'/decision',{
+              method:'POST',headers:{Authorization:'Bearer '+token,'Content-Type':'application/json'},
+              body:JSON.stringify({decision})
+            });
+            if(!r.ok)throw new Error('No se pudo guardar la decisión ('+r.status+').');
+            await loadDriveReviews();if(decision==='approve')await load();
+          }catch(e){alert(e.message);btn.disabled=false;}
+        };wrap.appendChild(btn);
+      }target.appendChild(wrap);
+    }
+  }catch(e){target.textContent=e.message;}
 }
 function showAdmin(){
   $('#adminPanel').classList.add('show');
