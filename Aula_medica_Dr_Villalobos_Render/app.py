@@ -313,9 +313,25 @@ def init_db():
     con.commit()
     con.close()
 
+# Publicación automática de ponencias en la carpeta privada AVICO Educación.
+# Se activa cuando el propietario comparte la carpeta con la cuenta de servicio.
+def _education_drive_sync_loop():
+    import time
+    from drive_educacion_sync import sync
+    while True:
+        try:
+            outcome = sync(db)
+            if outcome["ponencias_nuevas"]:
+                print("[AULA EDUCACION] Nuevas ponencias publicadas:", outcome["ponencias_nuevas"])
+        except Exception as exc:
+            print("[AULA EDUCACION] Sincronización pendiente:", type(exc).__name__, str(exc)[:180])
+        time.sleep(600)
+
 @app.on_event("startup")
 def startup():
     init_db()
+    import threading
+    threading.Thread(target=_education_drive_sync_loop,daemon=True,name="avico-educacion-drive").start()
     # Si ya existe información en el disco persistente, deja un respaldo al iniciar.
     try:
         backup_database()
