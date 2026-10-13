@@ -723,11 +723,11 @@ async function showAvicoSlide(lessonId,number,count){
 }
 let avicoProgressTimer=null;
 async function getLessonProgress(lessonId){
-  const st=sessionStorage.getItem('avico_student_token'); if(!st)return {position_seconds:0};
+  const st=sessionStorage.getItem('avico_student_token')||localStorage.getItem('avico_student_token'); if(!st)return {position_seconds:0};
   try{const r=await fetch('/api/student-progress/'+lessonId,{headers:{Authorization:'Bearer '+st}});return r.ok?await r.json():{position_seconds:0};}catch{return {position_seconds:0}}
 }
 async function saveLessonProgress(lessonId,position,duration,completed=false){
-  const st=sessionStorage.getItem('avico_student_token'); if(!st)return;
+  const st=sessionStorage.getItem('avico_student_token')||localStorage.getItem('avico_student_token'); if(!st)return;
   try{await fetch('/api/student-progress/'+lessonId,{method:'PUT',headers:{Authorization:'Bearer '+st,'Content-Type':'application/json'},body:JSON.stringify({position_seconds:position||0,duration_seconds:duration||0,completed})});}catch{}
 }
 function trackHtmlVideo(video,lessonId,startAt){
@@ -779,6 +779,7 @@ async function viewLesson(raw,accessToken=null,isAdmin=false){
       $('#viewerContent').replaceChildren(video);
       if(!isAdmin && studentToken){
         const progress=await getLessonProgress(l.id);
+        video.dataset.avicoProgressLesson=String(l.id);
         trackHtmlVideo(video,l.id,Math.max(0,Number(progress.position_seconds)||0));
       }
     }catch(e){$('#viewerContent').innerHTML='<div class="pptBox"><p>'+esc(e.message)+'</p></div>';}
@@ -866,7 +867,7 @@ function renderTimedCourse(data,accessToken){
     }
   },1000);
 }
-function closeViewer(){ $('#viewer').classList.remove('show'); if(document.fullscreenElement)document.exitFullscreen()}
+function closeViewer(){ const v=$('#viewerContent video'); if(v && v.dataset.avicoProgressLesson){saveLessonProgress(Number(v.dataset.avicoProgressLesson),v.currentTime,v.duration,v.ended)} $('#viewer').classList.remove('show'); if(document.fullscreenElement)document.exitFullscreen()}
 function toggleFull(){let el=$('#viewer'); if(!document.fullscreenElement) el.requestFullscreen(); else document.exitFullscreen()}
 function esc(s){return (s??'').toString().replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]))}
 async function openAdmin(){
