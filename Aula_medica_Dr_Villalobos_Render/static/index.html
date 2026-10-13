@@ -620,6 +620,7 @@ function renderTimedCourse(data,accessToken){
     </div>`).join(''):'<p class="muted">Todavía no hay clases.</p>';
   avicoLoadProgress();
   $('#lessons').innerHTML=`<div class="courseTimer">⏱ Tiempo restante: <span class="clock" id="courseCountdown">${formatRemaining(remaining)}</span></div>${rows}`;
+  avicoLoadProgress();
   courseTimerInterval=setInterval(()=>{
     remaining--;
     const el=$('#courseCountdown'); if(el) el.textContent=formatRemaining(remaining);
