@@ -499,8 +499,10 @@ async function saveAccessHours(id){
 }
 async function openCourse(id){
   window.avicoActiveCourseLessons=null;
+  window.avicoActiveAccessToken=null;
   const summary=document.getElementById('avicoLearningSummary');if(summary)summary.hidden=true;
   const c=courses.find(x=>x.id===id); if(!c)return;
+  window.avicoActiveCourseId=id;
   $('#lessonPanel').style.display='block';
   $('#lessonCourseTitle').textContent=c.title;
   $('#lessonCourseSubtitle').textContent=c.subtitle||'';
@@ -533,6 +535,7 @@ async function openCourse(id){
     if(!r.ok)throw Error('No se pudo abrir el curso.');
     const data=await r.json();
     window.avicoActiveCourseLessons=data.lessons||[];
+    window.avicoActiveAccessToken=typeof accessToken!=='undefined'?accessToken:null;
     if(courseTimerInterval)clearInterval(courseTimerInterval);
     $('#lessons').innerHTML=data.lessons.length?data.lessons.map(l=>`
       <div class="lessonRow">
@@ -558,7 +561,8 @@ function avicoUpdateLearningSummary(){
  const next=lessons.find(l=>avicoProgressPercent(l.id)<90);
  root.hidden=false;
  root.innerHTML='<div class="avico-summary-title">Mi aprendizaje · AVICO®</div><div class="avico-summary-metrics"><span><b>'+completed+'</b> / '+lessons.length+' ponencias completadas</span><span><b>'+average+' %</b> avance promedio</span></div><div class="avico-progress-track"><div class="avico-progress-fill" style="width:'+average+'%"></div></div>'+(next?'<button type="button" class="btn" id="avicoContinueLesson" style="margin-top:12px">▶ Continuar: '+esc(next.title)+'</button>':'<p>Has completado todas las ponencias del curso.</p>');
- if(next)document.getElementById('avicoContinueLesson').onclick=()=>viewLesson(JSON.stringify(next),null,false);
+ if(next)document.getElementById('avicoContinueLesson').onclick=()=>viewLesson(JSON.stringify(next),window.avicoActiveAccessToken||null,false);
+ const courseId=window.avicoActiveCourseId;if(courseId){const btn=document.createElement('button');btn.className='btn';btn.id='avicoCertificateBtn';btn.style.margin='12px 0 0 8px';btn.textContent='Solicitar constancia';btn.onclick=()=>avicoRequestCertificate(courseId);root.appendChild(btn)}
 }
 async function avicoLoadProgress(){
  const st=sessionStorage.getItem('avico_student_token');if(!st)return;
@@ -654,6 +658,27 @@ function renderTimedCourse(data,accessToken){
   },1000);
 }
 
+
+async function avicoRequestCertificate(courseId){
+ const studentToken=sessionStorage.getItem('avico_student_token');
+ if(!studentToken){alert('Inicia sesión como alumno para solicitar la constancia');return}
+ const headers={Authorization:'Bearer '+studentToken};
+ const status=await fetch('/api/student-certificate/'+courseId+'/eligibility',{headers});
+ if(!status.ok){alert('No fue posible verificar los requisitos');return}
+ const data=await status.json();
+ if(!data.eligible){alert('Constancia no disponible: '+data.reason);return}
+ if(!confirm('¿Emitir tu constancia AVICO® de finalización académica?'))return;
+ const r=await fetch('/api/student-certificate/'+courseId,{method:'POST',headers});
+ if(!r.ok){alert('No se pudo emitir la constancia');return}
+ const certificate=await r.json();
+ const verification=certificate.verification_url;
+ const popup=window.open('','_blank');
+ if(!popup){alert('Permite ventanas emergentes para visualizar la constancia');return}
+ const safeName=esc(window.avicoStudentName||'Participante');
+ const safeTitle=esc(data.course_title);
+ popup.document.write('<!doctype html><html lang="es"><head><meta charset="utf-8"><title>Constancia AVICO®</title><style>body{font-family:Arial,sans-serif;text-align:center;padding:8vh 8%;color:#143f63}main{border:9px double #14588a;padding:50px 30px}h1{font-size:40px}h2{font-size:30px}p{font-size:18px}small{font-size:12px}@media print{button{display:none}}</style></head><body><main><h1>AVICO®</h1><h2>Constancia de finalización académica</h2><p>Se hace constar que</p><h2>'+safeName+'</h2><p>ha cumplido los requisitos de aprendizaje del curso</p><h2>'+safeTitle+'</h2><p>Fecha de emisión: '+new Date().toLocaleDateString('es-MX')+'</p><small>Constancia emitida por AVICO®. No implica aval institucional ni créditos oficiales.</small><p><small>Verificación: '+esc(verification)+'</small></p></main><button onclick="print()">Imprimir / Guardar como PDF</button></body></html>');
+ popup.document.close();
+}
 async function avicoOpenQuiz(lessonId){
  const st=sessionStorage.getItem('avico_student_token');if(!st){alert('Inicia sesión como alumno');return}
  const r=await fetch('/api/student-quiz/'+lessonId,{headers:{Authorization:'Bearer '+st}});
