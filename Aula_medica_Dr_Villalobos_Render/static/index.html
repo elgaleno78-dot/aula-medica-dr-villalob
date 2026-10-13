@@ -742,15 +742,25 @@ async function viewLesson(raw,accessToken=null,isAdmin=false){
   if(avicoViewerBlob){URL.revokeObjectURL(avicoViewerBlob);avicoViewerBlob=null;}
   if(avicoSlideBlob){URL.revokeObjectURL(avicoSlideBlob);avicoSlideBlob=null;}
   if(l.kind==='drive'){
-    const id=String(l.filename||'');
+    $('#viewerContent').innerHTML='<div class="pptBox"><p>Conectando con streaming privado de Google Drive…</p></div>';
     $('#viewer').classList.add('show');
-    if(!/^[a-zA-Z0-9_-]{15,}$/.test(id)){
-      $('#viewerContent').innerHTML='<div class="pptBox"><p>Identificador de ponencia inválido.</p></div>';
-    }else{
-      const original='https://drive.google.com/file/d/'+encodeURIComponent(id)+'/view';
-      // Avoid third-party cookie prompts in embedded Google Drive players on iOS.
-      $('#viewerContent').innerHTML='<div class="pptBox" style="max-width:680px"><h2>'+esc(l.title)+'</h2><p>La ponencia se reproduce directamente en Google Drive para evitar bloqueos de cookies en iPhone.</p><p style="margin-top:22px"><a class="btn" style="display:inline-block;text-decoration:none;background:#245b9b;color:#fff;padding:14px 22px;border-radius:10px" href="'+original+'" target="_blank" rel="noopener noreferrer">▶ Reproducir ponencia</a></p><p style="font-size:14px;margin-top:20px">Al terminar, regrese a esta pestaña del Aula AVICO®.</p></div>';
-    }
+    try{
+      const studentToken=sessionStorage.getItem('avico_student_token');
+      let response=null;
+      if(studentToken)response=await fetch('/api/drive/player/'+l.id,{headers:{Authorization:'Bearer '+studentToken}});
+      if((!response||response.status===401)&&isAdmin&&token)response=await fetch('/api/drive/player/'+l.id,{headers:{Authorization:'Bearer '+token}});
+      if(!response||!response.ok){let msg='No se pudo iniciar la reproducción privada.';try{const e=await response.json();msg=e.detail||msg}catch{}throw Error(msg)}
+      const data=await response.json();
+      const video=document.createElement('video');
+      video.controls=true;video.playsInline=true;video.preload='metadata';video.autoplay=false;
+      video.setAttribute('controlsList','nodownload noremoteplayback');
+      video.setAttribute('disablePictureInPicture','');
+      video.setAttribute('oncontextmenu','return false');
+      video.style.cssText='width:100%;height:100%;object-fit:contain;background:#000';
+      video.src=data.media_url;
+      video.addEventListener('error',()=>{const box=$('#viewerContent');if(box&&box.contains(video))box.innerHTML='<div class="pptBox"><p>No se pudo cargar el streaming privado. Compruebe la credencial de Google Drive en Render.</p></div>';});
+      $('#viewerContent').replaceChildren(video);
+    }catch(e){$('#viewerContent').innerHTML='<div class="pptBox"><p>'+esc(e.message)+'</p></div>';}
     return;
   }
   if(l.kind==='stream'){
