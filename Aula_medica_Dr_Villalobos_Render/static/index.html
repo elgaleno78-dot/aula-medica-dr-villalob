@@ -679,7 +679,7 @@ async function avicoRequestCertificate(courseId){
  const verifiedResponse=await fetch(verification);if(!verifiedResponse.ok){popup.close();alert('No fue posible verificar la constancia');return}const verified=await verifiedResponse.json();
  const safeName=esc(verified.student_name);
  const safeTitle=esc(data.course_title);
- popup.document.write('<!doctype html><html lang="es"><head><meta charset="utf-8"><title>Constancia AVICO®</title><style>body{font-family:Arial,sans-serif;text-align:center;padding:8vh 8%;color:#143f63}main{border:9px double #14588a;padding:50px 30px}h1{font-size:40px}h2{font-size:30px}p{font-size:18px}small{font-size:12px}@media print{button{display:none}}</style></head><body><main><h1>AVICO®</h1><h2>Constancia de finalización académica</h2><p>Se hace constar que</p><h2>'+safeName+'</h2><p>ha cumplido los requisitos de aprendizaje del curso</p><h2>'+safeTitle+'</h2><p>Fecha de emisión: '+new Date().toLocaleDateString('es-MX')+'</p><small>Constancia emitida por AVICO®. No implica aval institucional ni créditos oficiales.</small><p><small>Verificación: '+esc(verification)+'</small></p></main><button onclick="print()">Imprimir / Guardar como PDF</button><script>if('serviceWorker' in navigator){window.addEventListener('load',()=>navigator.serviceWorker.register('/sw.js').catch(e=>console.warn('PWA:',e)))}</script></body></html>');
+ popup.document.write('<!doctype html><html lang="es"><head><meta charset="utf-8"><title>Constancia AVICO®</title><style>body{font-family:Arial,sans-serif;text-align:center;padding:8vh 8%;color:#143f63}main{border:9px double #14588a;padding:50px 30px}h1{font-size:40px}h2{font-size:30px}p{font-size:18px}small{font-size:12px}@media print{button{display:none}}</style></head><body><main><h1>AVICO®</h1><h2>Constancia de finalización académica</h2><p>Se hace constar que</p><h2>'+safeName+'</h2><p>ha cumplido los requisitos de aprendizaje del curso</p><h2>'+safeTitle+'</h2><p>Fecha de emisión: '+new Date().toLocaleDateString('es-MX')+'</p><small>Constancia emitida por AVICO®. No implica aval institucional ni créditos oficiales.</small><p><small>Verificación: '+esc(verification)+'</small></p></main><button onclick="print()">Imprimir / Guardar como PDF</button></body></html>');
  popup.document.close();
 }
 
@@ -1129,5 +1129,5 @@ window.avicoRefreshStudent=async function(){
   }
  }catch(e){alert(e.message);}
 })();
-</script></body>
+</script><script>if('serviceWorker' in navigator){window.addEventListener('load',()=>navigator.serviceWorker.register('/sw.js').catch(e=>console.warn('PWA:',e)))}</script></body>
 </html>
