@@ -380,6 +380,7 @@ async def education_drive_decision(file_id:str, request:Request):
 
 @app.on_event("startup")
 def startup():
+    avico_quiz_schema()
     init_db()
     import threading
     threading.Thread(target=_education_drive_sync_loop,daemon=True,name="avico-educacion-drive").start()
@@ -1636,3 +1637,121 @@ def health():
         "render": bool(os.getenv("RENDER")),
         "persistent_dir_configured": bool(os.getenv("AULA_DATA_DIR")),
     }
+
+
+# Evaluaciones AVICO®: banco de reactivos configurado por el administrador.
+def avico_quiz_schema():
+    con=db()
+    try:
+        con.executescript("""
+        CREATE TABLE IF NOT EXISTS avico_quiz_questions(
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          lesson_id INTEGER NOT NULL,
+          question TEXT NOT NULL,
+          options_json TEXT NOT NULL,
+          correct_index INTEGER NOT NULL,
+          explanation TEXT DEFAULT '',
+          FOREIGN KEY(lesson_id) REFERENCES lessons(id) ON DELETE CASCADE
+        );
+        CREATE TABLE IF NOT EXISTS avico_quiz_attempts(
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          account_id INTEGER NOT NULL,
+          lesson_id INTEGER NOT NULL,
+          score_percent REAL NOT NULL,
+          correct_count INTEGER NOT NULL,
+          question_count INTEGER NOT NULL,
+          submitted_at TEXT DEFAULT CURRENT_TIMESTAMP,
+          FOREIGN KEY(account_id) REFERENCES student_accounts(id) ON DELETE CASCADE,
+          FOREIGN KEY(lesson_id) REFERENCES lessons(id) ON DELETE CASCADE
+        );
+        CREATE INDEX IF NOT EXISTS idx_avico_quiz_attempts_account ON avico_quiz_attempts(account_id,lesson_id);
+        """)
+        con.commit()
+    finally: con.close()
+
+@app.get("/api/admin/quiz/{lesson_id}")
+def avico_admin_quiz(lesson_id:int,request:Request):
+    auth(request)
+    con=db()
+    try:
+        return [dict(x) for x in con.execute("SELECT id,question,options_json,correct_index,explanation FROM avico_quiz_questions WHERE lesson_id=? ORDER BY id",(lesson_id,))]
+    finally: con.close()
+
+@app.post("/api/admin/quiz/{lesson_id}")
+async def avico_admin_add_question(lesson_id:int,request:Request):
+    auth(request)
+    data=await request.json()
+    question=str(data.get("question","")).strip()
+    options=data.get("options")
+    explanation=str(data.get("explanation","")).strip()
+    if not question or not isinstance(options,list) or len(options)!=4 or any(not isinstance(x,str) or not x.strip() for x in options):
+        raise HTTPException(400,"Escribe una pregunta y cuatro opciones válidas")
+    try: correct=int(data.get("correct_index"))
+    except (ValueError,TypeError): raise HTTPException(400,"Respuesta correcta inválida")
+    if correct not in range(4):raise HTTPException(400,"Respuesta correcta inválida")
+    con=db()
+    try:
+        if not con.execute("SELECT id FROM lessons WHERE id=?",(lesson_id,)).fetchone():raise HTTPException(404,"Ponencia no encontrada")
+        cur=con.execute("INSERT INTO avico_quiz_questions(lesson_id,question,options_json,correct_index,explanation) VALUES(?,?,?,?,?)",(lesson_id,question,json.dumps(options,ensure_ascii=False),correct,explanation))
+        con.commit()
+        return {"id":cur.lastrowid,"saved":True}
+    finally: con.close()
+
+@app.delete("/api/admin/quiz/question/{question_id}")
+def avico_admin_delete_question(question_id:int,request:Request):
+    auth(request)
+    con=db()
+    try:
+        cur=con.execute("DELETE FROM avico_quiz_questions WHERE id=?",(question_id,))
+        con.commit()
+        if not cur.rowcount:raise HTTPException(404,"Reactivo no encontrado")
+        return {"deleted":True}
+    finally:con.close()
+
+@app.get("/api/student-quiz/{lesson_id}")
+def avico_student_quiz(lesson_id:int,request:Request):
+    student_identity(request)
+    con=db()
+    try:
+        rows=con.execute("""SELECT q.id,q.question,q.options_json FROM avico_quiz_questions q
+          JOIN lessons l ON l.id=q.lesson_id JOIN courses c ON c.id=l.course_id
+          WHERE q.lesson_id=? AND c.published=1 ORDER BY q.id""",(lesson_id,)).fetchall()
+        return {"lesson_id":lesson_id,"questions":[{"id":r["id"],"question":r["question"],"options":json.loads(r["options_json"])} for r in rows]}
+    finally:con.close()
+
+@app.post("/api/student-quiz/{lesson_id}/submit")
+async def avico_student_quiz_submit(lesson_id:int,request:Request):
+    identity=student_identity(request)
+    payload=await request.json()
+    answers=payload.get("answers")
+    if not isinstance(answers,dict):raise HTTPException(400,"Respuestas inválidas")
+    con=db()
+    try:
+        rows=con.execute("""SELECT q.id,q.correct_index,q.explanation FROM avico_quiz_questions q
+          JOIN lessons l ON l.id=q.lesson_id JOIN courses c ON c.id=l.course_id
+          WHERE q.lesson_id=? AND c.published=1 ORDER BY q.id""",(lesson_id,)).fetchall()
+        if not rows:raise HTTPException(404,"No hay evaluación publicada")
+        if len(rows)>100:raise HTTPException(400,"Evaluación demasiado extensa")
+        details=[]
+        for r in rows:
+            value=answers.get(str(r["id"]))
+            try: choice=int(value) if value is not None else -1
+            except (TypeError,ValueError):choice=-1
+            ok=choice==r["correct_index"]
+            details.append({"question_id":r["id"],"correct":ok,"correct_index":r["correct_index"],"explanation":r["explanation"]})
+        correct=sum(x["correct"] for x in details)
+        score=round(correct*100/len(rows),1)
+        con.execute("INSERT INTO avico_quiz_attempts(account_id,lesson_id,score_percent,correct_count,question_count) VALUES(?,?,?,?,?)",(identity["id"],lesson_id,score,correct,len(rows)))
+        con.commit()
+        return {"score_percent":score,"correct_count":correct,"question_count":len(rows),"details":details}
+    finally:con.close()
+
+@app.get("/api/admin/quiz-analytics")
+def avico_admin_quiz_analytics(request:Request):
+    auth(request)
+    con=db()
+    try:
+        return [dict(r) for r in con.execute("""SELECT l.title AS lesson_title,COUNT(a.id) AS attempts,ROUND(AVG(a.score_percent),1) AS average_score
+          FROM avico_quiz_attempts a JOIN lessons l ON l.id=a.lesson_id GROUP BY l.id ORDER BY l.title""")]
+    finally:con.close()
+
