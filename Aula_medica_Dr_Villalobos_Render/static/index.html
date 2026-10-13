@@ -759,6 +759,23 @@ async function viewLesson(raw,accessToken=null,isAdmin=false){
         response=await fetch('/api/drive/player/'+l.id,{headers:{Authorization:'Bearer '+credential}});
         if(response.ok||response.status!==401)break;
       }
+      if(response && response.status===401 && !isAdmin){
+        try{
+          const profile=JSON.parse(localStorage.getItem('avico_student_profile')||'null');
+          if(profile && profile.full_name && profile.email){
+            const renewed=await fetch('/api/student-auth/register',{
+              method:'POST',headers:{'Content-Type':'application/json'},
+              body:JSON.stringify({full_name:profile.full_name,email:profile.email,age:profile.age,institution:profile.institution,position:profile.position})
+            });
+            if(renewed.ok){
+              const renewedData=await renewed.json();
+              sessionStorage.setItem('avico_student_token',renewedData.token);
+              localStorage.setItem('avico_student_token',renewedData.token);
+              response=await fetch('/api/drive/player/'+l.id,{headers:{Authorization:'Bearer '+renewedData.token}});
+            }
+          }
+        }catch(e){console.warn('No se pudo renovar la sesión de alumno',e);}
+      }
       if(!response||!response.ok){
         let msg='No se pudo iniciar la reproducción privada.';
         try{const e=await response.json();msg=e.detail||msg}catch{}
