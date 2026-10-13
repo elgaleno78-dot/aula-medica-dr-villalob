@@ -331,7 +331,7 @@ button,input,textarea,select{font:inherit}.app{display:grid;grid-template-column
 
   <section id="avicoLearningSummary" class="avico-learning-summary" aria-live="polite" hidden></section>
   <section id="avicoAdminAnalytics" class="avico-admin-analytics" hidden></section>
-<div class="panel adminPanel" id="adminPanel">
+<div class="panel adminPanel" id="adminPanel"><button type="button" class="btn" id="avicoModerateOpinionsBtn" onclick="avicoModerateOpinions()">Moderar AVICO® Opinión</button>
     <h2>Panel de administrador</h2>
     <section class="panel" style="margin:16px 0;padding:18px;border:1px solid #dce6f0;border-radius:12px;background:#f7fbff">
       <h3>Autorizar ponencias de Drive · AVICO® Educación</h3>
@@ -542,6 +542,7 @@ async function openCourse(id){
         <div><b>${esc(l.title)}</b><div class="muted" style="font-size:12px">${esc(l.notes||'')} · ${l.kind.toUpperCase()}</div>${avicoProgressMarkup(l.id)}</div>
         <button class="btn" onclick='event.stopPropagation();viewLesson(${JSON.stringify(JSON.stringify(l))},null,false)'>Ver clase</button>
         <button class="btn" onclick="event.stopPropagation();avicoOpenQuiz(${l.id})">Evaluación</button>
+      <button class="btn" onclick="event.stopPropagation();avicoOpenOpinion(${l.id})">AVICO® Opinión</button>
       </div>`).join(''):'<p class="muted">Todavía no hay clases.</p>';
     avicoLoadProgress();
   }catch(err){$('#lessons').textContent=err.message||'No se pudo abrir el curso.';}
@@ -642,6 +643,7 @@ function renderTimedCourse(data,accessToken){
       <div><b>${esc(l.title)}</b><div class="muted" style="font-size:12px">${esc(l.notes||'')} · ${l.kind.toUpperCase()}</div>${avicoProgressMarkup(l.id)}</div>
       <button class="btn" onclick='event.stopPropagation();viewLesson(${JSON.stringify(JSON.stringify(l))},${JSON.stringify(accessToken)},false)'>Ver clase</button>
       <button class="btn" onclick="event.stopPropagation();avicoOpenQuiz(${l.id})">Evaluación</button>
+      <button class="btn" onclick="event.stopPropagation();avicoOpenOpinion(${l.id})">AVICO® Opinión</button>
     </div>`).join(''):'<p class="muted">Todavía no hay clases.</p>';
   avicoLoadProgress();
   window.avicoActiveCourseLessons=data.lessons||[];
@@ -679,6 +681,34 @@ async function avicoRequestCertificate(courseId){
  const safeTitle=esc(data.course_title);
  popup.document.write('<!doctype html><html lang="es"><head><meta charset="utf-8"><title>Constancia AVICO®</title><style>body{font-family:Arial,sans-serif;text-align:center;padding:8vh 8%;color:#143f63}main{border:9px double #14588a;padding:50px 30px}h1{font-size:40px}h2{font-size:30px}p{font-size:18px}small{font-size:12px}@media print{button{display:none}}</style></head><body><main><h1>AVICO®</h1><h2>Constancia de finalización académica</h2><p>Se hace constar que</p><h2>'+safeName+'</h2><p>ha cumplido los requisitos de aprendizaje del curso</p><h2>'+safeTitle+'</h2><p>Fecha de emisión: '+new Date().toLocaleDateString('es-MX')+'</p><small>Constancia emitida por AVICO®. No implica aval institucional ni créditos oficiales.</small><p><small>Verificación: '+esc(verification)+'</small></p></main><button onclick="print()">Imprimir / Guardar como PDF</button><script>if('serviceWorker' in navigator){window.addEventListener('load',()=>navigator.serviceWorker.register('/sw.js').catch(e=>console.warn('PWA:',e)))}</script></body></html>');
  popup.document.close();
+}
+
+async function avicoOpenOpinion(lessonId){
+ const st=sessionStorage.getItem('avico_student_token');
+ const r=await fetch('/api/opinions/'+lessonId);if(!r.ok){alert('No fue posible cargar comentarios');return}
+ const comments=await r.json();
+ const overlay=document.createElement('div');overlay.className='avico-quiz-overlay';
+ overlay.innerHTML='<section class="avico-quiz-card"><button type="button" class="btn" id="avicoOpinionClose">Cerrar</button><h2>AVICO® Opinión académica</h2><p>Espacio para preguntas y discusión profesional. Los comentarios se publican tras revisión.</p><div>'+comments.map(c=>'<blockquote><b>'+esc(c.student_name)+'</b><p>'+esc(c.comment)+'</p></blockquote>').join('')+'</div>'+(st?'<form id="avicoOpinionForm"><label>Tu pregunta o comentario<textarea required minlength="10" maxlength="1500" name="comment"></textarea></label><button type="submit" class="btn">Enviar para revisión</button></form>':'<p>Inicia sesión como alumno para participar.</p>')+'<p id="avicoOpinionStatus" aria-live="polite"></p></section>';
+ document.body.appendChild(overlay);overlay.querySelector('#avicoOpinionClose').onclick=()=>overlay.remove();
+ const form=overlay.querySelector('#avicoOpinionForm');if(form)form.onsubmit=async e=>{
+  e.preventDefault();const comment=new FormData(form).get('comment');
+  const resp=await fetch('/api/opinions/'+lessonId,{method:'POST',headers:{Authorization:'Bearer '+st,'Content-Type':'application/json'},body:JSON.stringify({comment})});
+  const result=await resp.json();overlay.querySelector('#avicoOpinionStatus').textContent=resp.ok?'Comentario enviado para revisión':(result.detail||'No se pudo enviar');
+  if(resp.ok)form.reset();
+ };
+}
+async function avicoModerateOpinions(){
+ if(!token)return;
+ const r=await fetch('/api/admin/opinions',{headers:{Authorization:'Bearer '+token}});
+ if(!r.ok){alert('No fue posible cargar la moderación');return}
+ const items=await r.json();
+ const overlay=document.createElement('div');overlay.className='avico-quiz-overlay';
+ overlay.innerHTML='<section class="avico-quiz-card"><button class="btn" id="avicoOpinionClose">Cerrar</button><h2>Moderación · AVICO® Opinión</h2>'+(items.length?items.map(c=>'<article class="avico-quiz-existing"><b>'+esc(c.lesson_title)+'</b><p>'+esc(c.student_name)+': '+esc(c.comment)+'</p><button class="btn" data-opinion="'+c.id+'" data-status="approved">Aprobar</button> <button class="btn" data-opinion="'+c.id+'" data-status="rejected">Rechazar</button></article>').join(''):'<p>No hay comentarios pendientes.</p>')+'</section>';
+ document.body.appendChild(overlay);overlay.querySelector('#avicoOpinionClose').onclick=()=>overlay.remove();
+ overlay.querySelectorAll('[data-opinion]').forEach(b=>b.onclick=async()=>{
+  const resp=await fetch('/api/admin/opinions/'+b.dataset.opinion+'/review',{method:'POST',headers:{Authorization:'Bearer '+token,'Content-Type':'application/json'},body:JSON.stringify({status:b.dataset.status})});
+  if(resp.ok){overlay.remove();avicoModerateOpinions()}else alert('No se pudo moderar');
+ });
 }
 async function avicoOpenQuiz(lessonId){
  const st=sessionStorage.getItem('avico_student_token');if(!st){alert('Inicia sesión como alumno');return}
