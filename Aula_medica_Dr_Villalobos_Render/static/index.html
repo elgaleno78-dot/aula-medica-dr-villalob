@@ -783,11 +783,6 @@ async function viewLesson(raw,accessToken=null,isAdmin=false){
       video.src=data.media_url;
       video.addEventListener('error',()=>{const box=$('#viewerContent');if(box&&box.contains(video))box.innerHTML='<div class="pptBox"><p>No se pudo cargar el streaming privado. Compruebe la credencial de Google Drive en Render.</p></div>';});
       $('#viewerContent').replaceChildren(video);
-      if(!isAdmin && studentToken){
-        const progress=await getLessonProgress(l.id);
-        video.dataset.avicoProgressLesson=String(l.id);
-        trackHtmlVideo(video,l.id,Math.max(0,Number(progress.position_seconds)||0));
-      }
     }catch(e){$('#viewerContent').innerHTML='<div class="pptBox"><p>'+esc(e.message)+'</p></div>';}
     return;
   }
@@ -873,7 +868,7 @@ function renderTimedCourse(data,accessToken){
     }
   },1000);
 }
-function closeViewer(){ const v=$('#viewerContent video'); if(v && v.dataset.avicoProgressLesson){saveLessonProgress(Number(v.dataset.avicoProgressLesson),v.currentTime,v.duration,v.ended)} $('#viewer').classList.remove('show'); if(document.fullscreenElement)document.exitFullscreen()}
+function closeViewer(){ $('#viewer').classList.remove('show'); if(document.fullscreenElement)document.exitFullscreen()}
 function toggleFull(){let el=$('#viewer'); if(!document.fullscreenElement) el.requestFullscreen(); else document.exitFullscreen()}
 function esc(s){return (s??'').toString().replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]))}
 async function openAdmin(){
