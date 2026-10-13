@@ -380,8 +380,8 @@ async def education_drive_decision(file_id:str, request:Request):
 
 @app.on_event("startup")
 def startup():
-    avico_quiz_schema()
     init_db()
+    avico_quiz_schema()
     import threading
     threading.Thread(target=_education_drive_sync_loop,daemon=True,name="avico-educacion-drive").start()
     # Si ya existe información en el disco persistente, deja un respaldo al iniciar.
