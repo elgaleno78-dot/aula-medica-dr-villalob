@@ -745,11 +745,20 @@ async function viewLesson(raw,accessToken=null,isAdmin=false){
     $('#viewerContent').innerHTML='<div class="pptBox"><p>Conectando con streaming privado de Google Drive…</p></div>';
     $('#viewer').classList.add('show');
     try{
-      const studentToken=sessionStorage.getItem('avico_student_token');
+      const studentToken=sessionStorage.getItem('avico_student_token')||localStorage.getItem('avico_student_token')||'';
+      const adminToken=token||localStorage.getItem('aula_admin_token')||'';
+      const credentials=[...new Set([isAdmin?adminToken:studentToken,isAdmin?studentToken:adminToken].filter(Boolean))];
       let response=null;
-      if(studentToken)response=await fetch('/api/drive/player/'+l.id,{headers:{Authorization:'Bearer '+studentToken}});
-      if((!response||response.status===401)&&isAdmin&&token)response=await fetch('/api/drive/player/'+l.id,{headers:{Authorization:'Bearer '+token}});
-      if(!response||!response.ok){let msg='No se pudo iniciar la reproducción privada.';try{const e=await response.json();msg=e.detail||msg}catch{}throw Error(msg)}
+      for(const credential of credentials){
+        response=await fetch('/api/drive/player/'+l.id,{headers:{Authorization:'Bearer '+credential}});
+        if(response.ok||response.status!==401)break;
+      }
+      if(!response||!response.ok){
+        let msg='No se pudo iniciar la reproducción privada.';
+        try{const e=await response.json();msg=e.detail||msg}catch{}
+        if(response&&response.status===401)msg='La sesión de acceso ha vencido. Salga del visor e inicie sesión nuevamente como alumno o administrador.';
+        throw Error(msg);
+      }
       const data=await response.json();
       const video=document.createElement('video');
       video.controls=true;video.playsInline=true;video.preload='metadata';video.autoplay=false;
