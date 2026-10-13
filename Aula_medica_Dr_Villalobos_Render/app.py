@@ -383,6 +383,7 @@ def startup():
     init_db()
     avico_quiz_schema()
     avico_certificate_schema()
+    avico_opinion_schema()
     import threading
     threading.Thread(target=_education_drive_sync_loop,daemon=True,name="avico-educacion-drive").start()
     # Si ya existe información en el disco persistente, deja un respaldo al iniciar.
@@ -1832,4 +1833,74 @@ def avico_verify_certificate(code:str):
 @app.get("/sw.js",include_in_schema=False)
 def avico_service_worker():
     return FileResponse(BASE / "static" / "sw.js",media_type="application/javascript",headers={"Service-Worker-Allowed":"/","Cache-Control":"no-cache"})
+
+
+
+# AVICO® Opinión: comentarios académicos moderados antes de su publicación.
+def avico_opinion_schema():
+    con=db()
+    try:
+        con.executescript("""
+        CREATE TABLE IF NOT EXISTS avico_opinions(
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          lesson_id INTEGER NOT NULL,
+          account_id INTEGER NOT NULL,
+          student_name TEXT NOT NULL,
+          comment TEXT NOT NULL,
+          status TEXT NOT NULL DEFAULT 'pending',
+          created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+          reviewed_at TEXT,
+          FOREIGN KEY(lesson_id) REFERENCES lessons(id) ON DELETE CASCADE,
+          FOREIGN KEY(account_id) REFERENCES student_accounts(id) ON DELETE CASCADE
+        );
+        CREATE INDEX IF NOT EXISTS idx_avico_opinions_lesson ON avico_opinions(lesson_id,status);
+        """)
+        con.commit()
+    finally:con.close()
+
+@app.get("/api/opinions/{lesson_id}")
+def avico_public_opinions(lesson_id:int):
+    con=db()
+    try:
+        return [dict(r) for r in con.execute("SELECT id,student_name,comment,created_at FROM avico_opinions WHERE lesson_id=? AND status='approved' ORDER BY id DESC LIMIT 100",(lesson_id,))]
+    finally:con.close()
+
+@app.post("/api/opinions/{lesson_id}")
+async def avico_submit_opinion(lesson_id:int,request:Request):
+    identity=student_identity(request)
+    data=await request.json()
+    comment=str(data.get("comment","")).strip()
+    if len(comment)<10 or len(comment)>1500:raise HTTPException(400,"El comentario debe tener entre 10 y 1500 caracteres")
+    con=db()
+    try:
+        if not con.execute("SELECT id FROM lessons WHERE id=?",(lesson_id,)).fetchone():raise HTTPException(404,"Ponencia no encontrada")
+        count=con.execute("SELECT COUNT(*) FROM avico_opinions WHERE account_id=? AND lesson_id=? AND created_at>=datetime('now','-1 day')",(identity["id"],lesson_id)).fetchone()[0]
+        if count>=3:raise HTTPException(429,"Máximo tres comentarios por ponencia cada 24 horas")
+        con.execute("INSERT INTO avico_opinions(lesson_id,account_id,student_name,comment) VALUES(?,?,?,?)",(lesson_id,identity["id"],identity["full_name"],comment))
+        con.commit()
+        return {"saved":True,"status":"pending","message":"Comentario enviado para revisión"}
+    finally:con.close()
+
+@app.get("/api/admin/opinions")
+def avico_admin_opinions(request:Request):
+    auth(request)
+    con=db()
+    try:
+        return [dict(r) for r in con.execute("""SELECT o.id,o.lesson_id,l.title AS lesson_title,o.student_name,o.comment,o.status,o.created_at
+          FROM avico_opinions o JOIN lessons l ON l.id=o.lesson_id WHERE o.status='pending' ORDER BY o.id LIMIT 200""")]
+    finally:con.close()
+
+@app.post("/api/admin/opinions/{opinion_id}/review")
+async def avico_review_opinion(opinion_id:int,request:Request):
+    auth(request)
+    data=await request.json()
+    status=data.get("status")
+    if status not in ("approved","rejected"):raise HTTPException(400,"Estado inválido")
+    con=db()
+    try:
+        cur=con.execute("UPDATE avico_opinions SET status=?,reviewed_at=CURRENT_TIMESTAMP WHERE id=? AND status='pending'",(status,opinion_id))
+        con.commit()
+        if not cur.rowcount:raise HTTPException(404,"Comentario pendiente no encontrado")
+        return {"reviewed":True,"status":status}
+    finally:con.close()
 
