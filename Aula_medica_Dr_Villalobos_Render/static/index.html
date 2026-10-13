@@ -756,7 +756,15 @@ async function viewLesson(raw,accessToken=null,isAdmin=false){
       if(!response||!response.ok){
         let msg='No se pudo iniciar la reproducción privada.';
         try{const e=await response.json();msg=e.detail||msg}catch{}
-        if(response&&response.status===401)msg='La sesión de acceso ha vencido. Salga del visor e inicie sesión nuevamente como alumno o administrador.';
+        if(response&&response.status===401){
+          if(isAdmin){
+            token='';localStorage.removeItem('aula_admin_token');
+            msg='La sesión anterior de administrador ya no es válida. Pulse Salir y vuelva a iniciar sesión con su contraseña de administrador.';
+            $('#loginModal').classList.add('show');
+          }else{
+            msg='La sesión de alumno no es válida. Inicie sesión nuevamente.';
+          }
+        }
         throw Error(msg);
       }
       const data=await response.json();
@@ -857,7 +865,16 @@ function renderTimedCourse(data,accessToken){
 function closeViewer(){ $('#viewer').classList.remove('show'); if(document.fullscreenElement)document.exitFullscreen()}
 function toggleFull(){let el=$('#viewer'); if(!document.fullscreenElement) el.requestFullscreen(); else document.exitFullscreen()}
 function esc(s){return (s??'').toString().replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]))}
-function openAdmin(){ if(token){showAdmin()} else $('#loginModal').classList.add('show') }
+async function openAdmin(){
+  if(token){
+    try{
+      const check=await fetch('/api/stream/status',{headers:{Authorization:'Bearer '+token}});
+      if(check.ok){showAdmin();return;}
+    }catch(e){}
+    token='';localStorage.removeItem('aula_admin_token');
+  }
+  $('#loginModal').classList.add('show');
+}
 function closeLogin(){ $('#loginModal').classList.remove('show') }
 async function login(){
  try{let d=await api('/api/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({password:$('#password').value})}); token=d.token;localStorage.setItem('aula_admin_token',token);closeLogin();showAdmin();load()}
