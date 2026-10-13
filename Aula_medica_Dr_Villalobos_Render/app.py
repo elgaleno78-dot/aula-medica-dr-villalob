@@ -762,8 +762,10 @@ def certificate_download(request:Request):
     name=identity["full_name"]
     c.setFont("Helvetica-Bold",min(26,max(13,800/max(len(name),1))))
     c.drawCentredString(width/2,height-247,name)
-    c.setFont("Helvetica",16);c.drawCentredString(width/2,height-305,"Por completar el curso de Hemorragia Obstétrica")
-    c.setFont("Helvetica",12);c.drawCentredString(width/2,height-335,"AVICO - Educación médica")
+    c.setFont("Helvetica",15);c.drawCentredString(width/2,height-298,"Hemorragia Obstétrica:")
+    c.drawCentredString(width/2,height-322,"Del código mater al control quirúrgico avanzado")
+    c.setFont("Helvetica-Bold",13);c.drawCentredString(width/2,height-347,"Edición 2026")
+    c.setFont("Helvetica",11);c.drawCentredString(width/2,height-378,"Salvando vidas maternas con atención oportuna y efectiva")
     today=utcnow().strftime("%d/%m/%Y")
     folio=hmac.new(ADMIN_PASSWORD.encode(),f"certificate:{identity['id']}".encode(),hashlib.sha256).hexdigest()[:16].upper()
     c.setFont("Helvetica",11);c.drawCentredString(width/2,105,f"Fecha: {today}   |   Folio: {folio}")
