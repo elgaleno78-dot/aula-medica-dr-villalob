@@ -420,6 +420,7 @@ button,input,textarea,select{font:inherit}.app{display:grid;grid-template-column
     <div><h2>Ponencias</h2><div class="muted">Todas las ponencias están disponibles desde el momento en que ingresas al aula</div></div>
     <button class="btn light" onclick="openAdmin()">+ Nueva ponencia</button>
   </div>
+  <div style="padding:14px;margin:12px 0;border:1px solid #d6e2ee;border-radius:12px"><strong>Constancia AVICO®</strong><p id="avicoCertificateStatus">Consulte su avance al ingresar como alumno.</p><button id="avicoCertificateDownload" class="btn" style="display:none" onclick="downloadAvicoCertificate()">Descargar constancia PDF</button></div>
   <div class="ponenciasWrap" id="sessionList"><p class="muted" style="padding:28px 8px">Cargando ponencias...</p></div>
 
   <div class="sectionTitle"><div><h2>Recursos del curso</h2></div></div>
@@ -618,6 +619,40 @@ function openPonencia(courseId,lessonId){
   }
   viewLesson(raw,null,false);
 }
+async function refreshAvicoCertificate(){
+ const label=document.getElementById('avicoCertificateStatus'),btn=document.getElementById('avicoCertificateDownload');
+ if(!label||!btn)return;
+ const st=sessionStorage.getItem('avico_student_token')||localStorage.getItem('avico_student_token');
+ if(!st){label.textContent='Ingrese como alumno para consultar su avance.';btn.style.display='none';return}
+ try{const r=await fetch('/api/certificate/status',{headers:{Authorization:'Bearer '+st}});
+ if(!r.ok)throw Error('Sesión vencida');
+ const x=await r.json();label.textContent=x.total?'Ponencias completadas: '+x.completed+' de '+x.total+' (mínimo 90 % de cada video).':'Sin ponencias elegibles.';
+ btn.style.display=x.eligible?'inline-block':'none';
+ }catch(e){label.textContent='Ingrese nuevamente como alumno para consultar el avance.';btn.style.display='none'}
+}
+async function downloadAvicoCertificate(){
+ const st=sessionStorage.getItem('avico_student_token')||localStorage.getItem('avico_student_token');
+ if(!st)return;
+ try{const r=await fetch('/api/certificate/download',{headers:{Authorization:'Bearer '+st}});
+ if(!r.ok)throw Error('Constancia no disponible');
+ const url=URL.createObjectURL(await r.blob()),a=document.createElement('a');
+ a.href=url;a.download='Constancia_AVICO.pdf';document.body.appendChild(a);a.click();a.remove();
+ setTimeout(()=>URL.revokeObjectURL(url),30000);
+ }catch(e){alert(e.message)}
+}
+function attachAvicoCertificateTracking(video,lessonId){
+ let active=false,last=0;
+ const ping=async()=>{
+  if(!active||video.paused||video.seeking||!Number.isFinite(video.duration)||video.duration<10)return;
+  const st=sessionStorage.getItem('avico_student_token')||localStorage.getItem('avico_student_token');if(!st)return;
+  try{const r=await fetch('/api/certificate/watch/'+lessonId,{method:'POST',headers:{Authorization:'Bearer '+st,'Content-Type':'application/json'},body:JSON.stringify({duration:video.duration})});
+  if(r.ok){const x=await r.json();if(x.completed){active=false;refreshAvicoCertificate()}}}catch(e){}
+ };
+ video.addEventListener('playing',()=>{active=true;ping()});
+ video.addEventListener('pause',()=>{active=false});
+ video.addEventListener('ended',()=>{active=false;refreshAvicoCertificate()});
+ video.addEventListener('timeupdate',()=>{if(active&&video.currentTime-last>=10){last=video.currentTime;ping()}});
+}
 function renderCourses(){
   const box=$('#sessionList');
   const lessons=courses.flatMap(c=>(c.lessons||[]).map(l=>({...l,course_id:c.id,course_title:c.title})));
@@ -641,6 +676,7 @@ function renderCourses(){
         <div class="ponenciaAction"><button class="btn" onclick="openPonencia(${l.course_id},${l.id})">Ir a la ponencia</button></div>
       </article>`).join('');
   }
+  refreshAvicoCertificate();
   renderCourseManager(); loadStudents(); loadAcademic(); loadLibrary();
 }
 function renderCourseManager(){
@@ -794,6 +830,7 @@ async function viewLesson(raw,accessToken=null,isAdmin=false){
       video.src=data.media_url;
       video.addEventListener('error',()=>{const box=$('#viewerContent');if(box&&box.contains(video))box.innerHTML='<div class="pptBox"><p>No se pudo cargar el streaming privado. Compruebe la credencial de Google Drive en Render.</p></div>';});
       $('#viewerContent').replaceChildren(video);
+      if(!isAdmin)attachAvicoCertificateTracking(video,l.id);
     }catch(e){$('#viewerContent').innerHTML='<div class="pptBox"><p>'+esc(e.message)+'</p></div>';}
     return;
   }
