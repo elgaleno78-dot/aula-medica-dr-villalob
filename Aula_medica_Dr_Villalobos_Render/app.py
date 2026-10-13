@@ -1,5 +1,5 @@
 from fastapi import FastAPI, UploadFile, File, Form, HTTPException, Request
-from fastapi.responses import HTMLResponse, FileResponse, Response
+from fastapi.responses import HTMLResponse, FileResponse, Response, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from pathlib import Path
 import sqlite3, os, secrets, shutil, datetime, json, hashlib, hmac, re, smtplib, ssl, urllib.request, urllib.error, base64
@@ -1357,3 +1357,82 @@ def health():
         "render": bool(os.getenv("RENDER")),
         "persistent_dir_configured": bool(os.getenv("AULA_DATA_DIR")),
     }
+
+
+# Private Google Drive streaming: no public Drive iframe or file URL is sent to students.
+DRIVE_SECRET_FILE = Path(os.getenv("GOOGLE_DRIVE_CREDENTIALS_PATH", "/etc/secrets/google-drive-service-account.json"))
+DRIVE_PLAYBACK_TOKENS = {}
+
+def _drive_credentials():
+    from google.oauth2 import service_account
+    scopes=["https://www.googleapis.com/auth/drive.readonly"]
+    raw=os.getenv("GOOGLE_DRIVE_SERVICE_ACCOUNT_JSON","").strip()
+    # Prefer a valid secret file if one exists; an incorrectly pasted env value must
+    # not disable a working secret file.
+    if DRIVE_SECRET_FILE.is_file():
+        try:
+            return service_account.Credentials.from_service_account_file(str(DRIVE_SECRET_FILE),scopes=scopes)
+        except Exception as exc:
+            print("[AULA] Drive secret file error:",type(exc).__name__)
+    if raw:
+        try:
+            info=json.loads(raw)
+            return service_account.Credentials.from_service_account_info(info,scopes=scopes)
+        except Exception as exc:
+            print("[AULA] Drive env credential error:",type(exc).__name__)
+    raise HTTPException(503,"Credencial privada de Google Drive no válida; configure JSON de cuenta de servicio en Render")
+
+@app.get("/api/drive/player/{lesson_id}")
+def drive_player(lesson_id:int,request:Request):
+    try:
+        identity=student_identity(request)
+        account_id=int(identity["id"])
+    except HTTPException as exc:
+        if exc.status_code!=401: raise
+        auth(request)
+        account_id=0
+    con=db()
+    row=con.execute("SELECT id,kind,title FROM lessons WHERE id=?",(lesson_id,)).fetchone()
+    con.close()
+    if not row or row["kind"]!="drive":raise HTTPException(404,"Ponencia no encontrada")
+    # Check credentials before creating a playback URL.
+    _drive_credentials()
+    grant=secrets.token_urlsafe(32)
+    DRIVE_PLAYBACK_TOKENS[grant]={"lesson_id":lesson_id,"account_id":account_id,"expires":utcnow()+datetime.timedelta(hours=2)}
+    return {"title":row["title"],"media_url":f"/api/drive/media/{lesson_id}?playback_token={grant}"}
+
+@app.get("/api/drive/media/{lesson_id}")
+def drive_media(lesson_id:int,request:Request,playback_token:str=""):
+    grant=DRIVE_PLAYBACK_TOKENS.get(playback_token)
+    if not grant or grant["lesson_id"]!=lesson_id or grant["expires"]<utcnow():
+        raise HTTPException(401,"Sesión de reproducción vencida")
+    con=db()
+    row=con.execute("SELECT kind,filename FROM lessons WHERE id=?",(lesson_id,)).fetchone()
+    con.close()
+    if not row or row["kind"]!="drive":raise HTTPException(404,"Ponencia no encontrada")
+    file_id=row["filename"] or ""
+    if not re.fullmatch(r"[A-Za-z0-9_-]{15,}",file_id):raise HTTPException(404,"Archivo inválido")
+    try:
+        from google.auth.transport.requests import AuthorizedSession
+        session=AuthorizedSession(_drive_credentials())
+        headers={}
+        requested_range=request.headers.get("range","")
+        if requested_range:headers["Range"]=requested_range
+        upstream=session.get(f"https://www.googleapis.com/drive/v3/files/{file_id}?alt=media",headers=headers,stream=True,timeout=35)
+        if upstream.status_code not in (200,206):
+            print("[AULA] Drive media HTTP",upstream.status_code)
+            upstream.close()
+            raise HTTPException(502,"Google Drive no entregó el video al servidor")
+        out={k:upstream.headers[k] for k in ("Content-Length","Content-Range","Accept-Ranges") if k in upstream.headers}
+        out.update({"Cache-Control":"private, no-store","Content-Disposition":"inline","X-Content-Type-Options":"nosniff"})
+        def chunks():
+            try:
+                for chunk in upstream.iter_content(chunk_size=262144):
+                    if chunk:yield chunk
+            finally:upstream.close()
+        return StreamingResponse(chunks(),status_code=upstream.status_code,headers=out,media_type=upstream.headers.get("Content-Type","video/mp4"))
+    except HTTPException:raise
+    except Exception as exc:
+        print("[AULA] Drive streaming error",type(exc).__name__)
+        raise HTTPException(502,"No se pudo reproducir el video privado")
+
