@@ -210,6 +210,14 @@ def init_db():
       FOREIGN KEY(thread_id) REFERENCES forum_threads(id) ON DELETE CASCADE,
       FOREIGN KEY(account_id) REFERENCES student_accounts(id) ON DELETE SET NULL
     );
+    CREATE TABLE IF NOT EXISTS certificate_watch(
+      account_id INTEGER NOT NULL,
+      lesson_id INTEGER NOT NULL,
+      watched_seconds REAL NOT NULL DEFAULT 0,
+      last_ping REAL DEFAULT 0,
+      completed INTEGER NOT NULL DEFAULT 0,
+      PRIMARY KEY(account_id,lesson_id)
+    );
     CREATE TABLE IF NOT EXISTS lesson_progress(
       account_id INTEGER NOT NULL,
       lesson_id INTEGER NOT NULL,
@@ -692,6 +700,76 @@ def _pptx_lesson(lesson_id:int, request:Request):
     if not path.is_file():
         raise HTTPException(404,"Presentación no disponible")
     return path
+
+
+# AVICO®: certificación independiente del reproductor y de lesson_progress.
+def _certificate_state(account_id):
+    con=db()
+    lessons=con.execute("""SELECT l.id FROM lessons l JOIN courses c ON c.id=l.course_id
+        WHERE c.published=1 AND l.kind='drive'""").fetchall()
+    total=len(lessons)
+    completed=con.execute("""SELECT COUNT(*) AS n FROM certificate_watch w JOIN lessons l ON l.id=w.lesson_id
+        JOIN courses c ON c.id=l.course_id WHERE w.account_id=? AND c.published=1
+        AND l.kind='drive' AND w.completed=1""",(account_id,)).fetchone()["n"]
+    con.close()
+    return {"total":total,"completed":completed,"eligible":total>0 and completed==total}
+
+@app.get("/api/certificate/status")
+def certificate_status(request:Request):
+    identity=student_identity(request)
+    return _certificate_state(identity["id"])
+
+@app.post("/api/certificate/watch/{lesson_id}")
+async def certificate_watch(lesson_id:int,request:Request):
+    identity=student_identity(request)
+    data=await request.json()
+    try: duration=float(data.get("duration",0))
+    except (ValueError,TypeError):raise HTTPException(400,"Duración inválida")
+    if not 10<=duration<=86400:raise HTTPException(400,"Duración inválida")
+    con=db()
+    lesson=con.execute("""SELECT l.id FROM lessons l JOIN courses c ON c.id=l.course_id
+        WHERE l.id=? AND c.published=1 AND l.kind='drive'""",(lesson_id,)).fetchone()
+    if not lesson:con.close();raise HTTPException(404,"Ponencia no disponible")
+    now=time.time()
+    row=con.execute("SELECT watched_seconds,last_ping,completed FROM certificate_watch WHERE account_id=? AND lesson_id=?",
+        (identity["id"],lesson_id)).fetchone()
+    elapsed=min(20,max(0,now-row["last_ping"])) if row and row["last_ping"] else 0
+    watched=min(duration,(row["watched_seconds"] if row else 0)+elapsed)
+    done=bool((row["completed"] if row else 0) or watched>=duration*.9)
+    con.execute("""INSERT INTO certificate_watch(account_id,lesson_id,watched_seconds,last_ping,completed)
+        VALUES(?,?,?,?,?) ON CONFLICT(account_id,lesson_id) DO UPDATE SET
+        watched_seconds=excluded.watched_seconds,last_ping=excluded.last_ping,
+        completed=MAX(certificate_watch.completed,excluded.completed)""",
+        (identity["id"],lesson_id,watched,now,int(done)))
+    con.commit();con.close()
+    return {"watched_seconds":watched,"completed":done}
+
+@app.get("/api/certificate/download")
+def certificate_download(request:Request):
+    identity=student_identity(request)
+    state=_certificate_state(identity["id"])
+    if not state["eligible"]:raise HTTPException(403,"Complete el 90 % de cada ponencia para obtener su constancia")
+    from reportlab.pdfgen import canvas
+    from reportlab.lib.pagesizes import landscape,A4
+    import io
+    out=io.BytesIO()
+    c=canvas.Canvas(out,pagesize=landscape(A4))
+    width,height=landscape(A4)
+    c.setStrokeColorRGB(.06,.25,.43);c.setLineWidth(5);c.rect(28,28,width-56,height-56)
+    c.setFillColorRGB(.04,.18,.32)
+    c.setFont("Helvetica-Bold",31);c.drawCentredString(width/2,height-135,"AVICO - CONSTANCIA")
+    c.setFont("Helvetica",17);c.drawCentredString(width/2,height-193,"Se otorga la presente constancia de participación a:")
+    name=identity["full_name"]
+    c.setFont("Helvetica-Bold",min(26,max(13,800/max(len(name),1))))
+    c.drawCentredString(width/2,height-247,name)
+    c.setFont("Helvetica",16);c.drawCentredString(width/2,height-305,"Por completar el curso de Hemorragia Obstétrica")
+    c.setFont("Helvetica",12);c.drawCentredString(width/2,height-335,"AVICO - Educación médica")
+    today=utcnow().strftime("%d/%m/%Y")
+    folio=hmac.new(ADMIN_PASSWORD.encode(),f"certificate:{identity['id']}".encode(),hashlib.sha256).hexdigest()[:16].upper()
+    c.setFont("Helvetica",11);c.drawCentredString(width/2,105,f"Fecha: {today}   |   Folio: {folio}")
+    c.setFont("Helvetica",10);c.drawCentredString(width/2,85,"Constancia de participación; no acredita horas curriculares ni aval institucional.")
+    c.save();out.seek(0)
+    return StreamingResponse(out,media_type="application/pdf",headers={"Content-Disposition":'attachment; filename="Constancia_AVICO.pdf"'})
 
 @app.get("/api/student-progress")
 def student_progress_all(request:Request):
