@@ -609,7 +609,13 @@ function openPonencia(courseId,lessonId){
   const l=c.lessons.find(x=>x.id===lessonId);
   if(!l)return;
   const raw=JSON.stringify(l);
-  if(token){viewLesson(raw,null,true);return;}
+  if(token){
+    fetch('/api/drive/player/'+lessonId,{headers:{Authorization:'Bearer '+token}}).then(r=>{
+      if(r.status===401){token='';localStorage.removeItem('aula_admin_token');$('#loginModal').classList.add('show');return;}
+      viewLesson(raw,null,true);
+    }).catch(()=>viewLesson(raw,null,true));
+    return;
+  }
   const studentToken=sessionStorage.getItem('avico_student_token')||localStorage.getItem('avico_student_token');
   if(!studentToken){
     document.getElementById('avicoWelcome').hidden=false;
