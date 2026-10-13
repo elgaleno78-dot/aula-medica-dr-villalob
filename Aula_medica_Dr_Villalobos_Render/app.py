@@ -382,6 +382,7 @@ async def education_drive_decision(file_id:str, request:Request):
 def startup():
     init_db()
     avico_quiz_schema()
+    avico_certificate_schema()
     import threading
     threading.Thread(target=_education_drive_sync_loop,daemon=True,name="avico-educacion-drive").start()
     # Si ya existe información en el disco persistente, deja un respaldo al iniciar.
@@ -1753,5 +1754,77 @@ def avico_admin_quiz_analytics(request:Request):
     try:
         return [dict(r) for r in con.execute("""SELECT l.title AS lesson_title,COUNT(a.id) AS attempts,ROUND(AVG(a.score_percent),1) AS average_score
           FROM avico_quiz_attempts a JOIN lessons l ON l.id=a.lesson_id GROUP BY l.id ORDER BY l.title""")]
+    finally:con.close()
+
+
+
+# Constancias AVICO®: emisión solo tras completar el curso y aprobar evaluaciones.
+def avico_certificate_schema():
+    con=db()
+    try:
+        con.executescript("""
+        CREATE TABLE IF NOT EXISTS avico_certificates(
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          verification_code TEXT UNIQUE NOT NULL,
+          account_id INTEGER NOT NULL,
+          course_id INTEGER NOT NULL,
+          student_name TEXT NOT NULL,
+          course_title TEXT NOT NULL,
+          issued_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+          UNIQUE(account_id,course_id),
+          FOREIGN KEY(account_id) REFERENCES student_accounts(id) ON DELETE CASCADE,
+          FOREIGN KEY(course_id) REFERENCES courses(id) ON DELETE CASCADE
+        );
+        """)
+        con.commit()
+    finally:con.close()
+
+def avico_certificate_eligibility(con,account_id,course_id):
+    course=con.execute("SELECT id,title,published FROM courses WHERE id=?",(course_id,)).fetchone()
+    if not course or not course["published"]:raise HTTPException(404,"Curso no disponible")
+    lessons=con.execute("SELECT id FROM lessons WHERE course_id=?",(course_id,)).fetchall()
+    if not lessons:return {"eligible":False,"reason":"El curso no tiene ponencias","course_title":course["title"]}
+    for lesson in lessons:
+        lid=lesson["id"]
+        progress=con.execute("SELECT percent,completed FROM lesson_progress WHERE account_id=? AND lesson_id=?",(account_id,lid)).fetchone()
+        if not progress or not (progress["completed"] or progress["percent"]>=90):
+            return {"eligible":False,"reason":"Completa al menos el 90 % de cada ponencia","course_title":course["title"]}
+        n=con.execute("SELECT COUNT(*) FROM avico_quiz_questions WHERE lesson_id=?",(lid,)).fetchone()[0]
+        if not n:return {"eligible":False,"reason":"Falta publicar una evaluación para cada ponencia","course_title":course["title"]}
+        score=con.execute("SELECT MAX(score_percent) FROM avico_quiz_attempts WHERE account_id=? AND lesson_id=?",(account_id,lid)).fetchone()[0]
+        if score is None or score<80:
+            return {"eligible":False,"reason":"Aprueba cada evaluación con al menos 80 %","course_title":course["title"]}
+    return {"eligible":True,"reason":"Requisitos cumplidos","course_title":course["title"]}
+
+@app.get("/api/student-certificate/{course_id}/eligibility")
+def avico_certificate_status(course_id:int,request:Request):
+    identity=student_identity(request)
+    con=db()
+    try:return avico_certificate_eligibility(con,identity["id"],course_id)
+    finally:con.close()
+
+@app.post("/api/student-certificate/{course_id}")
+def avico_issue_certificate(course_id:int,request:Request):
+    identity=student_identity(request)
+    con=db()
+    try:
+        old=con.execute("SELECT verification_code FROM avico_certificates WHERE account_id=? AND course_id=?",(identity["id"],course_id)).fetchone()
+        if old:return {"verification_code":old["verification_code"],"verification_url":str(request.base_url).rstrip("/")+"/api/certificate/verify/"+old["verification_code"]}
+        status=avico_certificate_eligibility(con,identity["id"],course_id)
+        if not status["eligible"]:raise HTTPException(403,status["reason"])
+        code=secrets.token_urlsafe(24)
+        con.execute("INSERT INTO avico_certificates(verification_code,account_id,course_id,student_name,course_title) VALUES(?,?,?,?,?)",(code,identity["id"],course_id,identity["full_name"],status["course_title"]))
+        con.commit()
+        return {"verification_code":code,"verification_url":str(request.base_url).rstrip("/")+"/api/certificate/verify/"+code}
+    finally:con.close()
+
+@app.get("/api/certificate/verify/{code}")
+def avico_verify_certificate(code:str):
+    if not re.fullmatch(r"[A-Za-z0-9_-]{20,80}",code):raise HTTPException(404,"Constancia no encontrada")
+    con=db()
+    try:
+        row=con.execute("SELECT student_name,course_title,issued_at,verification_code FROM avico_certificates WHERE verification_code=?",(code,)).fetchone()
+        if not row:raise HTTPException(404,"Constancia no encontrada")
+        return {"valid":True,"issuer":"AVICO®","type":"Constancia de finalización académica","student_name":row["student_name"],"course_title":row["course_title"],"issued_at":row["issued_at"],"verification_code":row["verification_code"],"institutional_accreditation":False}
     finally:con.close()
 
