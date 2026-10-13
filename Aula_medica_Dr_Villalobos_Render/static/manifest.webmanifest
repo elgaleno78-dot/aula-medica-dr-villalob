@@ -1,0 +1,19 @@
+{
+  "name": "Aula AVICO® Educación",
+  "short_name": "Aula AVICO",
+  "description": "Educación médica continua AVICO®",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#0e3655",
+  "lang": "es",
+  "icons": [
+    {
+      "src": "/static/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
