@@ -331,9 +331,21 @@ def startup():
     if os.getenv("RENDER") and not os.getenv("AULA_DATA_DIR"):
         print("[AULA] ADVERTENCIA: configure AULA_DATA_DIR=/var/data y monte un Persistent Disk en /var/data para no perder datos.")
 
+def _admin_token_valid(token:str)->bool:
+    if token in TOKENS:
+        return True
+    try:
+        version,expiry,signature=token.split(".")
+        if version!="avico1" or int(expiry)<int(datetime.datetime.now(datetime.timezone.utc).timestamp()):
+            return False
+        expected=hmac.new(ADMIN_PASSWORD.encode("utf-8"),f"{version}.{expiry}".encode("utf-8"),hashlib.sha256).hexdigest()
+        return hmac.compare_digest(signature,expected)
+    except (ValueError,TypeError):
+        return False
+
 def auth(request: Request):
     token = request.headers.get("authorization","").replace("Bearer ","").strip()
-    if token not in TOKENS:
+    if not _admin_token_valid(token):
         raise HTTPException(401,"Acceso de administrador requerido")
 
 def utcnow():
@@ -371,9 +383,10 @@ def home():
 async def login(payload: dict):
     if payload.get("password") != ADMIN_PASSWORD:
         raise HTTPException(401,"Contraseña incorrecta")
-    t = secrets.token_urlsafe(24)
-    TOKENS.add(t)
-    return {"token":t}
+    expiry=str(int((datetime.datetime.now(datetime.timezone.utc)+datetime.timedelta(days=7)).timestamp()))
+    payload=f"avico1.{expiry}"
+    signature=hmac.new(ADMIN_PASSWORD.encode("utf-8"),payload.encode("utf-8"),hashlib.sha256).hexdigest()
+    return {"token":f"{payload}.{signature}"}
 
 
 # ---------- CUENTAS INDIVIDUALES DE ALUMNOS ----------
@@ -934,7 +947,7 @@ def stream_player(lesson_id:int, request:Request):
     # Requiere una sesión válida de alumno o administrador.
     bearer=request.headers.get("authorization","")
     raw=bearer[7:].strip() if bearer.startswith("Bearer ") else ""
-    if raw not in TOKENS:
+    if not _admin_token_valid(raw):
         student_identity(request)
     account,token,customer=stream_config()
     con=db();row=con.execute("SELECT filename,kind FROM lessons WHERE id=?",(lesson_id,)).fetchone();con.close()
