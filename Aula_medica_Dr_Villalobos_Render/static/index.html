@@ -120,7 +120,7 @@ button,input,textarea,select{font:inherit}.app{display:grid;grid-template-column
 .avico-return-home{position:relative;z-index:99999;display:block;padding:12px 20px;background:#eef5fc;color:#073b76;font:600 15px Arial,sans-serif;text-decoration:none;border-bottom:1px solid #d4e2ef}
 .avico-return-home:hover,.avico-return-home:focus{text-decoration:underline;background:#e1edf9}
 </style>
-<style>.avico-progress{margin-top:9px;width:min(310px,100%);font-size:12px;color:#536b82}.avico-progress-top{display:flex;justify-content:space-between;gap:12px;margin-bottom:5px}.avico-progress-top strong{color:#0b4d87;font-variant-numeric:tabular-nums}.avico-progress-track{height:8px;border-radius:999px;background:#dce8f3;overflow:hidden}.avico-progress-fill{height:100%;background:#1876b9;border-radius:999px;transition:width .25s ease}</style></head>
+<style>.avico-progress{margin-top:9px;width:min(310px,100%);font-size:12px;color:#536b82}.avico-progress-top{display:flex;justify-content:space-between;gap:12px;margin-bottom:5px}.avico-progress-top strong{color:#0b4d87;font-variant-numeric:tabular-nums}.avico-progress-track{height:8px;border-radius:999px;background:#dce8f3;overflow:hidden}.avico-progress-fill{height:100%;background:#1876b9;border-radius:999px;transition:width .25s ease}</style><style>.avico-learning-summary{padding:18px;margin:14px 0;background:#f1f7fd;border:1px solid #d5e5f3;border-radius:14px}.avico-summary-title{font-weight:700;color:#0b416f;margin-bottom:10px}.avico-summary-metrics{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;font-size:13px;margin-bottom:10px}</style></head>
 <body>
 <a class="avico-return-home" href="https://avico-salud-ecosistema.onrender.com/index.html">← Volver al inicio</a>
 
@@ -329,6 +329,7 @@ button,input,textarea,select{font:inherit}.app{display:grid;grid-template-column
     <div id="lessons"></div>
   </div>
 
+  <section id="avicoLearningSummary" class="avico-learning-summary" aria-live="polite" hidden></section>
   <div class="panel adminPanel" id="adminPanel">
     <h2>Panel de administrador</h2>
     <section class="panel" style="margin:16px 0;padding:18px;border:1px solid #dce6f0;border-radius:12px;background:#f7fbff">
@@ -496,6 +497,8 @@ async function saveAccessHours(id){
   alert('Duración actualizada para nuevas inscripciones.');
 }
 async function openCourse(id){
+  window.avicoActiveCourseLessons=null;
+  const summary=document.getElementById('avicoLearningSummary');if(summary)summary.hidden=true;
   const c=courses.find(x=>x.id===id); if(!c)return;
   $('#lessonPanel').style.display='block';
   $('#lessonCourseTitle').textContent=c.title;
@@ -527,6 +530,7 @@ async function openCourse(id){
     }
     if(!r.ok)throw Error('No se pudo abrir el curso.');
     const data=await r.json();
+    window.avicoActiveCourseLessons=data.lessons||[];
     if(courseTimerInterval)clearInterval(courseTimerInterval);
     $('#lessons').innerHTML=data.lessons.length?data.lessons.map(l=>`
       <div class="lessonRow">
@@ -540,9 +544,22 @@ const avicoLessonProgress=new Map();
 function avicoProgressPercent(id){const r=avicoLessonProgress.get(Number(id));return Math.min(100,Math.max(0,Math.round(Number(r?.percent||0))))}
 function avicoProgressMarkup(id){const p=avicoProgressPercent(id);return '<div class="avico-progress" data-lesson-progress="'+Number(id)+'"><div class="avico-progress-top"><span>Avance de la ponencia</span><strong>'+p+' %</strong></div><div class="avico-progress-track"><div class="avico-progress-fill" style="width:'+p+'%"></div></div></div>'}
 function avicoRefreshProgress(id){document.querySelectorAll('[data-lesson-progress="'+Number(id)+'"]').forEach(el=>{const template=document.createElement('template');template.innerHTML=avicoProgressMarkup(id);el.replaceWith(template.content.firstElementChild)})}
+function avicoUpdateLearningSummary(){
+ const root=document.getElementById('avicoLearningSummary');
+ if(!root||!window.avicoActiveCourseLessons)return;
+ const lessons=window.avicoActiveCourseLessons;
+ if(!lessons.length){root.hidden=true;return;}
+ const pct=lessons.map(l=>avicoProgressPercent(l.id));
+ const average=Math.round(pct.reduce((a,b)=>a+b,0)/pct.length);
+ const completed=pct.filter(x=>x>=90).length;
+ const next=lessons.find(l=>avicoProgressPercent(l.id)<90);
+ root.hidden=false;
+ root.innerHTML='<div class="avico-summary-title">Mi aprendizaje · AVICO®</div><div class="avico-summary-metrics"><span><b>'+completed+'</b> / '+lessons.length+' ponencias completadas</span><span><b>'+average+' %</b> avance promedio</span></div><div class="avico-progress-track"><div class="avico-progress-fill" style="width:'+average+'%"></div></div>'+(next?'<button type="button" class="btn" id="avicoContinueLesson" style="margin-top:12px">▶ Continuar: '+esc(next.title)+'</button>':'<p>Has completado todas las ponencias del curso.</p>');
+ if(next)document.getElementById('avicoContinueLesson').onclick=()=>viewLesson(JSON.stringify(next),null,false);
+}
 async function avicoLoadProgress(){
  const st=sessionStorage.getItem('avico_student_token');if(!st)return;
- try{const r=await fetch('/api/student-progress',{headers:{Authorization:'Bearer '+st},cache:'no-store'});if(!r.ok)return;const rows=await r.json();for(const row of rows)avicoLessonProgress.set(Number(row.lesson_id),row);document.querySelectorAll('[data-lesson-progress]').forEach(el=>avicoRefreshProgress(Number(el.dataset.lessonProgress)))}catch(e){console.warn('Progreso no disponible',e)}
+ try{const r=await fetch('/api/student-progress',{headers:{Authorization:'Bearer '+st},cache:'no-store'});if(!r.ok)return;const rows=await r.json();for(const row of rows)avicoLessonProgress.set(Number(row.lesson_id),row);document.querySelectorAll('[data-lesson-progress]').forEach(el=>avicoRefreshProgress(Number(el.dataset.lessonProgress)));avicoUpdateLearningSummary()}catch(e){console.warn('Progreso no disponible',e)}
 }
 async function avicoSaveProgress(id,position,duration,completed=false){
  const st=sessionStorage.getItem('avico_student_token');if(!st)return;
@@ -619,6 +636,7 @@ function renderTimedCourse(data,accessToken){
       <button class="btn" onclick='event.stopPropagation();viewLesson(${JSON.stringify(JSON.stringify(l))},${JSON.stringify(accessToken)},false)'>Ver clase</button>
     </div>`).join(''):'<p class="muted">Todavía no hay clases.</p>';
   avicoLoadProgress();
+  window.avicoActiveCourseLessons=data.lessons||[];
   $('#lessons').innerHTML=`<div class="courseTimer">⏱ Tiempo restante: <span class="clock" id="courseCountdown">${formatRemaining(remaining)}</span></div>${rows}`;
   avicoLoadProgress();
   courseTimerInterval=setInterval(()=>{
