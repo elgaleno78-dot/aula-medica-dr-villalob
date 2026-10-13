@@ -120,7 +120,7 @@ button,input,textarea,select{font:inherit}.app{display:grid;grid-template-column
 .avico-return-home{position:relative;z-index:99999;display:block;padding:12px 20px;background:#eef5fc;color:#073b76;font:600 15px Arial,sans-serif;text-decoration:none;border-bottom:1px solid #d4e2ef}
 .avico-return-home:hover,.avico-return-home:focus{text-decoration:underline;background:#e1edf9}
 </style>
-</head>
+<style>.avico-progress{margin-top:9px;width:min(310px,100%);font-size:12px;color:#536b82}.avico-progress-top{display:flex;justify-content:space-between;gap:12px;margin-bottom:5px}.avico-progress-top strong{color:#0b4d87;font-variant-numeric:tabular-nums}.avico-progress-track{height:8px;border-radius:999px;background:#dce8f3;overflow:hidden}.avico-progress-fill{height:100%;background:#1876b9;border-radius:999px;transition:width .25s ease}</style></head>
 <body>
 <a class="avico-return-home" href="https://avico-salud-ecosistema.onrender.com/index.html">← Volver al inicio</a>
 
@@ -530,10 +530,28 @@ async function openCourse(id){
     if(courseTimerInterval)clearInterval(courseTimerInterval);
     $('#lessons').innerHTML=data.lessons.length?data.lessons.map(l=>`
       <div class="lessonRow">
-        <div><b>${esc(l.title)}</b><div class="muted" style="font-size:12px">${esc(l.notes||'')} · ${l.kind.toUpperCase()}</div></div>
+        <div><b>${esc(l.title)}</b><div class="muted" style="font-size:12px">${esc(l.notes||'')} · ${l.kind.toUpperCase()}</div>${avicoProgressMarkup(l.id)}</div>
         <button class="btn" onclick='event.stopPropagation();viewLesson(${JSON.stringify(JSON.stringify(l))},null,false)'>Ver clase</button>
       </div>`).join(''):'<p class="muted">Todavía no hay clases.</p>';
+    avicoLoadProgress();
   }catch(err){$('#lessons').textContent=err.message||'No se pudo abrir el curso.';}
+}
+const avicoLessonProgress=new Map();
+function avicoProgressPercent(id){const r=avicoLessonProgress.get(Number(id));return Math.min(100,Math.max(0,Math.round(Number(r?.percent||0))))}
+function avicoProgressMarkup(id){const p=avicoProgressPercent(id);return '<div class="avico-progress" data-lesson-progress="'+Number(id)+'"><div class="avico-progress-top"><span>Avance de la ponencia</span><strong>'+p+' %</strong></div><div class="avico-progress-track"><div class="avico-progress-fill" style="width:'+p+'%"></div></div></div>'}
+function avicoRefreshProgress(id){document.querySelectorAll('[data-lesson-progress="'+Number(id)+'"]').forEach(el=>{const template=document.createElement('template');template.innerHTML=avicoProgressMarkup(id);el.replaceWith(template.content.firstElementChild)})}
+async function avicoLoadProgress(){
+ const st=sessionStorage.getItem('avico_student_token');if(!st)return;
+ try{const r=await fetch('/api/student-progress',{headers:{Authorization:'Bearer '+st},cache:'no-store'});if(!r.ok)return;const rows=await r.json();for(const row of rows)avicoLessonProgress.set(Number(row.lesson_id),row);document.querySelectorAll('[data-lesson-progress]').forEach(el=>avicoRefreshProgress(Number(el.dataset.lessonProgress)))}catch(e){console.warn('Progreso no disponible',e)}
+}
+async function avicoSaveProgress(id,position,duration,completed=false){
+ const st=sessionStorage.getItem('avico_student_token');if(!st)return;
+ try{const r=await fetch('/api/student-progress/'+id,{method:'PUT',headers:{Authorization:'Bearer '+st,'Content-Type':'application/json'},body:JSON.stringify({position_seconds:position||0,duration_seconds:duration||0,completed})});if(r.ok){const old=avicoProgressPercent(id),pct=duration>0?Math.round(100*position/duration):0;avicoLessonProgress.set(Number(id),{percent:Math.max(old,pct)});avicoRefreshProgress(id)}}catch{}
+}
+function avicoTrackVideo(video,id){
+ let last=0;video.addEventListener('timeupdate',()=>{if(video.currentTime-last>=10){last=video.currentTime;avicoSaveProgress(id,video.currentTime,video.duration)}});
+ video.addEventListener('pause',()=>avicoSaveProgress(id,video.currentTime,video.duration));
+ video.addEventListener('ended',()=>avicoSaveProgress(id,video.duration,video.duration,true));
 }
 let avicoViewerBlob=null;
 let avicoSlideBlob=null;
@@ -584,6 +602,7 @@ async function viewLesson(raw,accessToken=null,isAdmin=false){
   else if(l.kind==='pptx')html='<div class="pptBox"><p>Vista previa de PowerPoint disponible para alumnos en su cuenta.</p></div>';
   $('#viewerContent').innerHTML=html;
   $('#viewer').classList.add('show');
+  if(!isAdmin){const video=$('#viewerContent video');if(video){avicoTrackVideo(video,l.id);fetch('/api/student-progress/'+l.id,{headers:{Authorization:'Bearer '+sessionStorage.getItem('avico_student_token')}}).then(r=>r.ok?r.json():null).then(p=>{if(p?.position_seconds)video.addEventListener('loadedmetadata',()=>{video.currentTime=Math.min(Number(p.position_seconds),Math.max(0,video.duration-1))},{once:true})}).catch(()=>{})}}
 }
 let courseTimerInterval=null;
 function formatRemaining(sec){
@@ -596,9 +615,10 @@ function renderTimedCourse(data,accessToken){
   let remaining=data.remaining_seconds||0;
   const rows=data.lessons.length?data.lessons.map(l=>`
     <div class="lessonRow">
-      <div><b>${esc(l.title)}</b><div class="muted" style="font-size:12px">${esc(l.notes||'')} · ${l.kind.toUpperCase()}</div></div>
+      <div><b>${esc(l.title)}</b><div class="muted" style="font-size:12px">${esc(l.notes||'')} · ${l.kind.toUpperCase()}</div>${avicoProgressMarkup(l.id)}</div>
       <button class="btn" onclick='event.stopPropagation();viewLesson(${JSON.stringify(JSON.stringify(l))},${JSON.stringify(accessToken)},false)'>Ver clase</button>
     </div>`).join(''):'<p class="muted">Todavía no hay clases.</p>';
+  avicoLoadProgress();
   $('#lessons').innerHTML=`<div class="courseTimer">⏱ Tiempo restante: <span class="clock" id="courseCountdown">${formatRemaining(remaining)}</span></div>${rows}`;
   courseTimerInterval=setInterval(()=>{
     remaining--;
