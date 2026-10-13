@@ -743,14 +743,14 @@ async function viewLesson(raw,accessToken=null,isAdmin=false){
   if(avicoSlideBlob){URL.revokeObjectURL(avicoSlideBlob);avicoSlideBlob=null;}
   if(l.kind==='drive'){
     const id=String(l.filename||'');
+    $('#viewer').classList.add('show');
     if(!/^[a-zA-Z0-9_-]{15,}$/.test(id)){
       $('#viewerContent').innerHTML='<div class="pptBox"><p>Identificador de ponencia inválido.</p></div>';
     }else{
-      const preview='https://drive.google.com/file/d/'+encodeURIComponent(id)+'/preview';
       const original='https://drive.google.com/file/d/'+encodeURIComponent(id)+'/view';
-      $('#viewerContent').innerHTML='<div style="width:100%;height:100%;display:flex;flex-direction:column"><iframe src="'+preview+'" style="width:100%;flex:1;border:0" allow="autoplay;fullscreen" allowfullscreen></iframe><div style="text-align:center;padding:8px;background:#071f36"><a href="'+original+'" target="_blank" rel="noopener noreferrer" style="color:white">Abrir ponencia en Google Drive si la vista previa no carga</a></div></div>';
+      // Avoid third-party cookie prompts in embedded Google Drive players on iOS.
+      $('#viewerContent').innerHTML='<div class="pptBox" style="max-width:680px"><h2>'+esc(l.title)+'</h2><p>La ponencia se reproduce directamente en Google Drive para evitar bloqueos de cookies en iPhone.</p><p style="margin-top:22px"><a class="btn" style="display:inline-block;text-decoration:none;background:#245b9b;color:#fff;padding:14px 22px;border-radius:10px" href="'+original+'" target="_blank" rel="noopener noreferrer">▶ Reproducir ponencia</a></p><p style="font-size:14px;margin-top:20px">Al terminar, regrese a esta pestaña del Aula AVICO®.</p></div>';
     }
-    $('#viewer').classList.add('show');
     return;
   }
   if(l.kind==='stream'){
