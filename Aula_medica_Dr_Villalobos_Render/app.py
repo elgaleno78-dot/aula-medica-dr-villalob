@@ -300,9 +300,28 @@ def init_db():
     con.commit()
     con.close()
 
+def restore_intro_catalog():
+    """Recover the two verified original Drive lectures without altering existing lessons."""
+    con=db()
+    try:
+        course=con.execute("SELECT id FROM courses WHERE title LIKE '%Hemorragia%' ORDER BY id LIMIT 1").fetchone()
+        if not course:
+            return
+        for title,file_id,order in [
+            ("Presentación","1H-PyuBKjjUXRYkYUVO9PJeRWwyhXRESW",-20),
+            ("Introducción","1rE3brEXNZnzifDLVgo3c0_pOZNvUt_As",-10),
+        ]:
+            existing=con.execute("SELECT id FROM lessons WHERE course_id=? AND (title=? OR filename=?) LIMIT 1",(course["id"],title,file_id)).fetchone()
+            if not existing:
+                con.execute("INSERT INTO lessons(course_id,title,kind,filename,ord) VALUES(?,?,?,?,?)",(course["id"],title,"drive",file_id,order))
+        con.commit()
+    finally:
+        con.close()
+
 @app.on_event("startup")
 def startup():
     init_db()
+    restore_intro_catalog()
     # Si ya existe información en el disco persistente, deja un respaldo al iniciar.
     try:
         backup_database()
