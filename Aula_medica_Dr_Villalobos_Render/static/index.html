@@ -609,19 +609,13 @@ function openPonencia(courseId,lessonId){
   const l=c.lessons.find(x=>x.id===lessonId);
   if(!l)return;
   const raw=JSON.stringify(l);
-  if(token){
-    fetch('/api/drive/player/'+lessonId,{headers:{Authorization:'Bearer '+token}}).then(r=>{
-      if(r.status===401){token='';localStorage.removeItem('aula_admin_token');$('#loginModal').classList.add('show');return;}
-      viewLesson(raw,null,true);
-    }).catch(()=>viewLesson(raw,null,true));
-    return;
-  }
+  if(token){viewLesson(raw,null,true);return;}
   const studentToken=sessionStorage.getItem('avico_student_token')||localStorage.getItem('avico_student_token');
-  if(!studentToken){
+  const savedProfile=localStorage.getItem('avico_student_profile');
+  if(!studentToken&&!savedProfile){
     document.getElementById('avicoWelcome').hidden=false;
     return;
   }
-  sessionStorage.setItem('avico_student_token',studentToken);
   viewLesson(raw,null,false);
 }
 function renderCourses(){
@@ -759,7 +753,7 @@ async function viewLesson(raw,accessToken=null,isAdmin=false){
         response=await fetch('/api/drive/player/'+l.id,{headers:{Authorization:'Bearer '+credential}});
         if(response.ok||response.status!==401)break;
       }
-      if(response && response.status===401 && !isAdmin){
+      if((!response || response.status===401) && !isAdmin){
         try{
           const profile=JSON.parse(localStorage.getItem('avico_student_profile')||'null');
           if(profile && profile.full_name && profile.email){
