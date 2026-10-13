@@ -1828,3 +1828,8 @@ def avico_verify_certificate(code:str):
         return {"valid":True,"issuer":"AVICO®","type":"Constancia de finalización académica","student_name":row["student_name"],"course_title":row["course_title"],"issued_at":row["issued_at"],"verification_code":row["verification_code"],"institutional_accreditation":False}
     finally:con.close()
 
+
+@app.get("/sw.js",include_in_schema=False)
+def avico_service_worker():
+    return FileResponse(BASE / "static" / "sw.js",media_type="application/javascript",headers={"Service-Worker-Allowed":"/","Cache-Control":"no-cache"})
+
