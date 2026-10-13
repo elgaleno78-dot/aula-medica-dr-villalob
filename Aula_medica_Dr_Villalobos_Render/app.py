@@ -2,7 +2,7 @@ from fastapi import FastAPI, UploadFile, File, Form, HTTPException, Request
 from fastapi.responses import HTMLResponse, FileResponse, Response, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from pathlib import Path
-import sqlite3, os, secrets, shutil, datetime, json, hashlib, hmac, re, smtplib, ssl, urllib.request, urllib.error, base64
+import sqlite3, os, secrets, shutil, datetime, json, hashlib, hmac, re, smtplib, ssl, urllib.request, urllib.error, base64, threading, time
 from email.message import EmailMessage
 from urllib.parse import quote
 
@@ -300,6 +300,60 @@ def init_db():
     con.commit()
     con.close()
 
+
+AVICO_HEMORRAGIA_DRIVE_FOLDER = "1-pRYmzvYCHxmXKSk1DdRD_hYLrHfiU4t"
+
+def sync_private_drive_folder():
+    """Catalog videos in the private AVICO Hemorragia folder without exposing Drive URLs."""
+    from google.auth.transport.requests import AuthorizedSession
+    session = AuthorizedSession(_drive_credentials())
+    found, page = [], None
+    while True:
+        params = {"q": "'" + AVICO_HEMORRAGIA_DRIVE_FOLDER + "' in parents and trashed = false",
+                  "fields": "nextPageToken,files(id,name,mimeType)",
+                  "pageSize": 100, "supportsAllDrives": "true",
+                  "includeItemsFromAllDrives": "true"}
+        if page:
+            params["pageToken"] = page
+        response = session.get("https://www.googleapis.com/drive/v3/files", params=params, timeout=25)
+        response.raise_for_status()
+        result = response.json()
+        found.extend(item for item in result.get("files", []) if item.get("mimeType", "").startswith("video/"))
+        page = result.get("nextPageToken")
+        if not page:
+            break
+    con = db()
+    try:
+        course = con.execute("SELECT id FROM courses WHERE title LIKE '%Hemorragia%' ORDER BY id LIMIT 1").fetchone()
+        if not course:
+            return 0
+        inserted = 0
+        for item in found:
+            fid = item["id"]
+            if not re.fullmatch(r"[A-Za-z0-9_-]{15,}", fid):
+                continue
+            if con.execute("SELECT id FROM lessons WHERE course_id=? AND filename=?", (course["id"], fid)).fetchone():
+                continue
+            title = re.sub(r"\\.(mp4|mov|webm)$", "", item.get("name") or "Ponencia", flags=re.I)
+            order = con.execute("SELECT COALESCE(MAX(ord),0)+10 AS next_ord FROM lessons WHERE course_id=?", (course["id"],)).fetchone()["next_ord"]
+            con.execute("INSERT INTO lessons(course_id,title,kind,filename,ord) VALUES(?,?,?,?,?)",
+                        (course["id"], title, "drive", fid, order))
+            inserted += 1
+        con.commit()
+        return inserted
+    finally:
+        con.close()
+
+def _avico_drive_sync_loop():
+    while True:
+        try:
+            added = sync_private_drive_folder()
+            if added:
+                print("[AULA] Nuevas ponencias privadas de Drive:", added)
+        except Exception as exc:
+            print("[AULA] Sincronización Drive pendiente:", type(exc).__name__)
+        time.sleep(300)
+
 def restore_intro_catalog():
     """Recover the two verified original Drive lectures without altering existing lessons."""
     con=db()
@@ -322,6 +376,7 @@ def restore_intro_catalog():
 def startup():
     init_db()
     restore_intro_catalog()
+    threading.Thread(target=_avico_drive_sync_loop, daemon=True, name='avico-drive-sync').start()
     # Si ya existe información en el disco persistente, deja un respaldo al iniciar.
     try:
         backup_database()
