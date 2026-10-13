@@ -708,6 +708,37 @@ def _pptx_lesson(lesson_id:int, request:Request):
         raise HTTPException(404,"Presentación no disponible")
     return path
 
+
+# Estadísticas académicas AVICO®: solo el administrador puede consultar datos agregados.
+@app.get("/api/admin/learning-analytics")
+def admin_learning_analytics(request:Request):
+    auth(request)
+    con=db()
+    try:
+        totals=con.execute("""
+          SELECT COUNT(DISTINCT account_id) AS active_students,
+                 COUNT(*) AS lesson_starts,
+                 SUM(CASE WHEN completed=1 OR percent>=90 THEN 1 ELSE 0 END) AS completed_views,
+                 ROUND(AVG(percent),1) AS average_percent
+          FROM lesson_progress
+        """).fetchone()
+        lessons=[dict(row) for row in con.execute("""
+          SELECT l.id AS lesson_id,l.title AS lesson_title,c.title AS course_title,
+                 COUNT(p.account_id) AS students_started,
+                 COALESCE(SUM(CASE WHEN p.completed=1 OR p.percent>=90 THEN 1 ELSE 0 END),0) AS completed,
+                 COALESCE(ROUND(AVG(p.percent),1),0) AS average_percent
+          FROM lessons l JOIN courses c ON c.id=l.course_id
+          LEFT JOIN lesson_progress p ON p.lesson_id=l.id
+          GROUP BY l.id,l.title,c.title ORDER BY c.title,l.id
+        """).fetchall()]
+        return {"active_students":totals["active_students"] or 0,
+                "lesson_starts":totals["lesson_starts"] or 0,
+                "completed_views":totals["completed_views"] or 0,
+                "average_percent":totals["average_percent"] or 0,
+                "lessons":lessons}
+    finally:
+        con.close()
+
 @app.get("/api/student-progress")
 def student_progress_all(request:Request):
     identity=student_identity(request)
