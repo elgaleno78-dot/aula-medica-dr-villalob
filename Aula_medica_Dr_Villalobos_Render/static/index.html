@@ -777,6 +777,10 @@ async function viewLesson(raw,accessToken=null,isAdmin=false){
       video.src=data.media_url;
       video.addEventListener('error',()=>{const box=$('#viewerContent');if(box&&box.contains(video))box.innerHTML='<div class="pptBox"><p>No se pudo cargar el streaming privado. Compruebe la credencial de Google Drive en Render.</p></div>';});
       $('#viewerContent').replaceChildren(video);
+      if(!isAdmin && studentToken){
+        const progress=await getLessonProgress(l.id);
+        trackHtmlVideo(video,l.id,Math.max(0,Number(progress.position_seconds)||0));
+      }
     }catch(e){$('#viewerContent').innerHTML='<div class="pptBox"><p>'+esc(e.message)+'</p></div>';}
     return;
   }
