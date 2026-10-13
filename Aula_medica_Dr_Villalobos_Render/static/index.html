@@ -120,7 +120,7 @@ button,input,textarea,select{font:inherit}.app{display:grid;grid-template-column
 .avico-return-home{position:relative;z-index:99999;display:block;padding:12px 20px;background:#eef5fc;color:#073b76;font:600 15px Arial,sans-serif;text-decoration:none;border-bottom:1px solid #d4e2ef}
 .avico-return-home:hover,.avico-return-home:focus{text-decoration:underline;background:#e1edf9}
 </style>
-<style>.avico-progress{margin-top:9px;width:min(310px,100%);font-size:12px;color:#536b82}.avico-progress-top{display:flex;justify-content:space-between;gap:12px;margin-bottom:5px}.avico-progress-top strong{color:#0b4d87;font-variant-numeric:tabular-nums}.avico-progress-track{height:8px;border-radius:999px;background:#dce8f3;overflow:hidden}.avico-progress-fill{height:100%;background:#1876b9;border-radius:999px;transition:width .25s ease}</style><style>.avico-learning-summary{padding:18px;margin:14px 0;background:#f1f7fd;border:1px solid #d5e5f3;border-radius:14px}.avico-summary-title{font-weight:700;color:#0b416f;margin-bottom:10px}.avico-summary-metrics{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;font-size:13px;margin-bottom:10px}</style></head>
+<style>.avico-progress{margin-top:9px;width:min(310px,100%);font-size:12px;color:#536b82}.avico-progress-top{display:flex;justify-content:space-between;gap:12px;margin-bottom:5px}.avico-progress-top strong{color:#0b4d87;font-variant-numeric:tabular-nums}.avico-progress-track{height:8px;border-radius:999px;background:#dce8f3;overflow:hidden}.avico-progress-fill{height:100%;background:#1876b9;border-radius:999px;transition:width .25s ease}</style><style>.avico-learning-summary{padding:18px;margin:14px 0;background:#f1f7fd;border:1px solid #d5e5f3;border-radius:14px}.avico-summary-title{font-weight:700;color:#0b416f;margin-bottom:10px}.avico-summary-metrics{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;font-size:13px;margin-bottom:10px}</style><style>.avico-admin-analytics{background:#fff;border:1px solid #d6e4f1;border-radius:14px;padding:18px;margin:18px 0}.avico-analytics-grid{display:flex;gap:15px;flex-wrap:wrap;margin:12px 0}.avico-analytics-grid span{background:#edf5fc;border-radius:8px;padding:10px;font-size:13px}.avico-analytics-table{border-collapse:collapse;width:100%;margin-top:14px;font-size:13px}.avico-analytics-table th,.avico-analytics-table td{padding:8px;border-bottom:1px solid #e3e9ef;text-align:left}</style></head>
 <body>
 <a class="avico-return-home" href="https://avico-salud-ecosistema.onrender.com/index.html">← Volver al inicio</a>
 
@@ -330,7 +330,8 @@ button,input,textarea,select{font:inherit}.app{display:grid;grid-template-column
   </div>
 
   <section id="avicoLearningSummary" class="avico-learning-summary" aria-live="polite" hidden></section>
-  <div class="panel adminPanel" id="adminPanel">
+  <section id="avicoAdminAnalytics" class="avico-admin-analytics" hidden></section>
+<div class="panel adminPanel" id="adminPanel">
     <h2>Panel de administrador</h2>
     <section class="panel" style="margin:16px 0;padding:18px;border:1px solid #dce6f0;border-radius:12px;background:#f7fbff">
       <h3>Autorizar ponencias de Drive · AVICO® Educación</h3>
@@ -691,7 +692,24 @@ async function loadDriveReviews(){
     }
   }catch(e){target.textContent=e.message;}
 }
+async function avicoShowAdminAnalytics(){
+ const el=document.getElementById('avicoAdminAnalytics');if(!el||!token)return;
+ el.hidden=false;el.textContent='Cargando estadísticas académicas…';
+ try{
+  const r=await fetch('/api/admin/learning-analytics',{headers:{Authorization:'Bearer '+token}});
+  if(!r.ok)throw Error('No fue posible consultar estadísticas');
+  const d=await r.json();
+  const rows=d.lessons||[];
+  el.innerHTML='<h3>Seguimiento académico · AVICO®</h3><div class="avico-analytics-grid"><span>Alumnos activos en ponencias: <b>'+d.active_students+'</b></span><span>Reproducciones registradas: <b>'+d.lesson_starts+'</b></span><span>Ponencias completadas: <b>'+d.completed_views+'</b></span><span>Avance medio: <b>'+d.average_percent+' %</b></span></div><button type="button" class="btn" id="avicoExportAnalytics">Exportar CSV</button><div style="overflow:auto"><table class="avico-analytics-table"><thead><tr><th>Curso</th><th>Ponencia</th><th>Iniciaron</th><th>Completaron</th><th>Avance medio</th></tr></thead><tbody>'+rows.map(x=>'<tr><td>'+esc(x.course_title)+'</td><td>'+esc(x.lesson_title)+'</td><td>'+Number(x.students_started)+'</td><td>'+Number(x.completed)+'</td><td>'+Number(x.average_percent)+' %</td></tr>').join('')+'</tbody></table></div>';
+  document.getElementById('avicoExportAnalytics').onclick=()=>{
+   const cells=[['Curso','Ponencia','Iniciaron','Completaron','Avance medio (%)'],...rows.map(x=>[x.course_title,x.lesson_title,x.students_started,x.completed,x.average_percent])];
+   const csv='\uFEFF'+cells.map(row=>row.map(v=>'"'+String(v??'').replace(/"/g,'""')+'"').join(',')).join('\r\n');
+   const url=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'}));const a=document.createElement('a');a.href=url;a.download='AVICO_estadisticas_ponencias.csv';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
+  };
+ }catch(e){el.textContent=e.message}
+}
 function showAdmin(){
+  avicoShowAdminAnalytics();
   $('#adminPanel').classList.add('show');
   $('#adminPanel').scrollIntoView({behavior:'smooth'});
   renderCourseManager(); loadStudents(); loadAcademic();
