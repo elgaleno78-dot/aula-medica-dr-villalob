@@ -120,7 +120,7 @@ button,input,textarea,select{font:inherit}.app{display:grid;grid-template-column
 .avico-return-home{position:relative;z-index:99999;display:block;padding:12px 20px;background:#eef5fc;color:#073b76;font:600 15px Arial,sans-serif;text-decoration:none;border-bottom:1px solid #d4e2ef}
 .avico-return-home:hover,.avico-return-home:focus{text-decoration:underline;background:#e1edf9}
 </style>
-<style>.avico-progress{margin-top:9px;width:min(310px,100%);font-size:12px;color:#536b82}.avico-progress-top{display:flex;justify-content:space-between;gap:12px;margin-bottom:5px}.avico-progress-top strong{color:#0b4d87;font-variant-numeric:tabular-nums}.avico-progress-track{height:8px;border-radius:999px;background:#dce8f3;overflow:hidden}.avico-progress-fill{height:100%;background:#1876b9;border-radius:999px;transition:width .25s ease}</style><style>.avico-learning-summary{padding:18px;margin:14px 0;background:#f1f7fd;border:1px solid #d5e5f3;border-radius:14px}.avico-summary-title{font-weight:700;color:#0b416f;margin-bottom:10px}.avico-summary-metrics{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;font-size:13px;margin-bottom:10px}</style><style>.avico-admin-analytics{background:#fff;border:1px solid #d6e4f1;border-radius:14px;padding:18px;margin:18px 0}.avico-analytics-grid{display:flex;gap:15px;flex-wrap:wrap;margin:12px 0}.avico-analytics-grid span{background:#edf5fc;border-radius:8px;padding:10px;font-size:13px}.avico-analytics-table{border-collapse:collapse;width:100%;margin-top:14px;font-size:13px}.avico-analytics-table th,.avico-analytics-table td{padding:8px;border-bottom:1px solid #e3e9ef;text-align:left}</style></head>
+<style>.avico-progress{margin-top:9px;width:min(310px,100%);font-size:12px;color:#536b82}.avico-progress-top{display:flex;justify-content:space-between;gap:12px;margin-bottom:5px}.avico-progress-top strong{color:#0b4d87;font-variant-numeric:tabular-nums}.avico-progress-track{height:8px;border-radius:999px;background:#dce8f3;overflow:hidden}.avico-progress-fill{height:100%;background:#1876b9;border-radius:999px;transition:width .25s ease}</style><style>.avico-learning-summary{padding:18px;margin:14px 0;background:#f1f7fd;border:1px solid #d5e5f3;border-radius:14px}.avico-summary-title{font-weight:700;color:#0b416f;margin-bottom:10px}.avico-summary-metrics{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;font-size:13px;margin-bottom:10px}</style><style>.avico-admin-analytics{background:#fff;border:1px solid #d6e4f1;border-radius:14px;padding:18px;margin:18px 0}.avico-analytics-grid{display:flex;gap:15px;flex-wrap:wrap;margin:12px 0}.avico-analytics-grid span{background:#edf5fc;border-radius:8px;padding:10px;font-size:13px}.avico-analytics-table{border-collapse:collapse;width:100%;margin-top:14px;font-size:13px}.avico-analytics-table th,.avico-analytics-table td{padding:8px;border-bottom:1px solid #e3e9ef;text-align:left}</style><style>.avico-quiz-overlay{position:fixed;inset:0;z-index:100000;background:#071b30b8;display:flex;align-items:flex-start;justify-content:center;overflow:auto;padding:24px}.avico-quiz-card{background:white;color:#10243a;width:min(720px,100%);border-radius:16px;padding:24px}.avico-quiz-card fieldset{border:1px solid #d5e2ef;border-radius:9px;margin:14px 0;padding:14px}.avico-quiz-option{display:block;padding:8px}.avico-quiz-card textarea,.avico-quiz-card input:not([type=radio]),.avico-quiz-card select{display:block;width:100%;margin:6px 0 12px;padding:9px;border:1px solid #b9ccdd;border-radius:7px}.avico-quiz-existing{padding:9px;border-bottom:1px solid #d5e2ef}</style></head>
 <body>
 <a class="avico-return-home" href="https://avico-salud-ecosistema.onrender.com/index.html">← Volver al inicio</a>
 
@@ -513,6 +513,7 @@ async function openCourse(id){
       <div class="lessonRow">
         <div><b>${esc(l.title)}</b><div class="muted" style="font-size:12px">${esc(l.notes||'')} · ${l.kind.toUpperCase()}</div></div>
         <button class="btn" onclick='event.stopPropagation();viewLesson(${JSON.stringify(JSON.stringify(l))},null,true)'>Abrir</button>
+        <button class="btn" onclick="event.stopPropagation();avicoAdminQuizEditor(${l.id})">Evaluación</button>
         <button class="btn danger" onclick="event.stopPropagation();delLesson(${l.id})">Eliminar</button>
       </div>`).join(''):'<p class="muted">Todavía no hay clases.</p>';
     return;
@@ -537,6 +538,7 @@ async function openCourse(id){
       <div class="lessonRow">
         <div><b>${esc(l.title)}</b><div class="muted" style="font-size:12px">${esc(l.notes||'')} · ${l.kind.toUpperCase()}</div>${avicoProgressMarkup(l.id)}</div>
         <button class="btn" onclick='event.stopPropagation();viewLesson(${JSON.stringify(JSON.stringify(l))},null,false)'>Ver clase</button>
+        <button class="btn" onclick="event.stopPropagation();avicoOpenQuiz(${l.id})">Evaluación</button>
       </div>`).join(''):'<p class="muted">Todavía no hay clases.</p>';
     avicoLoadProgress();
   }catch(err){$('#lessons').textContent=err.message||'No se pudo abrir el curso.';}
@@ -635,6 +637,7 @@ function renderTimedCourse(data,accessToken){
     <div class="lessonRow">
       <div><b>${esc(l.title)}</b><div class="muted" style="font-size:12px">${esc(l.notes||'')} · ${l.kind.toUpperCase()}</div>${avicoProgressMarkup(l.id)}</div>
       <button class="btn" onclick='event.stopPropagation();viewLesson(${JSON.stringify(JSON.stringify(l))},${JSON.stringify(accessToken)},false)'>Ver clase</button>
+      <button class="btn" onclick="event.stopPropagation();avicoOpenQuiz(${l.id})">Evaluación</button>
     </div>`).join(''):'<p class="muted">Todavía no hay clases.</p>';
   avicoLoadProgress();
   window.avicoActiveCourseLessons=data.lessons||[];
@@ -649,6 +652,39 @@ function renderTimedCourse(data,accessToken){
       $('#lessons').innerHTML='<div class="accessExpired"><b>Tiempo finalizado</b><br>Se cumplieron las horas permitidas para revisar este curso.</div>';
     }
   },1000);
+}
+
+async function avicoOpenQuiz(lessonId){
+ const st=sessionStorage.getItem('avico_student_token');if(!st){alert('Inicia sesión como alumno');return}
+ const r=await fetch('/api/student-quiz/'+lessonId,{headers:{Authorization:'Bearer '+st}});
+ if(!r.ok){alert('No fue posible abrir la evaluación');return}
+ const d=await r.json();if(!d.questions.length){alert('Esta ponencia aún no tiene evaluación');return}
+ const modal=document.createElement('div');modal.className='avico-quiz-overlay';modal.innerHTML='<section class="avico-quiz-card"><button type="button" class="btn" id="avicoQuizClose">Cerrar</button><h2>Evaluación AVICO®</h2><form id="avicoQuizForm">'+d.questions.map((q,i)=>'<fieldset><legend>'+String(i+1)+'. '+esc(q.question)+'</legend>'+q.options.map((opt,j)=>'<label class="avico-quiz-option"><input type="radio" name="q'+q.id+'" value="'+j+'"> '+esc(opt)+'</label>').join('')+'</fieldset>').join('')+'<button type="submit" class="btn">Calificar evaluación</button></form><div id="avicoQuizResult" aria-live="polite"></div></section>';
+ document.body.appendChild(modal);
+ modal.querySelector('#avicoQuizClose').onclick=()=>modal.remove();
+ modal.querySelector('#avicoQuizForm').onsubmit=async e=>{
+  e.preventDefault();const answers={};for(const q of d.questions){const v=modal.querySelector('input[name="q'+q.id+'"]:checked');if(v)answers[String(q.id)]=Number(v.value)}
+  if(Object.keys(answers).length!==d.questions.length){alert('Responde todas las preguntas');return}
+  const resp=await fetch('/api/student-quiz/'+lessonId+'/submit',{method:'POST',headers:{Authorization:'Bearer '+st,'Content-Type':'application/json'},body:JSON.stringify({answers})});
+  if(!resp.ok){alert('No se pudo registrar la evaluación');return}
+  const result=await resp.json();modal.querySelector('#avicoQuizForm').hidden=true;
+  modal.querySelector('#avicoQuizResult').innerHTML='<h3>Resultado: '+result.score_percent+' %</h3><p>'+result.correct_count+' respuestas correctas de '+result.question_count+'</p>'+result.details.map((x,i)=>'<p><b>Pregunta '+(i+1)+': '+(x.correct?'Correcta':'Incorrecta')+'</b> · '+esc(x.explanation||'Sin explicación adicional')+'</p>').join('');
+ };
+}
+async function avicoAdminQuizEditor(lessonId){
+ if(!token)return;
+ const r=await fetch('/api/admin/quiz/'+lessonId,{headers:{Authorization:'Bearer '+token}});
+ if(!r.ok){alert('No fue posible consultar reactivos');return}
+ const questions=await r.json();
+ const modal=document.createElement('div');modal.className='avico-quiz-overlay';
+ modal.innerHTML='<section class="avico-quiz-card"><button type="button" class="btn" id="avicoQuizClose">Cerrar</button><h2>Banco de reactivos · AVICO®</h2><p>'+questions.length+' reactivos guardados</p><div id="avicoQuizExisting">'+questions.map(q=>'<div class="avico-quiz-existing">'+esc(q.question)+' <button type="button" class="btn" data-delete-question="'+q.id+'">Eliminar</button></div>').join('')+'</div><form id="avicoQuizAdminForm"><label>Pregunta<textarea name="question" required></textarea></label>'+[0,1,2,3].map(i=>'<label>Opción '+(i+1)+'<input name="option'+i+'" required></label>').join('')+'<label>Respuesta correcta<select name="correct_index"><option value="0">Opción 1</option><option value="1">Opción 2</option><option value="2">Opción 3</option><option value="3">Opción 4</option></select></label><label>Explicación clínica<textarea name="explanation"></textarea></label><button class="btn" type="submit">Guardar reactivo</button></form></section>';
+ document.body.appendChild(modal);modal.querySelector('#avicoQuizClose').onclick=()=>modal.remove();
+ modal.querySelectorAll('[data-delete-question]').forEach(btn=>btn.onclick=async()=>{if(!confirm('¿Eliminar este reactivo?'))return;const resp=await fetch('/api/admin/quiz/question/'+btn.dataset.deleteQuestion,{method:'DELETE',headers:{Authorization:'Bearer '+token}});if(resp.ok){modal.remove();avicoAdminQuizEditor(lessonId)}else alert('No se pudo eliminar')});
+ modal.querySelector('#avicoQuizAdminForm').onsubmit=async e=>{
+  e.preventDefault();const fd=new FormData(e.target);const payload={question:fd.get('question'),options:[0,1,2,3].map(i=>fd.get('option'+i)),correct_index:Number(fd.get('correct_index')),explanation:fd.get('explanation')};
+  const resp=await fetch('/api/admin/quiz/'+lessonId,{method:'POST',headers:{Authorization:'Bearer '+token,'Content-Type':'application/json'},body:JSON.stringify(payload)});
+  if(resp.ok){modal.remove();avicoAdminQuizEditor(lessonId)}else alert('No se pudo guardar el reactivo');
+ };
 }
 function closeViewer(){ $('#viewer').classList.remove('show'); if(document.fullscreenElement)document.exitFullscreen()}
 function toggleFull(){let el=$('#viewer'); if(!document.fullscreenElement) el.requestFullscreen(); else document.exitFullscreen()}
