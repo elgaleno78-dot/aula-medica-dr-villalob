@@ -675,7 +675,7 @@ function attachAvicoCertificateTracking(video,lessonId){
   busy=true;
   try{
    const r=await fetch('/api/certificate/watch/'+lessonId,{method:'POST',headers:{Authorization:'Bearer '+st,'Content-Type':'application/json'},body:JSON.stringify({duration:video.duration})});
-   if(r.ok){const x=await r.json();if(x.completed){finished=true;refreshAvicoCertificate()}}
+   if(r.ok){const x=await r.json();avicoRefreshHemorrhageProgress();if(x.completed){finished=true;refreshAvicoCertificate()}}
    else console.warn('AVICO® constancia: registro rechazado',r.status);
   }catch(e){console.warn('AVICO® constancia: sin conexión',e)}
   finally{busy=false}
