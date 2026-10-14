@@ -405,11 +405,11 @@ button,input,textarea,select{font:inherit}.app{display:grid;grid-template-column
     <div class="studentAdmin" id="studentAdmin" style="display:none">
       <div class="studentToolbar">
         <div><h3 style="margin:0">Alumnos inscritos</h3><div class="muted" id="studentCountText" style="font-size:12px"></div></div>
-        <button class="btn red" onclick="exportStudentsExcel()">Descargar lista de asistencia · Excel</button>
+        <button class="btn red" onclick="exportStudentsExcel()">Descargar participantes y avance · Excel</button>
       </div>
       <div class="studentTableWrap">
         <table class="studentTable">
-          <thead><tr><th>Nombre</th><th>Edad</th><th>Institución</th><th>Puesto/Grado</th><th>Correo</th><th>Curso</th><th>Fecha</th><th></th></tr></thead>
+          <thead><tr><th>Nombre</th><th>Edad</th><th>Institución</th><th>Puesto/Grado</th><th>Correo</th><th>Curso</th><th>Fecha</th><th>Avance</th><th>Constancia</th><th></th></tr></thead>
           <tbody id="studentTableBody"></tbody>
         </table>
       </div>
@@ -1065,8 +1065,10 @@ async function loadStudents(){
         <td>${esc(s.email||'')}</td>
         <td>${esc(s.course_title||'General')}</td>
         <td>${esc((s.created_at||'').slice(0,10))}</td>
+        <td>${s.completadas||0} / ${s.total_ponencias||0} (${s.avance_pct||0}%)</td>
+        <td>${s.constancia_disponible?'Disponible':'Pendiente'}</td>
         <td><button class="btn danger" onclick="deleteStudent(${s.id})">Eliminar</button></td>
-      </tr>`).join(''):'<tr><td colspan="8" class="muted">Aún no hay alumnos inscritos.</td></tr>';
+      </tr>`).join(''):'<tr><td colspan="10" class="muted">Aún no hay alumnos inscritos.</td></tr>';
   }catch{ alert('No se pudo cargar la lista de alumnos') }
 }
 async function deleteStudent(id){
@@ -1085,7 +1087,7 @@ async function exportStudentsExcel(){
   let r=await fetch('/api/students/export.xlsx',{headers:{Authorization:'Bearer '+token}});
   if(!r.ok){alert('No se pudo generar la lista de asistencia');return}
   let b=await r.blob(), u=URL.createObjectURL(b), a=document.createElement('a');
-  a.href=u;a.download='lista_asistencia_hemorragia_obstetrica.xlsx';a.click();URL.revokeObjectURL(u);
+  a.href=u;a.download='Participantes_AVICO_Avance.xlsx';a.click();URL.revokeObjectURL(u);
 }
 
 
