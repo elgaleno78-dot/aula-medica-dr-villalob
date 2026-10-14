@@ -385,6 +385,13 @@ def startup():
     init_db()
     avico_quiz_schema()
     avico_opinion_schema()
+    con=db()
+    try:
+        columns=[r["name"] for r in con.execute("PRAGMA table_info(certificate_watch)")]
+        if "duration_seconds" not in columns:
+            con.execute("ALTER TABLE certificate_watch ADD COLUMN duration_seconds REAL NOT NULL DEFAULT 0")
+            con.commit()
+    finally:con.close()
     restore_intro_catalog()
     threading.Thread(target=_avico_drive_sync_loop, daemon=True, name='avico-drive-sync').start()
     # Si ya existe información en el disco persistente, deja un respaldo al iniciar.
@@ -738,13 +745,26 @@ async def certificate_watch(lesson_id:int,request:Request):
     elapsed=min(20,max(0,now-row["last_ping"])) if row and row["last_ping"] else 0
     watched=min(duration,(row["watched_seconds"] if row else 0)+elapsed)
     done=bool((row["completed"] if row else 0) or watched>=duration*.9)
-    con.execute("""INSERT INTO certificate_watch(account_id,lesson_id,watched_seconds,last_ping,completed)
-        VALUES(?,?,?,?,?) ON CONFLICT(account_id,lesson_id) DO UPDATE SET
+    con.execute("""INSERT INTO certificate_watch(account_id,lesson_id,watched_seconds,last_ping,completed,duration_seconds)
+        VALUES(?,?,?,?,?,?) ON CONFLICT(account_id,lesson_id) DO UPDATE SET
         watched_seconds=excluded.watched_seconds,last_ping=excluded.last_ping,
+        duration_seconds=excluded.duration_seconds,
         completed=MAX(certificate_watch.completed,excluded.completed)""",
-        (identity["id"],lesson_id,watched,now,int(done)))
+        (identity["id"],lesson_id,watched,now,int(done),duration))
     con.commit();con.close()
     return {"watched_seconds":watched,"completed":done}
+
+@app.get("/api/certificate/lesson-progress")
+def avico_certificate_lesson_progress(request:Request):
+    identity=student_identity(request)
+    con=db()
+    try:
+        rows=con.execute("""SELECT lesson_id,watched_seconds,duration_seconds,completed
+            FROM certificate_watch WHERE account_id=?""",(identity["id"],)).fetchall()
+        return {str(r["lesson_id"]):{"percent":100 if r["completed"] else
+            round(min(100,100*r["watched_seconds"]/r["duration_seconds"]),1) if r["duration_seconds"]>0 else 0,
+            "completed":bool(r["completed"])} for r in rows}
+    finally:con.close()
 
 @app.get("/api/certificate/download")
 def certificate_download(request:Request):
