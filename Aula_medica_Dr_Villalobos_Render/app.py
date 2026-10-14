@@ -1173,17 +1173,23 @@ async def register_student(
     con.commit(); con.close()
     return {"ok":True,"id":sid,"course_id":course_id,"access_token":access_token,"access_hours":hours,"expires_at":expires.isoformat()}
 
+def _admin_student_rows(con):
+    rows=[dict(r) for r in con.execute("""
+      SELECT s.*,COALESCE(c.title,'') AS course_title,
+      (SELECT COUNT(*) FROM lessons l WHERE l.course_id=s.course_id AND l.kind='drive') AS total_ponencias,
+      (SELECT COUNT(*) FROM certificate_watch w JOIN lessons l ON l.id=w.lesson_id
+       WHERE w.account_id=s.account_id AND w.completed=1 AND l.course_id=s.course_id AND l.kind='drive') AS completadas
+      FROM students s LEFT JOIN courses c ON c.id=s.course_id ORDER BY s.id DESC""").fetchall()]
+    for r in rows:
+        t=r["total_ponencias"]
+        r["avance_pct"]=round(100*r["completadas"]/t,1) if t else 0
+        r["constancia_disponible"]=bool(t and r["completadas"]>=t)
+    return rows
+
 @app.get("/api/students")
 def list_students(request:Request):
     auth(request)
-    con=db()
-    rows=[dict(r) for r in con.execute("""
-      SELECT s.*, c.title AS course_title
-      FROM students s
-      LEFT JOIN courses c ON c.id=s.course_id
-      ORDER BY s.id DESC
-    """).fetchall()]
-    con.close()
+    con=db();rows=_admin_student_rows(con);con.close()
     return rows
 
 @app.put("/api/students/{student_id}")
@@ -1220,42 +1226,20 @@ def delete_student(student_id:int, request:Request):
 @app.get("/api/students/export.xlsx")
 def export_students_xlsx(request:Request):
     auth(request)
-    import xlsxwriter
-    con=db()
-    rows=con.execute("""
-      SELECT s.id,s.full_name,s.age,s.institution,s.position,s.email,
-             COALESCE(c.title,'') AS course,s.created_at
-      FROM students s
-      LEFT JOIN courses c ON c.id=s.course_id
-      ORDER BY s.created_at,s.full_name
-    """).fetchall()
-    con.close()
-    out=DATA_DIR/"lista_asistencia_hemorragia_obstetrica.xlsx"
-    workbook=xlsxwriter.Workbook(out)
-    ws=workbook.add_worksheet("Asistencia")
-    fmt_head=workbook.add_format({"bold":True,"border":1,"align":"center","valign":"vcenter"})
-    fmt_cell=workbook.add_format({"border":1,"valign":"top"})
-    headers=["No.","Nombre completo","Edad","Institución / Adscripción","Puesto / Grado","Correo","Curso","Fecha de registro","Firma"]
-    for col,h in enumerate(headers):
-        ws.write(0,col,h,fmt_head)
-    for i,r in enumerate(rows, start=1):
-        values=[i,r["full_name"],r["age"] or "",r["institution"],r["position"],r["email"],r["course"],r["created_at"],""]
-        for col,v in enumerate(values):
-            ws.write(i,col,v,fmt_cell)
-    ws.set_column(0,0,6)
-    ws.set_column(1,1,32)
-    ws.set_column(2,2,8)
-    ws.set_column(3,3,30)
-    ws.set_column(4,4,24)
-    ws.set_column(5,5,30)
-    ws.set_column(6,6,36)
-    ws.set_column(7,7,20)
-    ws.set_column(8,8,24)
-    ws.freeze_panes(1,0)
-    workbook.close()
-    return FileResponse(out,
-      media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-      filename="lista_asistencia_hemorragia_obstetrica.xlsx")
+    import xlsxwriter, io
+    con=db();rows=_admin_student_rows(con);con.close()
+    out=io.BytesIO();wb=xlsxwriter.Workbook(out,{"in_memory":True})
+    ws=wb.add_worksheet("Participantes AVICO")
+    fmt=wb.add_format({"bold":True,"bg_color":"#123D69","font_color":"#FFFFFF"})
+    cols=["Nombre completo","Edad","Institución","Puesto/Grado","Correo","Curso","Fecha de inscripción","Total ponencias","Completadas","Avance (%)","Constancia"]
+    for j,h in enumerate(cols):ws.write(0,j,h,fmt)
+    for i,r in enumerate(rows,1):
+        vals=[r["full_name"],r["age"],r["institution"],r["position"],r["email"],r["course_title"],r["created_at"],r["total_ponencias"],r["completadas"],r["avance_pct"],"Disponible" if r["constancia_disponible"] else "Pendiente"]
+        for j,v in enumerate(vals):ws.write(i,j,v if v is not None else "")
+    ws.set_column(0,0,35);ws.set_column(1,1,10);ws.set_column(2,5,30);ws.set_column(6,10,20)
+    ws.freeze_panes(1,0);ws.autofilter(0,0,max(1,len(rows)),len(cols)-1)
+    wb.close();out.seek(0)
+    return StreamingResponse(out,media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",headers={"Content-Disposition":'attachment; filename="Participantes_AVICO_Avance.xlsx"'})
 
 @app.get("/api/students/export.csv")
 def export_students_csv(request:Request):
