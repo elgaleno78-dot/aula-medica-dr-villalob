@@ -163,6 +163,30 @@ button,input,textarea,select{font:inherit}.app{display:grid;grid-template-column
 #biblioteca,#videosMedicos,#casosClinicos,#autoevaluaciones,
 .quickGrid {display:none!important}
 </style>
+<style>
+/* Aula AVICO® Hemorragia: tarjetas académicas como Aula Educación */
+.ponenciasWrap{background:transparent;border:0;padding:0}
+.ponenciaRow{background:white;border:1px solid #d9e6f3;border-radius:16px;margin-bottom:16px;padding:28px 22px;grid-template-columns:minmax(190px,28%) minmax(0,1fr) auto;gap:25px;min-height:240px}
+.ponenciaRow:last-child{border-bottom:1px solid #d9e6f3}
+.ponenciaBadge{border-color:#397fc5;box-shadow:inset 0 0 0 7px #e8f2fc}
+.ponenciaBadge:before{border-top-color:#77b1e6;border-left-color:#2165ac}
+.ponenciaRibbon{color:#1d5f9e}
+.ponenciaRibbon small{background:#397fc5}
+.ponenciaInfo h3{font-size:clamp(23px,2.2vw,34px);color:#102f50}
+.ponenciaDate{font-size:16px;margin-bottom:12px}
+.ponenciaInfo .avico-lesson-progress{max-width:320px;margin-top:18px}
+.avico-progress-label{display:flex;justify-content:space-between;font-size:12px;color:#41617d;margin-bottom:5px}
+.avico-progress-track{height:8px;background:#dce8f4;border-radius:8px;overflow:hidden}
+.avico-progress-fill{height:100%;background:#247dc5;border-radius:8px}
+.ponenciaAction{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:8px}
+.ponenciaAction .btn{white-space:nowrap;background:#243c72}
+.ponenciaAction .avico-secondary{background:#103f68}
+.avico-course-label{padding:18px 10px 12px;color:#0d3155}
+.avico-course-label h2{margin:0;font-size:23px}
+.avico-quiz-overlay{position:fixed;inset:0;z-index:100000;background:#071b30b8;display:flex;align-items:flex-start;justify-content:center;overflow:auto;padding:24px}.avico-quiz-card{background:white;color:#10243a;width:min(720px,100%);border-radius:16px;padding:24px}.avico-quiz-card fieldset{border:1px solid #d5e2ef;border-radius:9px;margin:14px 0;padding:14px}.avico-quiz-option{display:block;padding:8px}.avico-quiz-card textarea,.avico-quiz-card input:not([type=radio]),.avico-quiz-card select{display:block;width:100%;margin:6px 0 12px;padding:9px;border:1px solid #b9ccdd;border-radius:7px}.avico-quiz-existing{padding:9px;border-bottom:1px solid #d5e2ef}
+@media(max-width:1080px){.ponenciaRow{grid-template-columns:200px 1fr}.ponenciaAction{grid-column:2;justify-content:flex-start}}
+@media(max-width:700px){.ponenciaRow{grid-template-columns:1fr;padding:18px;gap:10px}.ponenciaAction{grid-column:1}.ponenciaVisual{height:120px}.ponenciaRibbon{left:98px}}
+</style>
 </head>
 <body>
 <a class="avico-return-home" href="https://avico-salud-ecosistema.onrender.com/index.html">← Volver al inicio</a>
@@ -663,31 +687,113 @@ function attachAvicoCertificateTracking(video,lessonId){
  video.addEventListener('seeked',()=>{playing=!video.paused});
  video.addEventListener('ended',()=>{playing=false;refreshAvicoCertificate()});
 }
+function avicoHemorrhageProgressMarkup(id){
+ return '<div class="avico-lesson-progress" data-avico-progress="'+Number(id)+'"><div class="avico-progress-label"><span>Avance de la ponencia</span><strong>0 %</strong></div><div class="avico-progress-track"><div class="avico-progress-fill" style="width:0%"></div></div></div>';
+}
+async function avicoRefreshHemorrhageProgress(){
+ const st=sessionStorage.getItem('avico_student_token')||localStorage.getItem('avico_student_token');
+ if(!st)return;
+ try{
+  const r=await fetch('/api/certificate/lesson-progress',{headers:{Authorization:'Bearer '+st}});
+  if(!r.ok)return;
+  const data=await r.json();
+  document.querySelectorAll('[data-avico-progress]').forEach(el=>{
+   const id=el.getAttribute('data-avico-progress'),pct=Math.max(0,Math.min(100,Number(data[id]?.percent||0)));
+   el.querySelector('strong').textContent=pct+' %';
+   el.querySelector('.avico-progress-fill').style.width=pct+'%';
+  });
+ }catch(e){console.warn('AVICO® avance no disponible',e)}
+}
+async function avicoOpenOpinion(lessonId){
+ const st=sessionStorage.getItem('avico_student_token')||localStorage.getItem('avico_student_token');
+ const r=await fetch('/api/opinions/'+lessonId);if(!r.ok){alert('No fue posible cargar comentarios');return}
+ const comments=await r.json();
+ const overlay=document.createElement('div');overlay.className='avico-quiz-overlay';
+ overlay.innerHTML='<section class="avico-quiz-card"><button type="button" class="btn" id="avicoOpinionClose">Cerrar</button><h2>AVICO® Opinión académica</h2><p>Espacio para preguntas y discusión profesional. Los comentarios se publican tras revisión.</p><div>'+comments.map(c=>'<blockquote><b>'+esc(c.student_name)+'</b><p>'+esc(c.comment)+'</p></blockquote>').join('')+'</div>'+(st?'<form id="avicoOpinionForm"><label>Tu pregunta o comentario<textarea required minlength="10" maxlength="1500" name="comment"></textarea></label><button type="submit" class="btn">Enviar para revisión</button></form>':'<p>Inicia sesión como alumno para participar.</p>')+'<p id="avicoOpinionStatus" aria-live="polite"></p></section>';
+ document.body.appendChild(overlay);overlay.querySelector('#avicoOpinionClose').onclick=()=>overlay.remove();
+ const form=overlay.querySelector('#avicoOpinionForm');if(form)form.onsubmit=async e=>{
+  e.preventDefault();const comment=new FormData(form).get('comment');
+  const resp=await fetch('/api/opinions/'+lessonId,{method:'POST',headers:{Authorization:'Bearer '+st,'Content-Type':'application/json'},body:JSON.stringify({comment})});
+  const result=await resp.json();overlay.querySelector('#avicoOpinionStatus').textContent=resp.ok?'Comentario enviado para revisión':(result.detail||'No se pudo enviar');
+  if(resp.ok)form.reset();
+ };
+}
+async function avicoModerateOpinions(){
+ if(!token)return;
+ const r=await fetch('/api/admin/opinions',{headers:{Authorization:'Bearer '+token}});
+ if(!r.ok){alert('No fue posible cargar la moderación');return}
+ const items=await r.json();
+ const overlay=document.createElement('div');overlay.className='avico-quiz-overlay';
+ overlay.innerHTML='<section class="avico-quiz-card"><button class="btn" id="avicoOpinionClose">Cerrar</button><h2>Moderación · AVICO® Opinión</h2>'+(items.length?items.map(c=>'<article class="avico-quiz-existing"><b>'+esc(c.lesson_title)+'</b><p>'+esc(c.student_name)+': '+esc(c.comment)+'</p><button class="btn" data-opinion="'+c.id+'" data-status="approved">Aprobar</button> <button class="btn" data-opinion="'+c.id+'" data-status="rejected">Rechazar</button></article>').join(''):'<p>No hay comentarios pendientes.</p>')+'</section>';
+ document.body.appendChild(overlay);overlay.querySelector('#avicoOpinionClose').onclick=()=>overlay.remove();
+ overlay.querySelectorAll('[data-opinion]').forEach(b=>b.onclick=async()=>{
+  const resp=await fetch('/api/admin/opinions/'+b.dataset.opinion+'/review',{method:'POST',headers:{Authorization:'Bearer '+token,'Content-Type':'application/json'},body:JSON.stringify({status:b.dataset.status})});
+  if(resp.ok){overlay.remove();avicoModerateOpinions()}else alert('No se pudo moderar');
+ });
+}
+async function avicoOpenQuiz(lessonId){
+ const st=sessionStorage.getItem('avico_student_token');if(!st){alert('Inicia sesión como alumno');return}
+ const r=await fetch('/api/student-quiz/'+lessonId,{headers:{Authorization:'Bearer '+st}});
+ if(!r.ok){alert('No fue posible abrir la evaluación');return}
+ const d=await r.json();if(!d.questions.length){alert('Esta ponencia aún no tiene evaluación');return}
+ const modal=document.createElement('div');modal.className='avico-quiz-overlay';modal.innerHTML='<section class="avico-quiz-card"><button type="button" class="btn" id="avicoQuizClose">Cerrar</button><h2>Evaluación AVICO®</h2><form id="avicoQuizForm">'+d.questions.map((q,i)=>'<fieldset><legend>'+String(i+1)+'. '+esc(q.question)+'</legend>'+q.options.map((opt,j)=>'<label class="avico-quiz-option"><input type="radio" name="q'+q.id+'" value="'+j+'"> '+esc(opt)+'</label>').join('')+'</fieldset>').join('')+'<button type="submit" class="btn">Calificar evaluación</button></form><div id="avicoQuizResult" aria-live="polite"></div></section>';
+ document.body.appendChild(modal);
+ modal.querySelector('#avicoQuizClose').onclick=()=>modal.remove();
+ modal.querySelector('#avicoQuizForm').onsubmit=async e=>{
+  e.preventDefault();const answers={};for(const q of d.questions){const v=modal.querySelector('input[name="q'+q.id+'"]:checked');if(v)answers[String(q.id)]=Number(v.value)}
+  if(Object.keys(answers).length!==d.questions.length){alert('Responde todas las preguntas');return}
+  const resp=await fetch('/api/student-quiz/'+lessonId+'/submit',{method:'POST',headers:{Authorization:'Bearer '+st,'Content-Type':'application/json'},body:JSON.stringify({answers})});
+  if(!resp.ok){alert('No se pudo registrar la evaluación');return}
+  const result=await resp.json();modal.querySelector('#avicoQuizForm').hidden=true;
+  modal.querySelector('#avicoQuizResult').innerHTML='<h3>Resultado: '+result.score_percent+' %</h3><p>'+result.correct_count+' respuestas correctas de '+result.question_count+'</p>'+result.details.map((x,i)=>'<p><b>Pregunta '+(i+1)+': '+(x.correct?'Correcta':'Incorrecta')+'</b> · '+esc(x.explanation||'Sin explicación adicional')+'</p>').join('');
+ };
+}
+async function avicoAdminQuizEditor(lessonId){
+ if(!token)return;
+ const r=await fetch('/api/admin/quiz/'+lessonId,{headers:{Authorization:'Bearer '+token}});
+ if(!r.ok){alert('No fue posible consultar reactivos');return}
+ const questions=await r.json();
+ const modal=document.createElement('div');modal.className='avico-quiz-overlay';
+ modal.innerHTML='<section class="avico-quiz-card"><button type="button" class="btn" id="avicoQuizClose">Cerrar</button><h2>Banco de reactivos · AVICO®</h2><p>'+questions.length+' reactivos guardados</p><div id="avicoQuizExisting">'+questions.map(q=>'<div class="avico-quiz-existing">'+esc(q.question)+' <button type="button" class="btn" data-delete-question="'+q.id+'">Eliminar</button></div>').join('')+'</div><form id="avicoQuizAdminForm"><label>Pregunta<textarea name="question" required></textarea></label>'+[0,1,2,3].map(i=>'<label>Opción '+(i+1)+'<input name="option'+i+'" required></label>').join('')+'<label>Respuesta correcta<select name="correct_index"><option value="0">Opción 1</option><option value="1">Opción 2</option><option value="2">Opción 3</option><option value="3">Opción 4</option></select></label><label>Explicación clínica<textarea name="explanation"></textarea></label><button class="btn" type="submit">Guardar reactivo</button></form></section>';
+ document.body.appendChild(modal);modal.querySelector('#avicoQuizClose').onclick=()=>modal.remove();
+ modal.querySelectorAll('[data-delete-question]').forEach(btn=>btn.onclick=async()=>{if(!confirm('¿Eliminar este reactivo?'))return;const resp=await fetch('/api/admin/quiz/question/'+btn.dataset.deleteQuestion,{method:'DELETE',headers:{Authorization:'Bearer '+token}});if(resp.ok){modal.remove();avicoAdminQuizEditor(lessonId)}else alert('No se pudo eliminar')});
+ modal.querySelector('#avicoQuizAdminForm').onsubmit=async e=>{
+  e.preventDefault();const fd=new FormData(e.target);const payload={question:fd.get('question'),options:[0,1,2,3].map(i=>fd.get('option'+i)),correct_index:Number(fd.get('correct_index')),explanation:fd.get('explanation')};
+  const resp=await fetch('/api/admin/quiz/'+lessonId,{method:'POST',headers:{Authorization:'Bearer '+token,'Content-Type':'application/json'},body:JSON.stringify(payload)});
+  if(resp.ok){modal.remove();avicoAdminQuizEditor(lessonId)}else alert('No se pudo guardar el reactivo');
+ };
+}
+
 function renderCourses(){
-  const box=$('#sessionList');
-  const lessons=courses.flatMap(c=>(c.lessons||[]).map(l=>({...l,course_id:c.id,course_title:c.title})));
-  if(!lessons.length){
-    box.innerHTML='<p class="muted" style="padding:30px 8px">Todavía no hay ponencias publicadas.</p>';
-  }else{
-    box.innerHTML=lessons.map((l,i)=>`
-      <article class="ponenciaRow">
-        <div class="ponenciaVisual" aria-hidden="true">
-          <div class="ponenciaBadge"></div>
-          <div class="ponenciaRibbon">Sesión académica<small>${esc((l.session_date||'AVICO').toUpperCase())}</small></div>
-        </div>
-        <div class="ponenciaInfo">
-          <h3>${esc(l.title)}</h3>
-          <div class="ponenciaDate">${esc(formatSessionDate(l.session_date))}</div>
-          ${l.institution?`<div class="ponenciaInstitution">${esc(l.institution)}</div>`:''}
-          ${l.speaker?`<div class="ponenciaSpeaker">• <b>Ponente:</b><br>&nbsp;&nbsp;&nbsp;${esc(l.speaker)}</div>`:''}
-          ${l.notes?`<div class="muted" style="margin-top:12px;line-height:1.5">${esc(l.notes)}</div>`:''}
-          ${token?`<div class="ponenciaAdminActions"><button class="btn danger" onclick="event.stopPropagation();delLesson(${l.id})">Eliminar</button></div>`:''}
-        </div>
-        <div class="ponenciaAction"><button class="btn" onclick="openPonencia(${l.course_id},${l.id})">Ir a la ponencia</button></div>
-      </article>`).join('');
-  }
-  refreshAvicoCertificate();
-  renderCourseManager(); loadStudents(); loadAcademic(); loadLibrary();
+ const box=$('#sessionList');
+ const lessons=courses.flatMap(c=>(c.lessons||[]).map(l=>({...l,course_id:c.id,course_title:c.title,course_subtitle:c.subtitle})));
+ if(!lessons.length){box.innerHTML='<p class="muted" style="padding:30px 8px">Todavía no hay ponencias publicadas.</p>';}
+ else{
+  let lastCourse=null;
+  box.innerHTML=lessons.map(l=>{
+   const heading=l.course_id!==lastCourse?'<div class="avico-course-label"><h2>'+esc(l.course_title)+'</h2><p class="muted">'+esc(l.course_subtitle||'')+'</p></div>':'';
+   lastCourse=l.course_id;
+   return heading+`
+    <article class="ponenciaRow">
+      <div class="ponenciaVisual" aria-hidden="true"><div class="ponenciaBadge"></div><div class="ponenciaRibbon">Sesión académica<small>AVICO®</small></div></div>
+      <div class="ponenciaInfo">
+        <h3>${esc(l.title)}</h3>
+        <div class="ponenciaDate">Sesión académica</div>
+        ${l.notes?'<p class="muted">'+esc(l.notes)+'</p>':''}
+        ${avicoHemorrhageProgressMarkup(l.id)}
+        ${token?'<div class="ponenciaAdminActions"><button class="btn danger" onclick="delLesson('+Number(l.id)+')">Eliminar</button></div>':''}
+      </div>
+      <div class="ponenciaAction">
+        <button class="btn" onclick="openPonencia(${l.course_id},${l.id})">Ir a la ponencia</button>
+        <button class="btn avico-secondary" onclick="avicoOpenQuiz(${l.id})">Evaluación</button>
+        <button class="btn avico-secondary" onclick="avicoOpenOpinion(${l.id})">AVICO® Opinión</button>
+        ${token?'<button class="btn avico-secondary" onclick="avicoAdminQuizEditor('+Number(l.id)+')">Editar evaluación</button>':''}
+      </div>
+    </article>`;
+  }).join('');
+ }
+ avicoRefreshHemorrhageProgress();
+ refreshAvicoCertificate();renderCourseManager();loadStudents();loadAcademic();loadLibrary();
 }
 function renderCourseManager(){
   const box=$('#courseManagerList'); if(!box) return;
