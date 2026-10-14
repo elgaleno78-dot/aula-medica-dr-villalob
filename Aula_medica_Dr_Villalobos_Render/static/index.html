@@ -120,7 +120,18 @@ button,input,textarea,select{font:inherit}.app{display:grid;grid-template-column
 .avico-return-home{position:relative;z-index:99999;display:block;padding:12px 20px;background:#eef5fc;color:#073b76;font:600 15px Arial,sans-serif;text-decoration:none;border-bottom:1px solid #d4e2ef}
 .avico-return-home:hover,.avico-return-home:focus{text-decoration:underline;background:#e1edf9}
 </style>
-<style>.avico-progress{margin-top:9px;width:min(310px,100%);font-size:12px;color:#536b82}.avico-progress-top{display:flex;justify-content:space-between;gap:12px;margin-bottom:5px}.avico-progress-top strong{color:#0b4d87;font-variant-numeric:tabular-nums}.avico-progress-track{height:8px;border-radius:999px;background:#dce8f3;overflow:hidden}.avico-progress-fill{height:100%;background:#1876b9;border-radius:999px;transition:width .25s ease}</style><style>.avico-learning-summary{padding:18px;margin:14px 0;background:#f1f7fd;border:1px solid #d5e5f3;border-radius:14px}.avico-summary-title{font-weight:700;color:#0b416f;margin-bottom:10px}.avico-summary-metrics{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;font-size:13px;margin-bottom:10px}</style><style>.avico-admin-analytics{background:#fff;border:1px solid #d6e4f1;border-radius:14px;padding:18px;margin:18px 0}.avico-analytics-grid{display:flex;gap:15px;flex-wrap:wrap;margin:12px 0}.avico-analytics-grid span{background:#edf5fc;border-radius:8px;padding:10px;font-size:13px}.avico-analytics-table{border-collapse:collapse;width:100%;margin-top:14px;font-size:13px}.avico-analytics-table th,.avico-analytics-table td{padding:8px;border-bottom:1px solid #e3e9ef;text-align:left}</style><style>.avico-quiz-overlay{position:fixed;inset:0;z-index:100000;background:#071b30b8;display:flex;align-items:flex-start;justify-content:center;overflow:auto;padding:24px}.avico-quiz-card{background:white;color:#10243a;width:min(720px,100%);border-radius:16px;padding:24px}.avico-quiz-card fieldset{border:1px solid #d5e2ef;border-radius:9px;margin:14px 0;padding:14px}.avico-quiz-option{display:block;padding:8px}.avico-quiz-card textarea,.avico-quiz-card input:not([type=radio]),.avico-quiz-card select{display:block;width:100%;margin:6px 0 12px;padding:9px;border:1px solid #b9ccdd;border-radius:7px}.avico-quiz-existing{padding:9px;border-bottom:1px solid #d5e2ef}</style><style>.avico-certificate-legend{font-size:13px;line-height:1.55;color:#34536e;margin:12px 0 0;padding:10px 12px;border-left:3px solid #176ca8;background:#f5f9fd;border-radius:4px}@media(max-width:600px){.avico-learning-summary,.avico-admin-analytics{padding:12px}.avico-summary-metrics{flex-direction:column;gap:6px}.avico-quiz-overlay{padding:8px}.avico-quiz-card{padding:15px}.avico-analytics-table{font-size:12px}}</style><link rel="manifest" href="/static/manifest.webmanifest"><meta name="theme-color" content="#0e3655"><link rel="icon" type="image/svg+xml" href="/static/icon.svg"></head>
+<style>.avico-progress{margin-top:9px;width:min(310px,100%);font-size:12px;color:#536b82}.avico-progress-top{display:flex;justify-content:space-between;gap:12px;margin-bottom:5px}.avico-progress-top strong{color:#0b4d87;font-variant-numeric:tabular-nums}.avico-progress-track{height:8px;border-radius:999px;background:#dce8f3;overflow:hidden}.avico-progress-fill{height:100%;background:#1876b9;border-radius:999px;transition:width .25s ease}</style><style>.avico-learning-summary{padding:18px;margin:14px 0;background:#f1f7fd;border:1px solid #d5e5f3;border-radius:14px}.avico-summary-title{font-weight:700;color:#0b416f;margin-bottom:10px}.avico-summary-metrics{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;font-size:13px;margin-bottom:10px}</style><style>.avico-admin-analytics{background:#fff;border:1px solid #d6e4f1;border-radius:14px;padding:18px;margin:18px 0}.avico-analytics-grid{display:flex;gap:15px;flex-wrap:wrap;margin:12px 0}.avico-analytics-grid span{background:#edf5fc;border-radius:8px;padding:10px;font-size:13px}.avico-analytics-table{border-collapse:collapse;width:100%;margin-top:14px;font-size:13px}.avico-analytics-table th,.avico-analytics-table td{padding:8px;border-bottom:1px solid #e3e9ef;text-align:left}</style><style>.avico-quiz-overlay{position:fixed;inset:0;z-index:100000;background:#071b30b8;display:flex;align-items:flex-start;justify-content:center;overflow:auto;padding:24px}.avico-quiz-card{background:white;color:#10243a;width:min(720px,100%);border-radius:16px;padding:24px}.avico-quiz-card fieldset{border:1px solid #d5e2ef;border-radius:9px;margin:14px 0;padding:14px}.avico-quiz-option{display:block;padding:8px}.avico-quiz-card textarea,.avico-quiz-card input:not([type=radio]),.avico-quiz-card select{display:block;width:100%;margin:6px 0 12px;padding:9px;border:1px solid #b9ccdd;border-radius:7px}.avico-quiz-existing{padding:9px;border-bottom:1px solid #d5e2ef}</style><style>.avico-certificate-legend{font-size:13px;line-height:1.55;color:#34536e;margin:12px 0 0;padding:10px 12px;border-left:3px solid #176ca8;background:#f5f9fd;border-radius:4px}@media(max-width:600px){.avico-learning-summary,.avico-admin-analytics{padding:12px}.avico-summary-metrics{flex-direction:column;gap:6px}.avico-quiz-overlay{padding:8px}.avico-quiz-card{padding:15px}.avico-analytics-table{font-size:12px}}</style><link rel="manifest" href="/static/manifest.webmanifest"><meta name="theme-color" content="#0e3655"><link rel="icon" type="image/svg+xml" href="/static/icon.svg"><style>
+/* Aula AVICO® Educación: mostrar clases y foro; preservar módulos internos. */
+#biblioteca,#videosMedicos,#casosClinicos,#autoevaluaciones,#acerca,
+#herramientas,.quickGrid {display:none!important}
+.avico-forum{margin:24px 0;padding:24px;border:1px solid #d5e3ef;border-radius:14px;background:#fff}
+.avico-forum h2{margin:0 0 8px;color:#123d69}
+.avico-forum textarea,.avico-forum input{width:100%;box-sizing:border-box;padding:12px;margin:6px 0 12px;border:1px solid #ccd9e5;border-radius:8px;font:inherit}
+.avico-forum-thread{border:1px solid #dce6f0;border-radius:10px;padding:16px;margin-top:14px}
+.avico-forum-reply{padding:10px 14px;margin:8px 0;background:#f0f6fb;border-radius:8px}
+.avico-forum .avico-forum-muted{color:#5b6c7c;font-size:13px}
+</style>
+</head>
 <body>
 <a class="avico-return-home" href="https://avico-salud-ecosistema.onrender.com/index.html">← Volver al inicio</a>
 
@@ -166,14 +177,9 @@ button,input,textarea,select{font:inherit}.app{display:grid;grid-template-column
   <div class="brand"><div class="logo">♡</div><div>Aula médica<br><b>Dr. Villalobos</b></div></div>
   <div class="nav">
     <button class="active" onclick="scrollToId('inicio')">⌂ Inicio</button>
-    <button onclick="scrollToId('cursos')">▤ Mis cursos</button>
-    <button onclick="scrollToId('alumnos')">♙ Alumnos</button>
-    <button onclick="scrollToId('biblioteca')">▣ Biblioteca</button>
-    <button onclick="scrollToId('acerca')">◉ Acerca de mí</button>
-    <button onclick="scrollToId('videosMedicos')">▶ Videos médicos</button>
-    <button onclick="scrollToId('casosClinicos')">♙ Casos clínicos</button>
-    <button onclick="scrollToId('autoevaluaciones')">◎ Autoevaluaciones</button>
-    <button onclick="alert('Foro de dudas: preparado para integrarse con usuarios al desplegar en servidor.')">◌ Foro de dudas</button>
+    <button onclick="scrollToId('cursos')">▤ Clases</button>
+    <button onclick="scrollToId('foroDudas')">◌ Foro de debate y preguntas</button>
+    <button onclick="scrollToId('alumnos')">♙ Inscripción</button>
   </div>
   <div class="profile">
     <img src="/static/assets/perfil_dr_villalobos.jpg">
@@ -313,9 +319,21 @@ button,input,textarea,select{font:inherit}.app{display:grid;grid-template-column
     </div>
   </div>
 
-  <div class="sectionTitle" id="cursos"><div><h2>Mis cursos</h2><div class="muted">Selecciona un curso para abrir sus clases</div></div><button class="btn light" onclick="openAdmin()">+ Nueva clase</button></div>
+  <div class="sectionTitle" id="cursos"><div><h2>Clases</h2><div class="muted">Selecciona un curso para abrir sus clases</div></div><button class="btn light" onclick="openAdmin()">+ Nueva clase</button></div>
   <div class="courseGrid" id="courseGrid"></div>
 
+<section class="avico-forum" id="foroDudas">
+  <h2>Foro de debate y preguntas · AVICO®</h2>
+  <p class="avico-forum-muted">Comparte dudas y experiencias académicas. No publiques datos identificables de pacientes.</p>
+  <form id="avicoForumForm">
+    <label for="avicoForumTitle">Tema o pregunta</label>
+    <input id="avicoForumTitle" maxlength="180" required placeholder="Escribe el título del debate">
+    <label for="avicoForumBody">Tu comentario</label>
+    <textarea id="avicoForumBody" rows="4" maxlength="4000" required placeholder="Describe tu pregunta o reflexión"></textarea>
+    <button type="submit" class="btn red">Publicar pregunta</button>
+  </form>
+  <div id="avicoForumList" aria-live="polite">Cargando debates...</div>
+</section>
   <div class="sectionTitle"><div><h2>Accesos rápidos</h2></div></div>
   <div class="quickGrid">
     <div class="quick" onclick="scrollToId('casosClinicos')" style="cursor:pointer"><div class="ico">🩺</div>Casos clínicos</div><div class="quick" onclick="scrollToId('autoevaluaciones')" style="cursor:pointer"><div class="ico">📝</div>Autoevaluaciones</div>
@@ -679,7 +697,47 @@ async function avicoRequestCertificate(courseId){
  const verifiedResponse=await fetch(verification);if(!verifiedResponse.ok){popup.close();alert('No fue posible verificar la constancia');return}const verified=await verifiedResponse.json();
  const safeName=esc(verified.student_name);
  const safeTitle=esc(data.course_title);
- popup.document.write('<!doctype html><html lang="es"><head><meta charset="utf-8"><title>Constancia AVICO®</title><style>body{font-family:Arial,sans-serif;text-align:center;padding:8vh 8%;color:#143f63}main{border:9px double #14588a;padding:50px 30px}h1{font-size:40px}h2{font-size:30px}p{font-size:18px}small{font-size:12px}@media print{button{display:none}}</style></head><body><main><h1>AVICO®</h1><h2>Constancia de finalización académica</h2><p>Se hace constar que</p><h2>'+safeName+'</h2><p>ha cumplido los requisitos de aprendizaje del curso</p><h2>'+safeTitle+'</h2><p>Fecha de emisión: '+new Date().toLocaleDateString('es-MX')+'</p><small>Constancia emitida por AVICO®. No implica aval institucional ni créditos oficiales.</small><p><small>Verificación: '+esc(verification)+'</small></p></main><button onclick="print()">Imprimir / Guardar como PDF</button></body></html>');
+ popup.document.write('<!doctype html><html lang="es"><head><meta charset="utf-8"><title>Constancia AVICO®</title><style>body{font-family:Arial,sans-serif;text-align:center;padding:8vh 8%;color:#143f63}main{border:9px double #14588a;padding:50px 30px}h1{font-size:40px}h2{font-size:30px}p{font-size:18px}small{font-size:12px}@media print{button{display:none}}</style></head><body><main><h1>AVICO®</h1><h2>Constancia de finalización académica</h2><p>Se hace constar que</p><h2>'+safeName+'</h2><p>ha cumplido los requisitos de aprendizaje del curso</p><h2>'+safeTitle+'</h2><p>Fecha de emisión: '+new Date().toLocaleDateString('es-MX')+'</p><small>Constancia emitida por AVICO®. No implica aval institucional ni créditos oficiales.</small><p><small>Verificación: '+esc(verification)+'</small></p></main><button onclick="print()">Imprimir / Guardar como PDF</button><script>
+(function(){
+ const getToken=()=>localStorage.getItem('aula_admin_token')||sessionStorage.getItem('avico_student_token')||localStorage.getItem('avico_student_token')||'';
+ const studentToken=()=>sessionStorage.getItem('avico_student_token')||localStorage.getItem('avico_student_token')||'';
+ const escForum=x=>String(x??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+ async function refreshForum(){
+  const box=document.getElementById('avicoForumList');if(!box)return;
+  try{
+   const r=await fetch('/api/forum');if(!r.ok)throw Error();
+   const threads=await r.json();
+   box.innerHTML=threads.length?threads.map(t=>'<article class="avico-forum-thread"><h3>'+escForum(t.title)+'</h3><p class="avico-forum-muted">'+escForum(t.author)+' · '+escForum(t.created_at)+'</p><p>'+escForum(t.body)+'</p>'+
+    (t.replies||[]).map(x=>'<div class="avico-forum-reply"><b>'+escForum(x.author)+(x.is_admin?' · Administrador':'')+'</b><p>'+escForum(x.body)+'</p></div>').join('')+
+    '<form class="avicoReplyForm" data-id="'+Number(t.id)+'"><input required maxlength="4000" placeholder="Responder al debate"><button class="btn" type="submit">Responder</button></form>'+
+    (localStorage.getItem('aula_admin_token')?'<button class="btn danger avicoDeleteThread" data-id="'+Number(t.id)+'">Eliminar debate</button>':'')+'</article>').join(''):'<p class="avico-forum-muted">Todavía no hay debates. Publica la primera pregunta.</p>';
+  }catch(e){box.textContent='No fue posible cargar el foro.'}
+ }
+ document.addEventListener('submit',async e=>{
+  const form=e.target;
+  if(form.id!=='avicoForumForm'&&!form.classList.contains('avicoReplyForm'))return;
+  e.preventDefault();
+  const isReply=form.classList.contains('avicoReplyForm'),token=isReply?getToken():studentToken();
+  if(!token){alert('Ingresa como alumno para participar en el foro.');return}
+  const title=document.getElementById('avicoForumTitle')?.value.trim();
+  const body=isReply?form.querySelector('input').value.trim():document.getElementById('avicoForumBody').value.trim();
+  try{
+   const url=isReply?'/api/forum/'+form.dataset.id+'/replies':'/api/forum';
+   const r=await fetch(url,{method:'POST',headers:{Authorization:'Bearer '+token,'Content-Type':'application/json'},body:JSON.stringify(isReply?{body}:{title,body})});
+   if(!r.ok)throw Error('No se pudo publicar. Comprueba tu sesión de alumno.');
+   form.reset();await refreshForum();
+  }catch(err){alert(err.message)}
+ });
+ document.addEventListener('click',async e=>{
+  const btn=e.target.closest('.avicoDeleteThread');if(!btn)return;
+  if(!confirm('¿Eliminar el debate y sus respuestas?'))return;
+  const r=await fetch('/api/forum/'+btn.dataset.id,{method:'DELETE',headers:{Authorization:'Bearer '+localStorage.getItem('aula_admin_token')}});
+  if(r.ok)refreshForum();else alert('No se pudo eliminar el debate.');
+ });
+ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',refreshForum);else refreshForum();
+})();
+</script>
+</body></html>');
  popup.document.close();
 }
 
