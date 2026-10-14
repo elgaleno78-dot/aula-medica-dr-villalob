@@ -158,6 +158,11 @@ button,input,textarea,select{font:inherit}.app{display:grid;grid-template-column
 .avico-return-home{position:relative;z-index:99999;display:block;padding:12px 20px;background:#eef5fc;color:#073b76;font:600 15px Arial,sans-serif;text-decoration:none;border-bottom:1px solid #d4e2ef}
 .avico-return-home:hover,.avico-return-home:focus{text-decoration:underline;background:#e1edf9}
 </style>
+<style>
+/* AVICO®: vista académica enfocada, sin eliminar módulos ni datos. */
+#biblioteca,#videosMedicos,#casosClinicos,#autoevaluaciones,#foroDudas,
+.quickGrid {display:none!important}
+</style>
 </head>
 <body>
 <a class="avico-return-home" href="https://avico-salud-ecosistema.onrender.com/index.html">← Volver al inicio</a>
@@ -230,15 +235,11 @@ button,input,textarea,select{font:inherit}.app{display:grid;grid-template-column
   <div class="brand"><div class="logo">♡</div><div>Curso AVICO<br><b>Hemorragia Obstétrica</b></div></div>
   <div class="nav">
     <button class="active" onclick="scrollToId('inicio')">⌂ Inicio</button>
-    <button onclick="scrollToId('cursos')">▤ Mis cursos</button>
+    <button onclick="scrollToId('cursos')">▤ Ponencias</button>
+    <button onclick="scrollToId('avicoCertificate')">▣ Mi avance y constancia</button>
     <button id="studentsNavBtn" style="display:none" onclick="scrollToId('alumnos')">♙ Alumnos inscritos</button>
-    <button onclick="scrollToId('biblioteca')">▣ Biblioteca</button>
     <button onclick="scrollToId('acerca')">◉ Acerca de mí</button>
-    <button onclick="scrollToId('videosMedicos')">▶ Videos médicos</button>
-    <button onclick="scrollToId('casosClinicos')">♙ Casos clínicos</button>
-    <button onclick="scrollToId('autoevaluaciones')">◎ Autoevaluaciones</button>
     <button id="adminNavBtn" style="display:none" onclick="showAdmin()">⚙ Zona del administrador</button>
-    <button onclick="scrollToId('foroDudas')">◌ Foro de dudas</button>
   </div>
   <div class="profile">
     <img src="/static/assets/perfil_dr_villalobos.jpg">
