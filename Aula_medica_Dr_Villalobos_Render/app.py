@@ -383,6 +383,8 @@ def restore_intro_catalog():
 @app.on_event("startup")
 def startup():
     init_db()
+    avico_quiz_schema()
+    avico_opinion_schema()
     restore_intro_catalog()
     threading.Thread(target=_avico_drive_sync_loop, daemon=True, name='avico-drive-sync').start()
     # Si ya existe información en el disco persistente, deja un respaldo al iniciar.
@@ -1567,4 +1569,192 @@ def drive_media(lesson_id:int,request:Request,playback_token:str=""):
     except Exception as exc:
         print("[AULA] Drive streaming error",type(exc).__name__)
         raise HTTPException(502,"No se pudo reproducir el video privado")
+
+
+
+# Evaluaciones y opiniones por ponencia AVICO®
+def avico_quiz_schema():
+    con=db()
+    try:
+        con.executescript("""
+        CREATE TABLE IF NOT EXISTS avico_quiz_questions(
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          lesson_id INTEGER NOT NULL,
+          question TEXT NOT NULL,
+          options_json TEXT NOT NULL,
+          correct_index INTEGER NOT NULL,
+          explanation TEXT DEFAULT '',
+          FOREIGN KEY(lesson_id) REFERENCES lessons(id) ON DELETE CASCADE
+        );
+        CREATE TABLE IF NOT EXISTS avico_quiz_attempts(
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          account_id INTEGER NOT NULL,
+          lesson_id INTEGER NOT NULL,
+          score_percent REAL NOT NULL,
+          correct_count INTEGER NOT NULL,
+          question_count INTEGER NOT NULL,
+          submitted_at TEXT DEFAULT CURRENT_TIMESTAMP,
+          FOREIGN KEY(account_id) REFERENCES student_accounts(id) ON DELETE CASCADE,
+          FOREIGN KEY(lesson_id) REFERENCES lessons(id) ON DELETE CASCADE
+        );
+        CREATE INDEX IF NOT EXISTS idx_avico_quiz_attempts_account ON avico_quiz_attempts(account_id,lesson_id);
+        """)
+        con.commit()
+    finally: con.close()
+
+@app.get("/api/admin/quiz/{lesson_id}")
+def avico_admin_quiz(lesson_id:int,request:Request):
+    auth(request)
+    con=db()
+    try:
+        return [dict(x) for x in con.execute("SELECT id,question,options_json,correct_index,explanation FROM avico_quiz_questions WHERE lesson_id=? ORDER BY id",(lesson_id,))]
+    finally: con.close()
+
+@app.post("/api/admin/quiz/{lesson_id}")
+async def avico_admin_add_question(lesson_id:int,request:Request):
+    auth(request)
+    data=await request.json()
+    question=str(data.get("question","")).strip()
+    options=data.get("options")
+    explanation=str(data.get("explanation","")).strip()
+    if not question or not isinstance(options,list) or len(options)!=4 or any(not isinstance(x,str) or not x.strip() for x in options):
+        raise HTTPException(400,"Escribe una pregunta y cuatro opciones válidas")
+    try: correct=int(data.get("correct_index"))
+    except (ValueError,TypeError): raise HTTPException(400,"Respuesta correcta inválida")
+    if correct not in range(4):raise HTTPException(400,"Respuesta correcta inválida")
+    con=db()
+    try:
+        if not con.execute("SELECT id FROM lessons WHERE id=?",(lesson_id,)).fetchone():raise HTTPException(404,"Ponencia no encontrada")
+        cur=con.execute("INSERT INTO avico_quiz_questions(lesson_id,question,options_json,correct_index,explanation) VALUES(?,?,?,?,?)",(lesson_id,question,json.dumps(options,ensure_ascii=False),correct,explanation))
+        con.commit()
+        return {"id":cur.lastrowid,"saved":True}
+    finally: con.close()
+
+@app.delete("/api/admin/quiz/question/{question_id}")
+def avico_admin_delete_question(question_id:int,request:Request):
+    auth(request)
+    con=db()
+    try:
+        cur=con.execute("DELETE FROM avico_quiz_questions WHERE id=?",(question_id,))
+        con.commit()
+        if not cur.rowcount:raise HTTPException(404,"Reactivo no encontrado")
+        return {"deleted":True}
+    finally:con.close()
+
+@app.get("/api/student-quiz/{lesson_id}")
+def avico_student_quiz(lesson_id:int,request:Request):
+    student_identity(request)
+    con=db()
+    try:
+        rows=con.execute("""SELECT q.id,q.question,q.options_json FROM avico_quiz_questions q
+          JOIN lessons l ON l.id=q.lesson_id JOIN courses c ON c.id=l.course_id
+          WHERE q.lesson_id=? AND c.published=1 ORDER BY q.id""",(lesson_id,)).fetchall()
+        return {"lesson_id":lesson_id,"questions":[{"id":r["id"],"question":r["question"],"options":json.loads(r["options_json"])} for r in rows]}
+    finally:con.close()
+
+@app.post("/api/student-quiz/{lesson_id}/submit")
+async def avico_student_quiz_submit(lesson_id:int,request:Request):
+    identity=student_identity(request)
+    payload=await request.json()
+    answers=payload.get("answers")
+    if not isinstance(answers,dict):raise HTTPException(400,"Respuestas inválidas")
+    con=db()
+    try:
+        rows=con.execute("""SELECT q.id,q.correct_index,q.explanation FROM avico_quiz_questions q
+          JOIN lessons l ON l.id=q.lesson_id JOIN courses c ON c.id=l.course_id
+          WHERE q.lesson_id=? AND c.published=1 ORDER BY q.id""",(lesson_id,)).fetchall()
+        if not rows:raise HTTPException(404,"No hay evaluación publicada")
+        if len(rows)>100:raise HTTPException(400,"Evaluación demasiado extensa")
+        details=[]
+        for r in rows:
+            value=answers.get(str(r["id"]))
+            try: choice=int(value) if value is not None else -1
+            except (TypeError,ValueError):choice=-1
+            ok=choice==r["correct_index"]
+            details.append({"question_id":r["id"],"correct":ok,"correct_index":r["correct_index"],"explanation":r["explanation"]})
+        correct=sum(x["correct"] for x in details)
+        score=round(correct*100/len(rows),1)
+        con.execute("INSERT INTO avico_quiz_attempts(account_id,lesson_id,score_percent,correct_count,question_count) VALUES(?,?,?,?,?)",(identity["id"],lesson_id,score,correct,len(rows)))
+        con.commit()
+        return {"score_percent":score,"correct_count":correct,"question_count":len(rows),"details":details}
+    finally:con.close()
+
+@app.get("/api/admin/quiz-analytics")
+def avico_admin_quiz_analytics(request:Request):
+    auth(request)
+    con=db()
+    try:
+        return [dict(r) for r in con.execute("""SELECT l.title AS lesson_title,COUNT(a.id) AS attempts,ROUND(AVG(a.score_percent),1) AS average_score
+          FROM avico_quiz_attempts a JOIN lessons l ON l.id=a.lesson_id GROUP BY l.id ORDER BY l.title""")]
+    finally:con.close()
+
+
+
+
+def avico_opinion_schema():
+    con=db()
+    try:
+        con.executescript("""
+        CREATE TABLE IF NOT EXISTS avico_opinions(
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          lesson_id INTEGER NOT NULL,
+          account_id INTEGER NOT NULL,
+          student_name TEXT NOT NULL,
+          comment TEXT NOT NULL,
+          status TEXT NOT NULL DEFAULT 'pending',
+          created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+          reviewed_at TEXT,
+          FOREIGN KEY(lesson_id) REFERENCES lessons(id) ON DELETE CASCADE,
+          FOREIGN KEY(account_id) REFERENCES student_accounts(id) ON DELETE CASCADE
+        );
+        CREATE INDEX IF NOT EXISTS idx_avico_opinions_lesson ON avico_opinions(lesson_id,status);
+        """)
+        con.commit()
+    finally:con.close()
+
+@app.get("/api/opinions/{lesson_id}")
+def avico_public_opinions(lesson_id:int):
+    con=db()
+    try:
+        return [dict(r) for r in con.execute("SELECT id,student_name,comment,created_at FROM avico_opinions WHERE lesson_id=? AND status='approved' ORDER BY id DESC LIMIT 100",(lesson_id,))]
+    finally:con.close()
+
+@app.post("/api/opinions/{lesson_id}")
+async def avico_submit_opinion(lesson_id:int,request:Request):
+    identity=student_identity(request)
+    data=await request.json()
+    comment=str(data.get("comment","")).strip()
+    if len(comment)<10 or len(comment)>1500:raise HTTPException(400,"El comentario debe tener entre 10 y 1500 caracteres")
+    con=db()
+    try:
+        if not con.execute("SELECT id FROM lessons WHERE id=?",(lesson_id,)).fetchone():raise HTTPException(404,"Ponencia no encontrada")
+        count=con.execute("SELECT COUNT(*) FROM avico_opinions WHERE account_id=? AND lesson_id=? AND created_at>=datetime('now','-1 day')",(identity["id"],lesson_id)).fetchone()[0]
+        if count>=3:raise HTTPException(429,"Máximo tres comentarios por ponencia cada 24 horas")
+        con.execute("INSERT INTO avico_opinions(lesson_id,account_id,student_name,comment) VALUES(?,?,?,?)",(lesson_id,identity["id"],identity["full_name"],comment))
+        con.commit()
+        return {"saved":True,"status":"pending","message":"Comentario enviado para revisión"}
+    finally:con.close()
+
+@app.get("/api/admin/opinions")
+def avico_admin_opinions(request:Request):
+    auth(request)
+    con=db()
+    try:
+        return [dict(r) for r in con.execute("""SELECT o.id,o.lesson_id,l.title AS lesson_title,o.student_name,o.comment,o.status,o.created_at
+          FROM avico_opinions o JOIN lessons l ON l.id=o.lesson_id WHERE o.status='pending' ORDER BY o.id LIMIT 200""")]
+    finally:con.close()
+
+@app.post("/api/admin/opinions/{opinion_id}/review")
+async def avico_review_opinion(opinion_id:int,request:Request):
+    auth(request)
+    data=await request.json()
+    status=data.get("status")
+    if status not in ("approved","rejected"):raise HTTPException(400,"Estado inválido")
+    con=db()
+    try:
+        cur=con.execute("UPDATE avico_opinions SET status=?,reviewed_at=CURRENT_TIMESTAMP WHERE id=? AND status='pending'",(status,opinion_id))
+        con.commit()
+        if not cur.rowcount:raise HTTPException(404,"Comentario pendiente no encontrado")
+        return {"reviewed":True,"status":status}
+    finally:con.close()
 
