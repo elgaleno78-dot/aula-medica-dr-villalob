@@ -724,46 +724,7 @@ async function avicoRequestCertificate(courseId){
  const verifiedResponse=await fetch(verification);if(!verifiedResponse.ok){popup.close();alert('No fue posible verificar la constancia');return}const verified=await verifiedResponse.json();
  const safeName=esc(verified.student_name);
  const safeTitle=esc(data.course_title);
- popup.document.write('<!doctype html><html lang="es"><head><meta charset="utf-8"><title>Constancia AVICO®</title><style>body{font-family:Arial,sans-serif;text-align:center;padding:8vh 8%;color:#143f63}main{border:9px double #14588a;padding:50px 30px}h1{font-size:40px}h2{font-size:30px}p{font-size:18px}small{font-size:12px}@media print{button{display:none}}</style></head><body><main><h1>AVICO®</h1><h2>Constancia de finalización académica</h2><p>Se hace constar que</p><h2>'+safeName+'</h2><p>ha cumplido los requisitos de aprendizaje del curso</p><h2>'+safeTitle+'</h2><p>Fecha de emisión: '+new Date().toLocaleDateString('es-MX')+'</p><small>Constancia emitida por AVICO®. No implica aval institucional ni créditos oficiales.</small><p><small>Verificación: '+esc(verification)+'</small></p></main><button onclick="print()">Imprimir / Guardar como PDF</button><script>
-(function(){
- const getToken=()=>localStorage.getItem('aula_admin_token')||sessionStorage.getItem('avico_student_token')||localStorage.getItem('avico_student_token')||'';
- const studentToken=()=>sessionStorage.getItem('avico_student_token')||localStorage.getItem('avico_student_token')||'';
- const escForum=x=>String(x??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
- async function refreshForum(){
-  const box=document.getElementById('avicoForumList');if(!box)return;
-  try{
-   const r=await fetch('/api/forum');if(!r.ok)throw Error();
-   const threads=await r.json();
-   box.innerHTML=threads.length?threads.map(t=>'<article class="avico-forum-thread"><h3>'+escForum(t.title)+'</h3><p class="avico-forum-muted">'+escForum(t.author)+' · '+escForum(t.created_at)+'</p><p>'+escForum(t.body)+'</p>'+
-    (t.replies||[]).map(x=>'<div class="avico-forum-reply"><b>'+escForum(x.author)+(x.is_admin?' · Administrador':'')+'</b><p>'+escForum(x.body)+'</p></div>').join('')+
-    '<form class="avicoReplyForm" data-id="'+Number(t.id)+'"><input required maxlength="4000" placeholder="Responder al debate"><button class="btn" type="submit">Responder</button></form>'+
-    (localStorage.getItem('aula_admin_token')?'<button class="btn danger avicoDeleteThread" data-id="'+Number(t.id)+'">Eliminar debate</button>':'')+'</article>').join(''):'<p class="avico-forum-muted">Todavía no hay debates. Publica la primera pregunta.</p>';
-  }catch(e){box.textContent='No fue posible cargar el foro.'}
- }
- document.addEventListener('submit',async e=>{
-  const form=e.target;
-  if(form.id!=='avicoForumForm'&&!form.classList.contains('avicoReplyForm'))return;
-  e.preventDefault();
-  const isReply=form.classList.contains('avicoReplyForm'),token=isReply?getToken():studentToken();
-  if(!token){alert('Ingresa como alumno para participar en el foro.');return}
-  const title=document.getElementById('avicoForumTitle')?.value.trim();
-  const body=isReply?form.querySelector('input').value.trim():document.getElementById('avicoForumBody').value.trim();
-  try{
-   const url=isReply?'/api/forum/'+form.dataset.id+'/replies':'/api/forum';
-   const r=await fetch(url,{method:'POST',headers:{Authorization:'Bearer '+token,'Content-Type':'application/json'},body:JSON.stringify(isReply?{body}:{title,body})});
-   if(!r.ok)throw Error('No se pudo publicar. Comprueba tu sesión de alumno.');
-   form.reset();await refreshForum();
-  }catch(err){alert(err.message)}
- });
- document.addEventListener('click',async e=>{
-  const btn=e.target.closest('.avicoDeleteThread');if(!btn)return;
-  if(!confirm('¿Eliminar el debate y sus respuestas?'))return;
-  const r=await fetch('/api/forum/'+btn.dataset.id,{method:'DELETE',headers:{Authorization:'Bearer '+localStorage.getItem('aula_admin_token')}});
-  if(r.ok)refreshForum();else alert('No se pudo eliminar el debate.');
- });
- if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',refreshForum);else refreshForum();
-})();
-</script>
+ popup.document.write('<!doctype html><html lang="es"><head><meta charset="utf-8"><title>Constancia AVICO®</title><style>body{font-family:Arial,sans-serif;text-align:center;padding:8vh 8%;color:#143f63}main{border:9px double #14588a;padding:50px 30px}h1{font-size:40px}h2{font-size:30px}p{font-size:18px}small{font-size:12px}@media print{button{display:none}}</style></head><body><main><h1>AVICO®</h1><h2>Constancia de finalización académica</h2><p>Se hace constar que</p><h2>'+safeName+'</h2><p>ha cumplido los requisitos de aprendizaje del curso</p><h2>'+safeTitle+'</h2><p>Fecha de emisión: '+new Date().toLocaleDateString('es-MX')+'</p><small>Constancia emitida por AVICO®. No implica aval institucional ni créditos oficiales.</small><p><small>Verificación: '+esc(verification)+'</small></p></main><button onclick="print()">Imprimir / Guardar como PDF</button>
 </body></html>');
  popup.document.close();
 }
@@ -1214,5 +1175,45 @@ window.avicoRefreshStudent=async function(){
   }
  }catch(e){alert(e.message);}
 })();
-</script><script>if('serviceWorker' in navigator){window.addEventListener('load',()=>navigator.serviceWorker.register('/sw.js').catch(e=>console.warn('PWA:',e)))}</script></body>
+</script><script>if('serviceWorker' in navigator){window.addEventListener('load',()=>navigator.serviceWorker.register('/sw.js').catch(e=>console.warn('PWA:',e)))}</script><script>
+(function(){
+ const getToken=()=>localStorage.getItem('aula_admin_token')||sessionStorage.getItem('avico_student_token')||localStorage.getItem('avico_student_token')||'';
+ const studentToken=()=>sessionStorage.getItem('avico_student_token')||localStorage.getItem('avico_student_token')||'';
+ const escForum=x=>String(x??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+ async function refreshForum(){
+  const box=document.getElementById('avicoForumList');if(!box)return;
+  try{
+   const r=await fetch('/api/forum');if(!r.ok)throw Error();
+   const threads=await r.json();
+   box.innerHTML=threads.length?threads.map(t=>'<article class="avico-forum-thread"><h3>'+escForum(t.title)+'</h3><p class="avico-forum-muted">'+escForum(t.author)+' · '+escForum(t.created_at)+'</p><p>'+escForum(t.body)+'</p>'+
+    (t.replies||[]).map(x=>'<div class="avico-forum-reply"><b>'+escForum(x.author)+(x.is_admin?' · Administrador':'')+'</b><p>'+escForum(x.body)+'</p></div>').join('')+
+    '<form class="avicoReplyForm" data-id="'+Number(t.id)+'"><input required maxlength="4000" placeholder="Responder al debate"><button class="btn" type="submit">Responder</button></form>'+
+    (localStorage.getItem('aula_admin_token')?'<button class="btn danger avicoDeleteThread" data-id="'+Number(t.id)+'">Eliminar debate</button>':'')+'</article>').join(''):'<p class="avico-forum-muted">Todavía no hay debates. Publica la primera pregunta.</p>';
+  }catch(e){box.textContent='No fue posible cargar el foro.'}
+ }
+ document.addEventListener('submit',async e=>{
+  const form=e.target;
+  if(form.id!=='avicoForumForm'&&!form.classList.contains('avicoReplyForm'))return;
+  e.preventDefault();
+  const isReply=form.classList.contains('avicoReplyForm'),token=isReply?getToken():studentToken();
+  if(!token){alert('Ingresa como alumno para participar en el foro.');return}
+  const title=document.getElementById('avicoForumTitle')?.value.trim();
+  const body=isReply?form.querySelector('input').value.trim():document.getElementById('avicoForumBody').value.trim();
+  try{
+   const url=isReply?'/api/forum/'+form.dataset.id+'/replies':'/api/forum';
+   const r=await fetch(url,{method:'POST',headers:{Authorization:'Bearer '+token,'Content-Type':'application/json'},body:JSON.stringify(isReply?{body}:{title,body})});
+   if(!r.ok)throw Error('No se pudo publicar. Comprueba tu sesión de alumno.');
+   form.reset();await refreshForum();
+  }catch(err){alert(err.message)}
+ });
+ document.addEventListener('click',async e=>{
+  const btn=e.target.closest('.avicoDeleteThread');if(!btn)return;
+  if(!confirm('¿Eliminar el debate y sus respuestas?'))return;
+  const r=await fetch('/api/forum/'+btn.dataset.id,{method:'DELETE',headers:{Authorization:'Bearer '+localStorage.getItem('aula_admin_token')}});
+  if(r.ok)refreshForum();else alert('No se pudo eliminar el debate.');
+ });
+ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',refreshForum);else refreshForum();
+})();
+</script>
+</body>
 </html>
