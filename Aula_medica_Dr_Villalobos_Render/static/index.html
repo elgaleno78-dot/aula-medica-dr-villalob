@@ -641,17 +641,25 @@ async function downloadAvicoCertificate(){
  }catch(e){alert(e.message)}
 }
 function attachAvicoCertificateTracking(video,lessonId){
- let active=false,last=0;
+ let playing=false,busy=false,finished=false;
  const ping=async()=>{
-  if(!active||video.paused||video.seeking||!Number.isFinite(video.duration)||video.duration<10)return;
-  const st=sessionStorage.getItem('avico_student_token')||localStorage.getItem('avico_student_token');if(!st)return;
-  try{const r=await fetch('/api/certificate/watch/'+lessonId,{method:'POST',headers:{Authorization:'Bearer '+st,'Content-Type':'application/json'},body:JSON.stringify({duration:video.duration})});
-  if(r.ok){const x=await r.json();if(x.completed){active=false;refreshAvicoCertificate()}}}catch(e){}
+  if(!playing||busy||finished||video.paused||video.seeking||!Number.isFinite(video.duration)||video.duration<10)return;
+  const st=sessionStorage.getItem('avico_student_token')||localStorage.getItem('avico_student_token');
+  if(!st)return;
+  busy=true;
+  try{
+   const r=await fetch('/api/certificate/watch/'+lessonId,{method:'POST',headers:{Authorization:'Bearer '+st,'Content-Type':'application/json'},body:JSON.stringify({duration:video.duration})});
+   if(r.ok){const x=await r.json();if(x.completed){finished=true;refreshAvicoCertificate()}}
+   else console.warn('AVICO® constancia: registro rechazado',r.status);
+  }catch(e){console.warn('AVICO® constancia: sin conexión',e)}
+  finally{busy=false}
  };
- video.addEventListener('playing',()=>{active=true;ping()});
- video.addEventListener('pause',()=>{active=false});
- video.addEventListener('ended',()=>{active=false;refreshAvicoCertificate()});
- video.addEventListener('timeupdate',()=>{if(active&&video.currentTime-last>=10){last=video.currentTime;ping()}});
+ const timer=setInterval(()=>{if(!video.isConnected){clearInterval(timer);return}ping()},5000);
+ video.addEventListener('playing',()=>{playing=true;ping()});
+ video.addEventListener('pause',()=>{playing=false;refreshAvicoCertificate()});
+ video.addEventListener('seeking',()=>{playing=false});
+ video.addEventListener('seeked',()=>{playing=!video.paused});
+ video.addEventListener('ended',()=>{playing=false;refreshAvicoCertificate()});
 }
 function renderCourses(){
   const box=$('#sessionList');
