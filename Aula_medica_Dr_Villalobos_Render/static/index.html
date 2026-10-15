@@ -332,8 +332,8 @@ button,input,textarea,select{font:inherit}.app{display:grid;grid-template-column
     </div>
   </div>
 
-  <div class="sectionTitle" id="cursos"><div><h2>Clases</h2><div class="muted">Selecciona un curso para abrir sus clases</div></div><button class="btn light" onclick="openAdmin()">+ Nueva clase</button></div>
-  <div class="courseGrid" id="courseGrid"></div>
+  <div class="sectionTitle" id="cursos"><div><h2>Ponencias · Aula AVICO® Educación</h2><div class="muted">Selecciona la materia para consultar sus ponencias</div></div><label style="display:flex;align-items:center;gap:8px">Materia <select id="avicoCourseSelect" onchange="openCourse(Number(this.value),false)" aria-label="Seleccionar materia"></select></label></div>
+  <div class="courseGrid" id="courseGrid" hidden style="display:none"></div>
 
 <section class="avico-forum" id="foroDudas">
   <h2>Foro de debate y preguntas · AVICO®</h2>
@@ -495,12 +495,19 @@ async function load(){
   renderCourses(); fillSelect(); fillAcademicSelects(); loadAcademic(); loadLibrary();
 }
 function renderCourses(){
-  const icons=['🩸','🩺','🤰','🏥','📖','🧠'];
-  $('#courseGrid').innerHTML=courses.map((c,i)=>`
-    <div class="course" onclick="openCourse(${c.id})">
-      <div class="cover">${icons[i%icons.length]}</div>
-      <div class="courseBody"><span class="badge">${c.category||'Curso'}</span><h3>${esc(c.title)}</h3><p>${esc(c.subtitle||'')}</p><small>${c.lessons.length} clase(s)</small></div>
-    </div>`).join('');
+  const selector=document.getElementById('avicoCourseSelect');
+  const previous=Number(window.avicoActiveCourseId||selector?.value||0);
+  if(selector){
+    selector.innerHTML=courses.map(c=>'<option value="'+c.id+'">'+esc(c.title)+'</option>').join('');
+    const selected=courses.some(c=>c.id===previous)?previous:(courses[0]?.id||0);
+    if(selected){
+      selector.value=String(selected);
+      openCourse(selected,false);
+    }else{
+      const panel=document.getElementById('lessonPanel');
+      if(panel)panel.style.display='none';
+    }
+  }
   renderCourseManager(); loadStudents(); loadAcademic(); loadDriveReviews(); loadLibrary();
 }
 function renderCourseManager(){
@@ -536,7 +543,7 @@ function avicoClassInfo(l,student){
  (l.notes?'<p class="muted">'+esc(l.notes)+'</p>':'')+
  (student?avicoProgressMarkup(l.id):'')+'</div>';
 }
-async function openCourse(id){
+async function openCourse(id,scrollToPanel=true){
   window.avicoActiveCourseLessons=null;
   window.avicoActiveAccessToken=null;
   const summary=document.getElementById('avicoLearningSummary');if(summary)summary.hidden=true;
@@ -545,7 +552,7 @@ async function openCourse(id){
   $('#lessonPanel').style.display='block';
   $('#lessonCourseTitle').textContent=c.title;
   $('#lessonCourseSubtitle').textContent=c.subtitle||'';
-  $('#lessonPanel').scrollIntoView({behavior:'smooth'});
+  if(scrollToPanel) $('#lessonPanel').scrollIntoView({behavior:'smooth'});
 
   // Administrador: acceso permanente y visor original.
   if(token){
