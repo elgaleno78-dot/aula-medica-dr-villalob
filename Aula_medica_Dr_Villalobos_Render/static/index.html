@@ -781,7 +781,7 @@ function renderCourses(){
         <div class="ponenciaDate">Sesión académica</div>
         ${l.notes?'<p class="muted">'+esc(l.notes)+'</p>':''}
         ${avicoHemorrhageProgressMarkup(l.id)}
-        ${token?'<div class="ponenciaAdminActions"><button class="btn danger" onclick="delLesson('+Number(l.id)+')">Eliminar</button></div>':''}
+        ${token?'<div class="ponenciaAdminActions"><button class="btn light" title="Subir ponencia" onclick="avicoMovePonencia('+Number(l.course_id)+','+Number(l.id)+',-1)">↑ Subir</button> <button class="btn light" title="Bajar ponencia" onclick="avicoMovePonencia('+Number(l.course_id)+','+Number(l.id)+',1)">↓ Bajar</button> <button class="btn danger" onclick="delLesson('+Number(l.id)+')">Eliminar</button></div>':''}
       </div>
       <div class="ponenciaAction">
         <button class="btn" onclick="openPonencia(${l.course_id},${l.id})">Ir a la ponencia</button>
@@ -794,6 +794,17 @@ function renderCourses(){
  }
  avicoRefreshHemorrhageProgress();
  refreshAvicoCertificate();renderCourseManager();loadStudents();loadAcademic();loadLibrary();
+}
+async function avicoMovePonencia(courseId, lessonId, direction){
+ const c=courses.find(x=>Number(x.id)===Number(courseId)); if(!c)return;
+ const ids=c.lessons.map(x=>Number(x.id)), i=ids.indexOf(Number(lessonId)), j=i+direction;
+ if(i<0||j<0||j>=ids.length)return;
+ [ids[i],ids[j]]=[ids[j],ids[i]];
+ try{
+  const r=await fetch('/api/admin/lessons/reorder',{method:'POST',headers:{Authorization:'Bearer '+token,'Content-Type':'application/json'},body:JSON.stringify({course_id:Number(courseId),lesson_ids:ids})});
+  if(!r.ok)throw new Error(await r.text());
+  await load();
+ }catch(e){alert('No se pudo guardar el orden: '+e.message)}
 }
 function renderCourseManager(){
   const box=$('#courseManagerList'); if(!box) return;
