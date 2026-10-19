@@ -684,6 +684,27 @@ def courses():
     return rows
 
 
+@app.post("/api/admin/lessons/reorder")
+async def reorder_hemorrhage_lessons(request: Request):
+    auth(request)
+    payload = await request.json()
+    course_id = int(payload.get("course_id", 0))
+    ids = payload.get("lesson_ids", [])
+    if not isinstance(ids, list) or not ids or len(ids) != len(set(ids)) or not all(isinstance(i, int) for i in ids):
+        raise HTTPException(status_code=400, detail="Orden inválido")
+    con = db()
+    try:
+        existing = [r["id"] for r in con.execute("SELECT id FROM lessons WHERE course_id=?", (course_id,)).fetchall()]
+        if set(ids) != set(existing):
+            raise HTTPException(status_code=400, detail="La lista de ponencias no coincide con el curso")
+        for pos, lesson_id in enumerate(ids):
+            con.execute("UPDATE lessons SET ord=? WHERE id=? AND course_id=?", ((pos+1)*10, lesson_id, course_id))
+        con.commit()
+        return {"ok": True}
+    finally:
+        con.close()
+
+
 @app.get("/api/student-courses/{course_id}/access")
 def student_course_access(course_id:int, request:Request):
     """All published lessons are available to every authenticated student account."""
