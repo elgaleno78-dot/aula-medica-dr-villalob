@@ -152,6 +152,11 @@ button,input,textarea,select{font:inherit}.app{display:grid;grid-template-column
 .forumReply.admin{border-left-color:#1764a8;background:#eef6ff}
 .forumReplyForm{display:flex;gap:8px;margin-top:12px}
 .forumReplyForm input{flex:1;padding:10px;border:1px solid var(--line);border-radius:9px}
+
+/* Titulos completos de ponencias: tipografia compacta y salto de linea */
+.ponenciaInfo h3,.ponenciaRow .ponenciaInfo h3{font-size:clamp(16px,1.35vw,20px);line-height:1.35;font-weight:750;white-space:normal;overflow:visible;text-overflow:clip;overflow-wrap:anywhere;word-break:normal;display:block;max-height:none;-webkit-line-clamp:unset}
+.ponenciaInfo{min-width:0}
+@media(max-width:760px){.ponenciaInfo h3,.ponenciaRow .ponenciaInfo h3{font-size:17px;line-height:1.35}}
 </style>
 <link rel="stylesheet" href="/static/avico-theme.css">
 <style>
