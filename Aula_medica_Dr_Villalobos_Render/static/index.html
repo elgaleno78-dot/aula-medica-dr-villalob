@@ -115,10 +115,13 @@ button,input,textarea,select{font:inherit}.app{display:grid;grid-template-column
 @media(max-width:760px){.libraryGrid{grid-template-columns:1fr}}
 
 
-/* Aviso temporal AVICO®: cambiar display a none para retirarlo */
-.avico-construction-notice{display:block;margin:0;padding:13px 22px;background:#eaf2fa;border-bottom:1px solid #cbddeb;color:#123d65;text-align:center;font-size:15px;line-height:1.5}
-.avico-construction-notice strong{font-weight:800}
-@media(max-width:600px){.avico-construction-notice{font-size:13px;padding:11px 14px}}
+/* Señal temporal de obra: visible en la portada y el acceso */
+.avico-construction-notice{display:block!important;background:#fff!important;color:#111!important;border:7px solid transparent!important;border-image:repeating-linear-gradient(135deg,#ffcc00 0 16px,#111 16px 32px) 7!important;border-radius:4px;padding:15px 18px!important;text-align:center;font:500 14px/1.45 Arial,sans-serif!important;box-shadow:0 6px 22px #0002;max-width:760px;margin:10px auto 18px!important}
+.avico-construction-notice strong{display:block;font-size:clamp(18px,3vw,27px);font-weight:900;letter-spacing:.02em;color:#111}
+.avico-construction-notice strong:before{content:"🚧 ";font-size:1em}
+.avico-construction-notice strong:after{content:" 🚧";font-size:1em}
+#avicoWelcome .avico-construction-notice{max-width:100%;position:relative;z-index:2}
+@media(max-width:600px){.avico-construction-notice{font-size:12px!important;padding:10px!important;border-width:5px!important}}
 </style>
 <link rel="stylesheet" href="/static/avico-theme.css">
 <style>
@@ -152,7 +155,7 @@ button,input,textarea,select{font:inherit}.app{display:grid;grid-template-column
 </head>
 <body>
 <a class="avico-return-home" href="https://avico-salud-ecosistema.onrender.com/index.html">← Volver al inicio</a>
-<div class="avico-construction-notice" role="status"><strong>Aula AVICO® en construcción.</strong> Estamos incorporando nuevas ponencias y contenidos académicos. Gracias por tu comprensión.</div>
+<div class="avico-construction-notice" role="status"><strong>AULA AVICO | EN CONSTRUCCIÓN</strong>Estamos incorporando nuevas ponencias y recursos académicos. El contenido disponible puede consultarse con normalidad.</div>
 
 
 <div id="avicoWelcome" class="avico-welcome" role="dialog" aria-modal="true" aria-label="Bienvenida a Aula AVICO">
