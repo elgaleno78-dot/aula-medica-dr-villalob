@@ -114,6 +114,11 @@ button,input,textarea,select{font:inherit}.app{display:grid;grid-template-column
 @media(max-width:1100px){.libraryGrid{grid-template-columns:1fr 1fr}}
 @media(max-width:760px){.libraryGrid{grid-template-columns:1fr}}
 
+
+/* Aviso temporal AVICO®: cambiar display a none para retirarlo */
+.avico-construction-notice{display:block;margin:0;padding:13px 22px;background:#eaf2fa;border-bottom:1px solid #cbddeb;color:#123d65;text-align:center;font-size:15px;line-height:1.5}
+.avico-construction-notice strong{font-weight:800}
+@media(max-width:600px){.avico-construction-notice{font-size:13px;padding:11px 14px}}
 </style>
 <link rel="stylesheet" href="/static/avico-theme.css">
 <style>
@@ -147,6 +152,8 @@ button,input,textarea,select{font:inherit}.app{display:grid;grid-template-column
 </head>
 <body>
 <a class="avico-return-home" href="https://avico-salud-ecosistema.onrender.com/index.html">← Volver al inicio</a>
+<div class="avico-construction-notice" role="status"><strong>Aula AVICO® en construcción.</strong> Estamos incorporando nuevas ponencias y contenidos académicos. Gracias por tu comprensión.</div>
+
 
 <div id="avicoWelcome" class="avico-welcome" role="dialog" aria-modal="true" aria-label="Bienvenida a Aula AVICO">
   <section class="avico-welcome-left">
