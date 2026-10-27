@@ -803,16 +803,20 @@ function renderCourses(){
  avicoRefreshHemorrhageProgress();
  refreshAvicoCertificate();renderCourseManager();loadStudents();loadAcademic();loadLibrary();
 }
+let avicoReorderBusy=false;
 async function avicoMovePonencia(courseId, lessonId, direction){
- const c=courses.find(x=>Number(x.id)===Number(courseId)); if(!c)return;
+ if(avicoReorderBusy)return;
+ avicoReorderBusy=true;
+ const c=courses.find(x=>Number(x.id)===Number(courseId)); if(!c){avicoReorderBusy=false;return;}
  const ids=c.lessons.map(x=>Number(x.id)), i=ids.indexOf(Number(lessonId)), j=i+direction;
- if(i<0||j<0||j>=ids.length)return;
+ if(i<0||j<0||j>=ids.length){avicoReorderBusy=false;return;}
  [ids[i],ids[j]]=[ids[j],ids[i]];
  try{
   const r=await fetch('/api/admin/lessons/reorder',{method:'POST',headers:{Authorization:'Bearer '+token,'Content-Type':'application/json'},body:JSON.stringify({course_id:Number(courseId),lesson_ids:ids})});
   if(!r.ok)throw new Error(await r.text());
   await load();
  }catch(e){alert('No se pudo guardar el orden: '+e.message)}
+ finally{avicoReorderBusy=false;}
 }
 function renderCourseManager(){
   const box=$('#courseManagerList'); if(!box) return;
