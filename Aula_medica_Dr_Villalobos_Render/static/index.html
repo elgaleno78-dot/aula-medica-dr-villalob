@@ -542,6 +542,7 @@ button,input,textarea,select{font:inherit}.app{display:grid;grid-template-column
       </form>
     </div>
 
+    <div class="courseManager"><h3>Organizar módulos y ponencias</h3><p class="muted">Cambie los títulos, cree módulos y mueva las ponencias. Guarde para publicar.</p><div id="avicoModuleEditor"></div></div>
     <div class="courseManager">
       <h3>Contenido académico interactivo</h3>
       <div class="adminAcademic">
@@ -625,14 +626,14 @@ const $=s=>document.querySelector(s);
 function scrollToId(id){document.getElementById(id)?.scrollIntoView({behavior:'smooth'})}
 async function api(url,opt={}){let r=await fetch(url,opt); if(!r.ok) throw new Error(await r.text()); return r.json()}
 async function load(){
-  courses=await api('/api/courses'); const d=await api('/api/dashboard');
+  courses=await api('/api/courses'); try{avicoSavedModules=await api('/api/course-modules')}catch(e){console.warn('Módulos no disponibles',e)} const d=await api('/api/dashboard');
   if(token){
     const adminNav=document.getElementById('adminNavBtn'); if(adminNav) adminNav.style.display='block';
     const studentsNav=document.getElementById('studentsNavBtn'); if(studentsNav) studentsNav.style.display='block';
     const studentsPanel=document.getElementById('alumnos'); if(studentsPanel) studentsPanel.style.display='block';
   }
   $('#statCourses').textContent=d.courses; $('#statStudents').textContent=d.students; $('#statProgress').textContent=d.progress+'%'; $('#statSat').textContent=d.satisfaction+'%';
-  renderCourses(); fillSelect(); fillAcademicSelects(); loadAcademic(); loadLibrary(); loadForum();
+  renderCourses(); if(token)renderAvicoModuleEditor(); fillSelect(); fillAcademicSelects(); loadAcademic(); loadLibrary(); loadForum();
 }
 function formatSessionDate(value){
   if(!value)return 'Sesión académica';
@@ -764,6 +765,45 @@ async function avicoAdminQuizEditor(lessonId){
  };
 }
 
+let avicoSavedModules=[];
+let avicoEditorState=null;
+function avicoInitModuleEditor(){
+ const c=courses[0];if(!c)return;
+ const saved=avicoSavedModules.filter(m=>m.course_id===c.id);
+ const defaults=['Fundamentos, epidemiología y prevención','Reconocimiento, choque y respuesta inicial','Tratamiento médico y dispositivos','Tratamiento quirúrgico y control vascular','Casos clínicos, resultados y seguridad'];
+ const normalize=t=>String(t||'').toLowerCase().normalize('NFD').replace(/[\\u0300-\\u036f]/g,'');
+ const rules=[/presentacion|introduccion|mortalidad|definicion|factor|subestimacion|cuantificacion|qbl|qps|tercer periodo|pinzamiento tardio|traccion controlada|masaje uterino/,/choque|abordaje inicial|codigo mater|bundle|reanimacion|algoritmo|escalamiento/,/uteroton|farmacol|tratamiento medico|bakri|ellavi|balon|vacio intrauterino|hidrostatic/,/quirurg|sutura|ligadura|vascular|zea|histerectomia|aorta/,/caso|near miss|morbilidad|demora|seguridad|epmm/];
+ const modules=saved.length?saved.map(m=>({id:m.id,title:m.title,ids:[]})):defaults.map(title=>({id:null,title,ids:[]}));
+ c.lessons.forEach(l=>{let i=saved.findIndex(m=>m.id===l.module_id);if(i<0){i=rules.findIndex(r=>r.test(normalize(l.title)));if(i<0)i=modules.length-1;}modules[i].ids.push(l.id)});
+ avicoEditorState={course_id:c.id,modules};
+}
+function avicoModuleAction(type,i,j,value){
+ const st=avicoEditorState;if(!st)return;const a=st.modules;
+ if(type==='title')a[i].title=value;
+ if(type==='add')a.push({id:null,title:'Nuevo módulo',ids:[]});
+ if(type==='delete'){if(a[i].ids.length)return alert('Mueva primero las ponencias a otro módulo.');a.splice(i,1)}
+ if(type==='moduleUp'&&i>0)[a[i-1],a[i]]=[a[i],a[i-1]];
+ if(type==='moduleDown'&&i<a.length-1)[a[i+1],a[i]]=[a[i],a[i+1]];
+ if(type==='up'&&j>0)[a[i].ids[j-1],a[i].ids[j]]=[a[i].ids[j],a[i].ids[j-1]];
+ if(type==='down'&&j<a[i].ids.length-1)[a[i].ids[j+1],a[i].ids[j]]=[a[i].ids[j],a[i].ids[j+1]];
+ if(type==='move'){const id=a[i].ids.splice(j,1)[0];a[Number(value)].ids.push(id)}
+ if(type!=='title')renderAvicoModuleEditor();
+}
+function renderAvicoModuleEditor(){
+ const box=document.getElementById('avicoModuleEditor');if(!box||!token)return;
+ if(!avicoEditorState||!courses.some(c=>c.id===avicoEditorState.course_id))avicoInitModuleEditor();
+ const st=avicoEditorState;if(!st)return;
+ const c=courses.find(x=>x.id===st.course_id);
+ box.innerHTML=st.modules.map((m,i)=>`<div style="border:1px solid #d7e3ef;border-radius:12px;padding:14px;margin:12px 0;background:#fff">
+ <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center"><input aria-label="Título del módulo" style="flex:1;min-width:180px;padding:10px" value="${esc(m.title)}" oninput="avicoModuleAction('title',${i},0,this.value)">
+ <button class="btn light" onclick="avicoModuleAction('moduleUp',${i})">↑ Módulo</button><button class="btn light" onclick="avicoModuleAction('moduleDown',${i})">↓ Módulo</button><button class="btn danger" onclick="avicoModuleAction('delete',${i})">Eliminar módulo</button></div>
+ ${m.ids.map((id,j)=>{const l=c.lessons.find(x=>x.id===id);return `<div style="display:flex;align-items:center;gap:7px;flex-wrap:wrap;padding:9px 0;border-bottom:1px solid #edf1f6"><span style="flex:1;min-width:190px">${j+1}. ${esc(l?.title||'Ponencia')}</span><button class="btn light" onclick="avicoModuleAction('up',${i},${j})">↑</button><button class="btn light" onclick="avicoModuleAction('down',${i},${j})">↓</button><select aria-label="Mover ponencia a módulo" onchange="avicoModuleAction('move',${i},${j},this.value)"><option value="">Mover a…</option>${st.modules.map((other,k)=>k===i?'':`<option value="${k}">${esc(other.title)}</option>`).join('')}</select></div>`}).join('')}
+ </div>`).join('')+`<div style="display:flex;gap:10px;flex-wrap:wrap"><button class="btn light" onclick="avicoModuleAction('add')">+ Agregar módulo</button><button class="btn" onclick="avicoSaveModules()">Guardar organización</button></div>`;
+}
+async function avicoSaveModules(){
+ const st=avicoEditorState;if(!st||!st.modules.length||st.modules.some(m=>!m.title.trim()))return alert('Cada módulo debe tener un título.');
+ try{const r=await fetch('/api/admin/course-modules',{method:'PUT',headers:{Authorization:'Bearer '+token,'Content-Type':'application/json'},body:JSON.stringify({course_id:st.course_id,modules:st.modules.map(m=>({id:m.id,title:m.title,lesson_ids:m.ids}))})});if(!r.ok){const e=await r.json();throw Error(e.detail||'Error al guardar')}avicoEditorState=null;await load();alert('Organización guardada y publicada.')}catch(e){alert(e.message)}
+}
 function renderCourses(){
  const box=$('#sessionList');
  const lessons=courses.flatMap(c=>(c.lessons||[]).map(l=>({...l,course_id:c.id,course_title:c.title,course_subtitle:c.subtitle})));
@@ -790,7 +830,17 @@ function renderCourses(){
    groups[moduleIndex].push({...l,_avicoRank:rank,_avicoOriginalIndex:index});
   });
   groups.forEach(group=>group.sort((x,y)=>x._avicoRank-y._avicoRank||x._avicoOriginalIndex-y._avicoOriginalIndex));
-  box.innerHTML=groups.map((group,i)=>group.length?'<details class="avico-module" '+(i===0?'open':'')+'><summary><span><strong>Módulo '+(i+1)+'</strong> · '+(i===4&&group.some(l=>l._avicoRank===999)?'Casos clínicos, seguridad y temas complementarios':modules[i].name)+'</span><small>'+group.length+' ponencia'+(group.length===1?'':'s')+'</small></summary><div class="avico-module-body">'+group.map(l=>{
+  groups.forEach(group=>group.sort((x,y)=>x._avicoRank-y._avicoRank||x._avicoOriginalIndex-y._avicoOriginalIndex));
+  const saved=avicoSavedModules.filter(m=>courses.some(c=>c.id===m.course_id));
+  let displayModules=modules.map((m,i)=>({name:m.name,lessons:groups[i]}));
+  if(saved.length){
+   const assigned=new Set();
+   displayModules=saved.map(m=>({name:m.title,lessons:lessons.filter(l=>l.module_id===m.id).map(l=>{assigned.add(l.id);return l})}));
+   const unassigned=lessons.filter(l=>!assigned.has(l.id));
+   if(unassigned.length)displayModules.push({name:'Ponencias sin asignar',lessons:unassigned});
+  }
+  const visibleGroups=displayModules.map(m=>m.lessons);
+  box.innerHTML=visibleGroups.map((group,i)=>group.length?'<details class="avico-module" '+(i===0?'open':'')+'><summary><span><strong>Módulo '+(i+1)+'</strong> · '+(i===4&&group.some(l=>l._avicoRank===999)?'Casos clínicos, seguridad y temas complementarios':modules[i].name)+'</span><small>'+group.length+' ponencia'+(group.length===1?'':'s')+'</small></summary><div class="avico-module-body">'+group.map(l=>{
    
    return `
     <article class="ponenciaRow">
