@@ -287,7 +287,16 @@ def init_db():
         cur.execute("ALTER TABLE students ADD COLUMN access_expires_at TEXT")
     if "account_id" not in student_cols:
         cur.execute("ALTER TABLE students ADD COLUMN account_id INTEGER REFERENCES student_accounts(id)")
+    cur.execute("""CREATE TABLE IF NOT EXISTS course_modules (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        course_id INTEGER NOT NULL,
+        title TEXT NOT NULL,
+        ord INTEGER NOT NULL DEFAULT 0,
+        FOREIGN KEY(course_id) REFERENCES courses(id)
+    )""")
     lesson_cols={r["name"] for r in cur.execute("PRAGMA table_info(lessons)").fetchall()}
+    if "module_id" not in lesson_cols:
+        cur.execute("ALTER TABLE lessons ADD COLUMN module_id INTEGER")
     if "session_date" not in lesson_cols:
         cur.execute("ALTER TABLE lessons ADD COLUMN session_date TEXT DEFAULT ''")
     if "institution" not in lesson_cols:
@@ -673,6 +682,53 @@ def student_logout(request:Request):
     con.execute("DELETE FROM student_sessions WHERE token_hash=?",(hashlib.sha256(token.encode()).hexdigest(),))
     con.commit();con.close()
     return {"ok":True}
+
+@app.get("/api/course-modules")
+def get_course_modules():
+    con=db()
+    try:
+        return [dict(r) for r in con.execute("SELECT id,course_id,title,ord FROM course_modules ORDER BY course_id,ord,id")]
+    finally:
+        con.close()
+
+
+@app.put("/api/admin/course-modules")
+async def save_course_modules(request: Request):
+    auth(request)
+    data=await request.json()
+    course_id=data.get("course_id")
+    modules=data.get("modules")
+    if not isinstance(course_id,int) or not isinstance(modules,list) or len(modules)>30:
+        raise HTTPException(400,"Datos de módulos inválidos")
+    if any(not isinstance(m,dict) or not isinstance(m.get("title"),str) or not m["title"].strip() or len(m["title"])>120 or not isinstance(m.get("lesson_ids"),list) for m in modules):
+        raise HTTPException(400,"Módulos inválidos")
+    con=db()
+    try:
+        existing={r["id"] for r in con.execute("SELECT id FROM lessons WHERE course_id=?",(course_id,))}
+        ids=[lid for m in modules for lid in m["lesson_ids"]]
+        if len(ids)!=len(set(ids)) or any(type(lid)!=int for lid in ids) or set(ids)!=existing:
+            raise HTTPException(400,"Todas las ponencias deben asignarse una sola vez")
+        old_ids={r["id"] for r in con.execute("SELECT id FROM course_modules WHERE course_id=?",(course_id,))}
+        retained=set()
+        order=0
+        for position,m in enumerate(modules):
+            mid=m.get("id")
+            if type(mid)==int and mid in old_ids and mid not in retained:
+                con.execute("UPDATE course_modules SET title=?,ord=? WHERE id=?",(m["title"].strip(),position,mid))
+            else:
+                cur=con.execute("INSERT INTO course_modules(course_id,title,ord) VALUES(?,?,?)",(course_id,m["title"].strip(),position))
+                mid=cur.lastrowid
+            retained.add(mid)
+            for lid in m["lesson_ids"]:
+                order+=10
+                con.execute("UPDATE lessons SET module_id=?,ord=? WHERE id=? AND course_id=?",(mid,order,lid,course_id))
+        for mid in old_ids-retained:
+            con.execute("DELETE FROM course_modules WHERE id=?",(mid,))
+        con.commit()
+        return {"ok":True}
+    finally:
+        con.close()
+
 
 @app.get("/api/courses")
 def courses():
