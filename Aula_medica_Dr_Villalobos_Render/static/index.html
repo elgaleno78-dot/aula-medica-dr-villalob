@@ -790,7 +790,7 @@ function renderCourses(){
    groups[moduleIndex].push({...l,_avicoRank:rank,_avicoOriginalIndex:index});
   });
   groups.forEach(group=>group.sort((x,y)=>x._avicoRank-y._avicoRank||x._avicoOriginalIndex-y._avicoOriginalIndex));
-  box.innerHTML=groups.map((group,i)=>group.length?'<details class="avico-module" '+(i===0?'open':'')+'><summary><span><strong>Módulo '+(i+1)+'</strong> · '+modules[i].name+'</span><small>'+group.length+' ponencia'+(group.length===1?'':'s')+'</small></summary><div class="avico-module-body">'+group.map(l=>{
+  box.innerHTML=groups.map((group,i)=>group.length?'<details class="avico-module" '+(i===0?'open':'')+'><summary><span><strong>Módulo '+(i+1)+'</strong> · '+(i===4&&group.some(l=>l._avicoRank===999)?'Casos clínicos, seguridad y temas complementarios':modules[i].name)+'</span><small>'+group.length+' ponencia'+(group.length===1?'':'s')+'</small></summary><div class="avico-module-body">'+group.map(l=>{
    
    return `
     <article class="ponenciaRow">
