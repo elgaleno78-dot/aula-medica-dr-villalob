@@ -769,12 +769,28 @@ function renderCourses(){
  const lessons=courses.flatMap(c=>(c.lessons||[]).map(l=>({...l,course_id:c.id,course_title:c.title,course_subtitle:c.subtitle})));
  if(!lessons.length){box.innerHTML='<p class="muted" style="padding:30px 8px">Todavía no hay ponencias publicadas.</p>';}
  else{
-  // Respetar estrictamente el orden de ponencias recibido del servidor.
-  // Los bloques son exclusivamente visuales: no reclasifican ni reordenan clases.
-  const groupSize=Math.max(1,Math.ceil(lessons.length/5));
-  const groups=[];
-  for(let i=0;i<lessons.length;i+=groupSize)groups.push(lessons.slice(i,i+groupSize));
-  box.innerHTML=groups.map((group,i)=>group.length?'<details class="avico-module" '+(i===0?'open':'')+'><summary><span><strong>Bloque '+(i+1)+'</strong> · Ponencias '+(i*groupSize+1)+' a '+(i*groupSize+group.length)+'</span><small>'+group.length+' ponencia'+(group.length===1?'':'s')+'</small></summary><div class="avico-module-body">'+group.map(l=>{
+  // Clasificación académica por el título real, sin alterar la base de datos.
+  const normalizeTitle=t=>String(t||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+  const modules=[
+   {name:'Fundamentos, epidemiología y prevención',rules:[/presentacion|introduccion/,/mortalidad materna/,/definicion|concepto/,/factor.*riesgo/,/subestimacion/,/cuantificacion|qbl|qps|perdida sanguinea/,/tercer periodo|pinzamiento tardio|traccion controlada|masaje uterino/]},
+   {name:'Reconocimiento, choque y respuesta inicial',rules:[/choque/,/abordaje inicial|evaluacion inicial/,/codigo mater|bundle|paquete de atencion/,/reanimacion|resucitacion/,/algoritmo|escalamiento/]},
+   {name:'Tratamiento médico y dispositivos',rules:[/uterotonico|oxitocina|carbetocina|misoprostol|ergonovina/,/tratamiento medico|manejo medico|farmacologico|acido tranexamico/,/hidrostatic|balon|bakri|ellavi/,/vacio intrauterino|dispositivo de vacio/]},
+   {name:'Tratamiento quirúrgico y control vascular',rules:[/pasos quirurgicos|abordaje quirurgico/,/zea|pinzamiento vaginal/,/sutura.*compres|b.lynch|hayman|ho.cho|sutura.*li/,/ligadura/,/vascularizacion|control vascular|s1.*s2|s2.*s3/,/histerectomia|cirugia de control|compresion aortica/]},
+   {name:'Casos clínicos, resultados y seguridad',rules:[/caso clinico|simulacion/,/near miss|morbilidad materna|epmm/,/tres demoras|3 demoras/,/seguridad del paciente|calidad de atencion/]}
+  ];
+  const groups=modules.map(()=>[]);
+  const fallback=4;
+  lessons.forEach((l,index)=>{
+   const title=normalizeTitle(l.title);
+   let moduleIndex=fallback,rank=999;
+   for(let m=0;m<modules.length;m++){
+    const r=modules[m].rules.findIndex(pattern=>pattern.test(title));
+    if(r!==-1){moduleIndex=m;rank=r;break;}
+   }
+   groups[moduleIndex].push({...l,_avicoRank:rank,_avicoOriginalIndex:index});
+  });
+  groups.forEach(group=>group.sort((x,y)=>x._avicoRank-y._avicoRank||x._avicoOriginalIndex-y._avicoOriginalIndex));
+  box.innerHTML=groups.map((group,i)=>group.length?'<details class="avico-module" '+(i===0?'open':'')+'><summary><span><strong>Módulo '+(i+1)+'</strong> · '+modules[i].name+'</span><small>'+group.length+' ponencia'+(group.length===1?'':'s')+'</small></summary><div class="avico-module-body">'+group.map(l=>{
    
    return `
     <article class="ponenciaRow">
