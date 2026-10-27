@@ -202,7 +202,7 @@ button,input,textarea,select{font:inherit}.app{display:grid;grid-template-column
     <div class="avico-benefits"><p><b>Hemorragia obstétrica</b><br>Actualización basada en evidencia y toma de decisiones</p></div>
     <p class="avico-tagline">Conocimiento hoy,<br>mejores pacientes mañana.</p><p class="avico-signature">Dr. Alejandro Villalobos</p>
   </section>
-  <section class="avico-welcome-right"><div class="avico-entry-card"><h1>Bienvenido(a) al<br><strong>Curso de Hemorragia Obstétrica</strong></h1><p>Formación AVICO para reconocer, reanimar y controlar la hemorragia obstétrica.</p><p><strong>Constancia de participación:</strong> al completar la totalidad de las ponencias del curso, podrá descargar su constancia desde el aula, cuando esté habilitada.</p>
+  <section class="avico-welcome-right"><div class="avico-entry-card"><h1>Bienvenido(a) al<br><strong>Curso de Hemorragia Obstétrica</strong></h1><p>Formación AVICO para reconocer, reanimar y controlar la hemorragia obstétrica.</p>
   <form id="avicoAccountForm" class="avico-account-form">
     <label for="avicoName">Nombre completo</label><input id="avicoName" autocomplete="name" required placeholder="Nombre y apellidos">
     <label for="avicoEmail">Correo electrónico</label><input id="avicoEmail" type="email" autocomplete="email" required placeholder="alumno@correo.com">
@@ -265,7 +265,7 @@ button,input,textarea,select{font:inherit}.app{display:grid;grid-template-column
   <div class="nav">
     <button class="active" onclick="scrollToId('inicio')">⌂ Inicio</button>
     <button onclick="scrollToId('cursos')">▤ Ponencias</button>
-    <button onclick="scrollToId('avicoCertificate')">▣ Mi avance y constancia</button>
+    <button onclick="scrollToId('avicoCertificate')">▣ Mi avance</button>
     <button id="studentsNavBtn" style="display:none" onclick="scrollToId('alumnos')">♙ Alumnos inscritos</button>
     <button onclick="scrollToId('foroDudas')">◌ Foro de debate y preguntas</button>
     <button onclick="scrollToId('acerca')">◉ Acerca de mí</button>
@@ -274,7 +274,7 @@ button,input,textarea,select{font:inherit}.app{display:grid;grid-template-column
   <div class="profile">
     <img src="/static/assets/perfil_dr_villalobos.jpg">
     <h3>Dr. Alejandro Lenin Villalobos Rodríguez</h3>
-    <p>Jefe de Servicio de<br>Ginecología y Obstetricia</p>
+    <p>Especialista en<br>Ginecología y Obstetricia</p>
     <a href="https://www.facebook.com/profile.php?id=61595141903129" target="_blank" rel="noopener noreferrer" aria-label="Visitar el perfil de Facebook de AVICO®" style="display:inline-flex;align-items:center;justify-content:center;gap:8px;margin-top:12px;padding:9px 13px;border:1px solid #8cb5e8;border-radius:9px;background:#eaf3ff;color:#154c92;font-size:13px;font-weight:700;text-decoration:none">
       <span aria-hidden="true" style="display:inline-grid;place-items:center;width:22px;height:22px;border-radius:50%;background:#1877f2;color:white;font:bold 17px Arial">f</span> Facebook · AVICO®
     </a>
@@ -379,7 +379,7 @@ button,input,textarea,select{font:inherit}.app{display:grid;grid-template-column
         <div class="aboutText">
           Médico especialista en Ginecología y Obstetricia con más de 20 años de experiencia clínica, académica y de liderazgo institucional. Su trayectoria se ha desarrollado principalmente en la atención de la salud materna, las emergencias obstétricas y la formación de médicos y residentes.
           <br><br>
-          Se desempeña como Jefe del Servicio del Hospital General de Playa del Carmen y Coordinador del Comité de Mortalidad Materna. Su formación integra la medicina con una Maestría en Ciencias de la Educación y una Licenciatura en Administración Pública y Ciencias Políticas.
+          Es médico especialista en Ginecología y Obstetricia en el Hospital General de Playa del Carmen y ha participado en el Comité de Mortalidad Materna. Su formación integra la medicina con una Maestría en Ciencias de la Educación y una Licenciatura en Administración Pública y Ciencias Políticas.
           <br><br>
           Ha participado durante años en la formación de estudiantes y especialistas como profesor de Ginecología y Obstetricia en instituciones como la Universidad Autónoma del Estado de Quintana Roo, la Universidad Anáhuac Cancún y la Universidad Autónoma de Yucatán.
           <br><br>
@@ -443,7 +443,7 @@ button,input,textarea,select{font:inherit}.app{display:grid;grid-template-column
       </div>
       <div class="studentTableWrap">
         <table class="studentTable">
-          <thead><tr><th>Nombre</th><th>Edad</th><th>Institución</th><th>Puesto/Grado</th><th>Correo</th><th>Curso</th><th>Fecha</th><th>Avance</th><th>Constancia</th><th></th></tr></thead>
+          <thead><tr><th>Nombre</th><th>Edad</th><th>Institución</th><th>Puesto/Grado</th><th>Correo</th><th>Curso</th><th>Fecha</th><th>Avance</th><th></th></tr></thead>
           <tbody id="studentTableBody"></tbody>
         </table>
       </div>
@@ -454,7 +454,7 @@ button,input,textarea,select{font:inherit}.app{display:grid;grid-template-column
     <div><h2>Ponencias</h2><div class="muted">Todas las ponencias están disponibles desde el momento en que ingresas al aula</div></div>
     <button class="btn light" onclick="openAdmin()">+ Nueva ponencia</button>
   </div>
-  <section id="avicoCertificate" style="padding:22px;margin:18px 0 22px;border:2px solid #1e5683;border-radius:14px;background:#f0f6fc"><h2 style="margin:0 0 10px;color:#103f67">Constancia digital AVICO®</h2><p style="margin:0 0 10px">Al visualizar al menos el 90 % de cada ponencia, podrá descargar automáticamente su constancia de participación.</p><p id="avicoCertificateStatus" style="font-weight:700;margin:10px 0">Consulte su avance al ingresar como alumno.</p><button id="avicoCertificateDownload" class="btn" style="display:none" onclick="downloadAvicoCertificate()">Descargar constancia PDF</button><p style="font-size:12px;margin:10px 0 0;color:#53677b">El botón de descarga se habilita al completar todas las ponencias.</p></section>
+  
   <div class="ponenciasWrap" id="sessionList"><p class="muted" style="padding:28px 8px">Cargando ponencias...</p></div>
 
   <div class="sectionTitle"><div><h2>Recursos del curso</h2></div></div>
@@ -465,7 +465,7 @@ button,input,textarea,select{font:inherit}.app{display:grid;grid-template-column
     <div class="quick"><div class="ico">🧭</div>Algoritmos</div>
     <div class="quick" onclick="scrollToId('videosMedicos')" style="cursor:pointer"><div class="ico">▶</div>Videos</div>
     <div class="quick" onclick="scrollToId('foroDudas')" style="cursor:pointer"><div class="ico">💬</div>Foro de dudas</div>
-    <div class="quick"><div class="ico">🏅</div>Certificados</div>
+    <div class="quick"><div class="ico">🏅</div>Formación</div>
   </div>
 
   <div class="panel" id="lessonPanel" style="display:none">
@@ -664,16 +664,7 @@ async function refreshAvicoCertificate(){
  btn.style.display=x.eligible?'inline-block':'none';
  }catch(e){label.textContent='Ingrese nuevamente como alumno para consultar el avance.';btn.style.display='none'}
 }
-async function downloadAvicoCertificate(){
- const st=sessionStorage.getItem('avico_student_token')||localStorage.getItem('avico_student_token');
- if(!st)return;
- try{const r=await fetch('/api/certificate/download',{headers:{Authorization:'Bearer '+st}});
- if(!r.ok)throw Error('Constancia no disponible');
- const url=URL.createObjectURL(await r.blob()),a=document.createElement('a');
- a.href=url;a.download='Constancia_AVICO.pdf';document.body.appendChild(a);a.click();a.remove();
- setTimeout(()=>URL.revokeObjectURL(url),30000);
- }catch(e){alert(e.message)}
-}
+
 function attachAvicoCertificateTracking(video,lessonId){
  let playing=false,busy=false,finished=false;
  const ping=async()=>{
@@ -1197,7 +1188,7 @@ async function loadStudents(){
         <td>${esc(s.course_title||'General')}</td>
         <td>${esc((s.created_at||'').slice(0,10))}</td>
         <td>${s.completadas||0} / ${s.total_ponencias||0} (${s.avance_pct||0}%)</td>
-        <td>${s.constancia_disponible?'Disponible':'Pendiente'}</td>
+        
         <td><button class="btn danger" onclick="deleteStudent(${s.id})">Eliminar</button></td>
       </tr>`).join(''):'<tr><td colspan="10" class="muted">Aún no hay alumnos inscritos.</td></tr>';
   }catch{ alert('No se pudo cargar la lista de alumnos') }
