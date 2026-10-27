@@ -157,6 +157,7 @@ button,input,textarea,select{font:inherit}.app{display:grid;grid-template-column
 .ponenciaInfo h3,.ponenciaRow .ponenciaInfo h3{font-size:clamp(16px,1.35vw,20px);line-height:1.35;font-weight:750;white-space:normal;overflow:visible;text-overflow:clip;overflow-wrap:anywhere;word-break:normal;display:block;max-height:none;-webkit-line-clamp:unset}
 .ponenciaInfo{min-width:0}
 @media(max-width:760px){.ponenciaInfo h3,.ponenciaRow .ponenciaInfo h3{font-size:17px;line-height:1.35}}
+.avico-module{background:#fff;border:1px solid #d7e3ef;border-radius:13px;margin:12px 0;overflow:hidden}.avico-module summary{cursor:pointer;padding:18px 20px;display:flex;justify-content:space-between;gap:12px;align-items:center;color:#153e65;background:#f3f7fb;list-style:none}.avico-module summary::-webkit-details-marker{display:none}.avico-module summary small{white-space:nowrap;color:#637b90}.avico-module[open] summary{border-bottom:1px solid #d7e3ef}.avico-module-body{padding:0 16px}@media(max-width:700px){.avico-module summary{padding:14px;align-items:flex-start;flex-direction:column}.avico-module-body{padding:0 10px}}
 </style>
 <link rel="stylesheet" href="/static/avico-theme.css">
 <style>
@@ -768,11 +769,21 @@ function renderCourses(){
  const lessons=courses.flatMap(c=>(c.lessons||[]).map(l=>({...l,course_id:c.id,course_title:c.title,course_subtitle:c.subtitle})));
  if(!lessons.length){box.innerHTML='<p class="muted" style="padding:30px 8px">Todavía no hay ponencias publicadas.</p>';}
  else{
-  let lastCourse=null;
-  box.innerHTML=lessons.map(l=>{
-   const heading=l.course_id!==lastCourse?'<div class="avico-course-label"><h2>'+esc(l.course_title)+'</h2><p class="muted">'+esc(l.course_subtitle||'')+'</p></div>':'';
-   lastCourse=l.course_id;
-   return heading+`
+  const moduleNames=['Fundamentos y prevención','Reconocimiento y respuesta inicial','Tratamiento médico y dispositivos','Tratamiento quirúrgico','Seguridad, resultados y casos clínicos'];
+  const groups=Array.from({length:5},()=>[]);
+  lessons.forEach((l,i)=>{
+   const title=(l.title||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+   let m=0;
+   if(/caso|near miss|demora|seguridad|mortalidad|morbilidad|epmm/.test(title))m=4;
+   else if(/sutura|ligadura|vascular|quirurg|histerectom|zea|pinzamiento|aorta|control de danos|compresion/.test(title))m=3;
+   else if(/uteroton|farmaco|medicamento|bakri|ellavi|balon|vacio|hidrostat|tratamiento medico/.test(title))m=2;
+   else if(/choque|reanimacion|abordaje|codigo mater|bundle|respuesta|escalamiento|algoritmo/.test(title))m=1;
+   else if(!/presentacion|introduccion|definicion|factor|riesgo|prevencion|cuantificacion|subestimacion|tercer periodo|manejo activo/.test(title))m=Math.min(4,Math.floor(i/Math.max(1,Math.ceil(lessons.length/5))));
+   groups[m].push(l);
+  });
+  box.innerHTML=groups.map((group,i)=>group.length?'<details class="avico-module" '+(i===0?'open':'')+'><summary><span><strong>Módulo '+(i+1)+'</strong> · '+moduleNames[i]+'</span><small>'+group.length+' ponencia'+(group.length===1?'':'s')+'</small></summary><div class="avico-module-body">'+group.map(l=>{
+   
+   return `
     <article class="ponenciaRow">
       <div class="ponenciaVisual" aria-hidden="true"><div class="ponenciaBadge"></div><div class="ponenciaRibbon">Sesión académica<small>AVICO®</small></div></div>
       <div class="ponenciaInfo">
@@ -789,7 +800,7 @@ function renderCourses(){
         ${token?'<button class="btn avico-secondary" onclick="avicoAdminQuizEditor('+Number(l.id)+')">Editar evaluación</button>':''}
       </div>
     </article>`;
-  }).join('');
+  }).join('')+'</div></details>':'').join('');
  }
  avicoRefreshHemorrhageProgress();
  refreshAvicoCertificate();renderCourseManager();loadStudents();loadAcademic();loadLibrary();
