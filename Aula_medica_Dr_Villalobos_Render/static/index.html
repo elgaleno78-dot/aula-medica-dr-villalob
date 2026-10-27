@@ -802,7 +802,7 @@ function renderAvicoModuleEditor(){
 }
 async function avicoSaveModules(){
  const st=avicoEditorState;if(!st||!st.modules.length||st.modules.some(m=>!m.title.trim()))return alert('Cada módulo debe tener un título.');
- try{const r=await fetch('/api/admin/course-modules',{method:'PUT',headers:{Authorization:'Bearer '+token,'Content-Type':'application/json'},body:JSON.stringify({course_id:st.course_id,modules:st.modules.map(m=>({id:m.id,title:m.title,lesson_ids:m.ids}))})});if(!r.ok){const e=await r.json();throw Error(e.detail||'Error al guardar')}avicoEditorState=null;await load();alert('Organización guardada y publicada.')}catch(e){alert(e.message)}
+ try{const r=await fetch('/api/admin/course-modules',{method:'PUT',headers:{Authorization:'Bearer '+token,'Content-Type':'application/json'},body:JSON.stringify({course_id:st.course_id,modules:st.modules.map(m=>({id:m.id,title:m.title,lesson_ids:m.ids}))})});if(!r.ok){const e=await r.json();throw Error(e.detail||'Error al guardar')}avicoEditorState=null;await load();const check=await fetch('/api/courses',{cache:'no-store'});const latest=await check.json();const course=latest.find(c=>c.id===st.course_id);const expected=st.modules.flatMap(m=>m.ids);const actual=(course?.lessons||[]).map(l=>l.id);if(expected.join(',')!==actual.join(','))throw Error('El servidor no confirmó el orden guardado');alert('Organización guardada y verificada en el servidor.')}catch(e){alert(e.message)}
 }
 function renderCourses(){
  const box=$('#sessionList');
@@ -830,7 +830,6 @@ function renderCourses(){
    groups[moduleIndex].push({...l,_avicoRank:rank,_avicoOriginalIndex:index});
   });
   groups.forEach(group=>group.sort((x,y)=>x._avicoRank-y._avicoRank||x._avicoOriginalIndex-y._avicoOriginalIndex));
-  groups.forEach(group=>group.sort((x,y)=>x._avicoRank-y._avicoRank||x._avicoOriginalIndex-y._avicoOriginalIndex));
   const saved=avicoSavedModules.filter(m=>courses.some(c=>c.id===m.course_id));
   let displayModules=modules.map((m,i)=>({name:m.name,lessons:groups[i]}));
   if(saved.length){
@@ -840,7 +839,7 @@ function renderCourses(){
    if(unassigned.length)displayModules.push({name:'Ponencias sin asignar',lessons:unassigned});
   }
   const visibleGroups=displayModules.map(m=>m.lessons);
-  box.innerHTML=visibleGroups.map((group,i)=>group.length?'<details class="avico-module" '+(i===0?'open':'')+'><summary><span><strong>Módulo '+(i+1)+'</strong> · '+(i===4&&group.some(l=>l._avicoRank===999)?'Casos clínicos, seguridad y temas complementarios':modules[i].name)+'</span><small>'+group.length+' ponencia'+(group.length===1?'':'s')+'</small></summary><div class="avico-module-body">'+group.map(l=>{
+  box.innerHTML=visibleGroups.map((group,i)=>group.length?'<details class="avico-module" '+(i===0?'open':'')+'><summary><span><strong>Módulo '+(i+1)+'</strong> · '+displayModules[i].name+'</span><small>'+group.length+' ponencia'+(group.length===1?'':'s')+'</small></summary><div class="avico-module-body">'+group.map(l=>{
    
    return `
     <article class="ponenciaRow">
