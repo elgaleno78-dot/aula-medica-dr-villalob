@@ -769,19 +769,12 @@ function renderCourses(){
  const lessons=courses.flatMap(c=>(c.lessons||[]).map(l=>({...l,course_id:c.id,course_title:c.title,course_subtitle:c.subtitle})));
  if(!lessons.length){box.innerHTML='<p class="muted" style="padding:30px 8px">Todavía no hay ponencias publicadas.</p>';}
  else{
-  const moduleNames=['Fundamentos y prevención','Reconocimiento y respuesta inicial','Tratamiento médico y dispositivos','Tratamiento quirúrgico','Seguridad, resultados y casos clínicos'];
-  const groups=Array.from({length:5},()=>[]);
-  lessons.forEach((l,i)=>{
-   const title=(l.title||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
-   let m=0;
-   if(/caso|near miss|demora|seguridad|mortalidad|morbilidad|epmm/.test(title))m=4;
-   else if(/sutura|ligadura|vascular|quirurg|histerectom|zea|pinzamiento|aorta|control de danos|compresion/.test(title))m=3;
-   else if(/uteroton|farmaco|medicamento|bakri|ellavi|balon|vacio|hidrostat|tratamiento medico/.test(title))m=2;
-   else if(/choque|reanimacion|abordaje|codigo mater|bundle|respuesta|escalamiento|algoritmo/.test(title))m=1;
-   else if(!/presentacion|introduccion|definicion|factor|riesgo|prevencion|cuantificacion|subestimacion|tercer periodo|manejo activo/.test(title))m=Math.min(4,Math.floor(i/Math.max(1,Math.ceil(lessons.length/5))));
-   groups[m].push(l);
-  });
-  box.innerHTML=groups.map((group,i)=>group.length?'<details class="avico-module" '+(i===0?'open':'')+'><summary><span><strong>Módulo '+(i+1)+'</strong> · '+moduleNames[i]+'</span><small>'+group.length+' ponencia'+(group.length===1?'':'s')+'</small></summary><div class="avico-module-body">'+group.map(l=>{
+  // Respetar estrictamente el orden de ponencias recibido del servidor.
+  // Los bloques son exclusivamente visuales: no reclasifican ni reordenan clases.
+  const groupSize=Math.max(1,Math.ceil(lessons.length/5));
+  const groups=[];
+  for(let i=0;i<lessons.length;i+=groupSize)groups.push(lessons.slice(i,i+groupSize));
+  box.innerHTML=groups.map((group,i)=>group.length?'<details class="avico-module" '+(i===0?'open':'')+'><summary><span><strong>Bloque '+(i+1)+'</strong> · Ponencias '+(i*groupSize+1)+' a '+(i*groupSize+group.length)+'</span><small>'+group.length+' ponencia'+(group.length===1?'':'s')+'</small></summary><div class="avico-module-body">'+group.map(l=>{
    
    return `
     <article class="ponenciaRow">
